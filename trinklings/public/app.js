@@ -1204,19 +1204,30 @@ function blowOut(m) {
 }
 // Inserting/removing a card in a centre-justified flex lane RE-CENTERS the row, shifting the layout box of any
 // pet currently STAGED in the pit — but its fixed pit transform stays put, so it teleports sideways mid-fight.
-// Snapshot staged pets' screen rects, run the DOM mutation, then correct each staged transform by the pure
-// layout delta (measured same-tick so an in-flight lunge hasn't advanced). Kills the summon/faint teleport.
+// FLIP (First-Last-Invert-Play): snapshot EVERY card's screen position, run the lane-mutating DOM op, then
+// animate each card from its OLD position to the new one so bench cards GLIDE instead of snapping when a
+// summon is inserted / a fainter is removed / a pet moves. The staged fighter stays pinned to the pit (its
+// stored transform is shifted by the pure layout delta). Kills the "bench teleports" on any lane reflow.
 function compensateStagedForReflow(container, mutate) {
-  const snaps = [];
-  for (const uid in staged) { const s = staged[uid]; if (s && s.el && s.el.parentElement === container) snaps.push({ s, r: s.el.getBoundingClientRect() }); }
+  const sp = replaySpeed || 1;
+  const cards = [...container.children].map((el) => ({ el, r: el.getBoundingClientRect(), inArena: el.classList.contains('in-arena') }));
   mutate();
-  for (const { s, r } of snaps) {
-    const nr = s.el.getBoundingClientRect(), dx = nr.left - r.left, dy = nr.top - r.top;
+  for (const c of cards) {
+    const el = c.el; if (!el.isConnected) continue;
+    const nr = el.getBoundingClientRect(), dx = c.r.left - nr.left, dy = c.r.top - nr.top;   // invert = old − new
     if (!dx && !dy) continue;
-    s.tx -= dx; s.ty -= dy;
-    const prev = s.el.style.transition;
-    s.el.style.transition = 'none'; s.el.style.transform = `translate(${s.tx}px, ${s.ty}px) scale(1.12)`;
-    void s.el.offsetWidth; s.el.style.transition = prev;
+    if (c.inArena) {                          // staged fighter: keep it pinned to the pit through the reflow
+      const s = staged[el.dataset.uid];
+      if (s) { s.tx += dx; s.ty += dy; const prev = el.style.transition; el.style.transition = 'none'; el.style.transform = `translate(${s.tx}px, ${s.ty}px) scale(1.12)`; void el.offsetWidth; el.style.transition = prev; }
+      continue;
+    }
+    el.style.transition = 'none';             // bench card FLIP: jump back to the old spot, then glide to the new
+    el.style.transform = `translate(${dx}px, ${dy}px)`;
+    void el.offsetWidth;
+    el.style.transition = `transform ${(0.34 / sp).toFixed(2)}s cubic-bezier(.3,1.2,.5,1)`;
+    el.style.transform = '';
+    const clear = () => { el.style.transition = ''; el.removeEventListener('transitionend', clear); };
+    el.addEventListener('transitionend', clear);
   }
 }
 function clashMeet(A, B) { if (A && B) { stageMatchup(A, B); bumpFight(A, B); } }   // legacy name → new staging
@@ -1318,10 +1329,11 @@ function applyEvent(e) {
       const m = elMap[e.uid];
       if (m) {
         const line = m.el.parentElement;
-        if (e.to === 'back') line.appendChild(m.el); else line.prepend(m.el);
-        // If the pet was STAGED in the pit (e.g. Skiff dashing to the back after attacking), glide it home to its
-        // NEW lane slot instead of leaving a stale pit transform that teleports it. (Sweep 2026-09-13.)
-        if (staged[m.uid]) { void m.el.offsetWidth; returnToLane(staged[m.uid]); delete staged[m.uid]; }
+        const wasStaged = staged[m.uid];
+        // FLIP the reparent so a NON-staged mover (and its lane-mates) GLIDE to their new slots, not teleport.
+        compensateStagedForReflow(line, () => { if (e.to === 'back') line.appendChild(m.el); else line.prepend(m.el); });
+        // A STAGED mover (e.g. Skiff dashing to the back after attacking) glides home from the pit instead.
+        if (wasStaged) { void m.el.offsetWidth; returnToLane(wasStaged); delete staged[m.uid]; }
       }
       break;
     }
