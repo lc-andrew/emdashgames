@@ -44,6 +44,7 @@ function scale(e, f) {
 }
 const TGT = { self: 'itself', allFriends: 'all friends', friendBehind: 'the friend behind', friendAhead: 'the friend ahead', lowestHpFriend: 'the weakest friend', randomFriend: 'a random friend', randomFriends: 'random friends', highestAtkFriend: 'the strongest friend', triggerFriend: 'that friend', enemyFront: 'the front enemy', lastEnemy: 'the back enemy', allEnemies: 'all enemies', randomEnemy: 'a random enemy' };
 const sgn = (v) => (v >= 0 ? '+' + v : '' + v);
+const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 function describe(e) {
   if (!e || e.type === 'none') return '';
   switch (e.type) {
@@ -51,15 +52,36 @@ function describe(e) {
     case 'shield': return `give ${TGT[e.target] || e.target} a ${e.amount}-HP shield`;
     case 'damage': return `deal ${e.amount === 'selfAtk' ? 'its attack' : e.amount} to ${TGT[e.target] || e.target}`;
     case 'steal': return `steal ${sgn(e.atk || 0)}/${sgn(e.hp || 0)} from ${TGT[e.target] || e.target}`;
-    case 'summon': return `summon ${e.count || 1} ${e.token}`;
+    case 'summon': { const n = e.count || 1; return `summon ${n} ${cap(e.token || 'token')}${n > 1 ? 's' : ''}`; }
     case 'skipAttack': return `stop ${TGT[e.target] || e.target} from attacking`;
-    case 'multi': return e.effects.map(describe).filter(Boolean).join(', then ');
-    case 'chance': return `maybe ${describe(e.then)}, else ${describe(e.else)}`;
-    case 'randomEffect': return 'a random effect';
-    default: return e.type;
+    case 'swapStats': return 'swap its attack and health';
+    case 'move': return e.to === 'back' ? 'dash to the back' : 'dart to the front';
+    case 'multi': { const p = e.effects.map(describe).filter(Boolean); return p.length <= 1 ? (p[0] || '') : p.slice(0, -1).join(', ') + ', then ' + p[p.length - 1]; }
+    case 'chance': return `maybe ${describe(e.then)}${e.else ? ', otherwise ' + describe(e.else) : ''}`;
+    case 'randomEffect': return 'a random bonus';
+    default: return '';   // never leak a raw effect-type keyword into player-facing copy
   }
 }
-const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+// Flatten nested multis + combine same-target buffs/shields so the blended fusion text reads cleanly
+// (e.g. "give itself +2/+1, then give itself +1/+1" → "give itself +3/+2"). Behaviour-identical — the engine
+// applies a summed buff the same as two sequential ones, and a flat multi fires the same as a nested one.
+function flattenMerge(effects) {
+  const flat = [];
+  const push = (e) => { if (!e || e.type === 'none') return; if (e.type === 'multi') (e.effects || []).forEach(push); else flat.push(e); };
+  effects.forEach(push);
+  const out = [];
+  for (const e of flat) {
+    if (e.type === 'buff') {
+      const m = out.find((o) => o.type === 'buff' && o.target === e.target && o.mode === e.mode && (((o.atk || 0) < 0) === ((e.atk || 0) < 0)) && (((o.hp || 0) < 0) === ((e.hp || 0) < 0)));
+      if (m) { m.atk = (m.atk || 0) + (e.atk || 0); m.hp = (m.hp || 0) + (e.hp || 0); continue; }
+    } else if (e.type === 'shield') {
+      const m = out.find((o) => o.type === 'shield' && o.target === e.target);
+      if (m) { m.amount = (m.amount || 0) + (e.amount || 0); continue; }
+    }
+    out.push({ ...e });
+  }
+  return out;
+}
 function portmanteau(a, b) { const h = Math.ceil(a.length / 2), t = Math.floor(b.length / 2); return cap((a.slice(0, h) + b.slice(b.length - t)).replace(/\s+/g, '')); }
 
 // A flavour description for EVERY fusion — deterministic template over the parents' names, a pair-hash picks
@@ -110,7 +132,7 @@ export function fuseUnit(a, b) {
   const trig = [hi.ability?.trigger, lo.ability?.trigger].find((t) => BATTLE_TRIGS.includes(t)) || 'onStartBattle';
   const flevel = Math.min(a.level || 1, b.level || 1);   // inherit the LOWER parent level (per spec)
   const sig = FUSE_SIGS[pairHash(a.defId, b.defId) % FUSE_SIGS.length];   // this fusion's signature bonus
-  const effect = { type: 'multi', effects: [sig.effect(), scale(toBattle(hi.ability?.effect), 0.75), scale(toBattle(lo.ability?.effect), 0.75)].filter((e) => e && e.type !== 'none') };
+  const effect = { type: 'multi', effects: flattenMerge([sig.effect(), scale(toBattle(hi.ability?.effect), 0.75), scale(toBattle(lo.ability?.effect), 0.75)]) };
   // Never strip a parent's once-per-battle guard, and never create an unlimited "when a friend/it faints →
   // summon another" loop (feedback: makes fights unwinnable). Force once when a parent was guarded, OR when a
   // faint trigger drives a summon (even if neither parent was guarded — a mixed onFaint-summon combo).
