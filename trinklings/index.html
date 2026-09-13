@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#6fd0a8" />
+  <title>Trinklings</title>
+  <link rel="icon" type="image/png" href="assets/ui/appicon.png" />
+  <link rel="apple-touch-icon" href="assets/ui/appicon.png" />
+  <link rel="stylesheet" href="public/style.css" />
+</head>
+<body>
+<div id="app">
+
+  <!-- TITLE -->
+  <section id="title" class="screen show">
+    <button class="icon-btn bare title-settings" id="titleSettings" title="Settings"><img src="assets/ui/gear.png" alt="Settings"></button>
+    <div class="title-hero">
+      <img class="title-wordmark" src="assets/ui/wordmark-trinklings.png" alt="Trinklings" />
+      <div class="title-creatures">
+        <img class="tc tc1" src="assets/creatures/ducat.png" alt="" />
+        <img class="tc tc2" src="assets/creatures/gnash.png" alt="" />
+        <img class="tc tc3" src="assets/creatures/foxfire.png" alt="" />
+      </div>
+    </div>
+    <div class="btn-col title-actions">
+      <button class="btn big glass" data-start="offline">Offline</button>
+      <button class="btn big glass" id="onlineBtn"><span class="online-dot" id="onlineDot" title="Connection"></span> Online</button>
+    </div>
+  </section>
+
+  <!-- SHOP / GAME -->
+  <section id="game" class="screen">
+    <header class="hud">
+      <div class="hud-stack">
+        <div class="hud-item turn" title="Turn"><span class="turn-lbl">Turn</span><span id="hudTurn">1</span></div>
+        <div class="hud-item tier" title="Shop tier — new Trinklings unlock every 2 turns"><span id="tierTag">Tier 1</span></div>
+      </div>
+      <div class="hud-item gold" title="Gold — spend it all before End Turn"><img class="ic" src="assets/ui/coin.png" alt="Gold" /><span id="hudGold">10</span></div>
+      <div class="hud-item hearts" title="Lives left"><img class="ic" src="assets/ui/heart.png" alt="Lives" /><span id="hudHearts">5</span></div>
+      <div class="hud-item trophies" title="Wins — reach 10 to take the Cup"><img class="ic" src="assets/ui/trophy.png" alt="Wins" /><span id="hudTrophies">0</span><span class="hud-goal">/10</span></div>
+      <button class="icon-btn bare" id="replayBtn" title="Rewatch last battle" hidden><img src="assets/ui/replay.png" alt="Rewatch"></button>
+      <button class="icon-btn bare" id="menuBtn" title="Menu"><img src="assets/ui/gear.png" alt="Menu"></button>
+    </header>
+
+    <div id="coach" class="coach"></div>
+    <div id="cardDetail" class="card-detail" hidden></div>
+
+    <div class="squad-wrap">
+      <div class="row-label"><span>Your squad</span></div>
+      <div id="squad" class="squad"></div>
+    </div>
+
+    <div class="shop-wrap">
+      <div class="row-label"><span>Shop</span></div>
+      <div class="shop-row combined">
+        <div id="shopPets" class="cells"></div>
+        <div id="shopSnacks" class="cells"></div>
+      </div>
+    </div>
+
+    <div class="actionbar">
+      <button class="btn roll" id="rollBtn">Reroll <span class="cost"><img class="ic" src="assets/ui/coin.png" alt="" />1</span></button>
+      <button class="btn action" id="actionBtn" hidden><span id="actionLbl">Combine</span></button>
+      <button class="btn action swapbtn" id="swapBtn" title="Swap places instead" aria-label="Swap places" hidden>⇄</button>
+      <button class="btn freezebtn" id="freezeBtn" hidden><img class="ic" src="assets/ui/snowflake.png" alt="" /> <span id="freezeLbl">Freeze</span></button>
+      <button class="btn sell" id="sellBtn" hidden><span id="sellLbl">Sell</span> <span class="cost"><img class="ic" src="assets/ui/coin.png" alt="" /><span id="sellVal">1</span></span></button>
+      <button class="btn big primary end" id="endBtn">End Turn ▶</button>
+    </div>
+    <div id="hint" class="hint"></div>
+  </section>
+
+  <!-- BATTLE -->
+  <section id="battle" class="screen">
+    <div class="battle-top">
+      <div class="vs-label">Fight!</div>
+      <div class="battle-actions">
+        <button class="btn small replay-only" id="rewindBtn" title="Rewind" aria-label="Rewind"><img class="ic" src="assets/ui/replay.png" alt=""></button>
+        <button class="btn small" id="pauseBtn" title="Pause">Pause</button>
+        <button class="btn small" id="fastBtn" title="Fast">Fast</button>
+        <button class="btn small" id="fbOpenBattle" title="Give feedback" aria-label="Give feedback">💬</button>
+        <button class="btn small" id="skipBtn">Skip <img class="ic" src="assets/ui/skip.png" alt=""></button>
+      </div>
+    </div>
+    <div class="arena">
+      <div class="side enemy"><div class="side-label" id="enemyLabel">Rival</div><div id="enemyLine" class="line"></div></div>
+      <div class="arena-mid"><div id="clashFx"></div></div>
+      <div class="side mine"><div class="side-label">You</div><div id="myLine" class="line"></div></div>
+      <div id="abilityCallout" class="ability-callout" hidden></div>
+    </div>
+    <div id="battleResult" class="battle-result" hidden>
+      <div id="resultCard" class="result-card">
+        <div id="duelScore" class="duel-score" hidden></div>
+        <div class="result-emblem"><img id="resultEmblem" src="assets/ui/trophy.png" alt="" /></div>
+        <div id="resultBanner" class="result-banner"></div>
+        <div id="resultSub" class="result-sub"></div>
+        <button class="btn big primary" id="continueBtn">Continue ▶</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- GAME OVER -->
+  <section id="gameover" class="screen">
+    <div class="title-card">
+      <div id="goEmoji" class="logo">🏆</div>
+      <h1 id="goTitle">You win!</h1>
+      <p id="goText" class="tag"></p>
+      <button class="btn big primary" data-start="normal">Play again</button>
+      <button class="btn" id="goTitleBtn">Main menu</button>
+    </div>
+  </section>
+
+  <!-- DECK SELECT (coalition of 2) -->
+  <section id="deckselect" class="screen">
+    <div class="deck-card">
+      <h1>Your Alliance</h1>
+      <div id="factionGrid" class="faction-grid"></div>
+      <button class="btn big primary" id="deckBegin" disabled>Pick 2 factions</button>
+      <button class="btn ghostbtn" id="deckBack">Back</button>
+    </div>
+  </section>
+
+  <!-- DUEL LOBBY -->
+  <section id="duel" class="screen">
+    <div class="title-card">
+      <img class="logo appicon" src="assets/ui/sword.png" alt="Duel" style="border-radius:0;box-shadow:none;background:none" />
+      <h1>Duel a friend</h1>
+      <p class="tag" id="duelTag">Same Wi-Fi, <b>same room code</b> — first to <b>3 wins</b>.</p>
+      <input id="duelCode" class="duel-input" maxlength="6" placeholder="ROOM CODE" autocapitalize="characters" autocomplete="off" />
+      <input id="duelName" class="duel-input" maxlength="12" placeholder="Your name" autocomplete="off" />
+      <button class="btn big primary" id="duelJoin">Join room</button>
+      <div id="duelStatus" class="tag" style="margin-top:12px"></div>
+      <button class="btn ghostbtn" id="duelBack">Back</button>
+    </div>
+  </section>
+
+  <!-- DRIFTLING CODEX -->
+  <section id="codex" class="screen">
+    <div class="codex-head">
+      <h1>Trinkling Codex</h1>
+      <div class="codex-progress" id="codexProgress"></div>
+    </div>
+    <div id="codexList" class="codex-list"></div>
+    <button class="btn ghostbtn" id="codexBack">◀ Back</button>
+  </section>
+
+  <!-- TIER-UNLOCK MODAL (fires every 2 turns as a new Trinkling tier opens) -->
+  <div id="tierModal" class="modal" hidden>
+    <div class="modal-card tier-card">
+      <div class="tier-emblem"><span id="tierBig">2</span></div>
+      <h2 id="tierModalTitle">Tier 2 unlocked!</h2>
+      <button class="btn big primary" id="tierModalOk">Nice ▶</button>
+    </div>
+  </div>
+
+  <!-- REWARD MODAL -->
+  <div id="rewardModal" class="modal" hidden>
+    <div class="modal-card">
+      <h2>Level up! 🎉</h2>
+      <p>Pick a free Trinkling:</p>
+      <div id="rewardOptions" class="reward-opts"></div>
+      <button class="btn ghostbtn" id="rewardSkip">No thanks</button>
+    </div>
+  </div>
+
+  <!-- MENU MODAL -->
+  <div id="settingsModal" class="modal" hidden>
+    <div class="modal-card">
+      <h2>Settings</h2>
+      <button class="btn" id="settingsCodex">Codex</button>
+      <button class="btn" id="settingsHowTo">How to play</button>
+      <button class="btn" id="settingsFeedback">Give feedback</button>
+      <button class="btn" id="settingsEasy">Easy mode: Off</button>
+      <button class="btn" id="settingsSound">Sound: On</button>
+      <button class="btn ghostbtn" id="settingsClose">Close</button>
+    </div>
+  </div>
+
+  <div id="rewatchModal" class="modal" hidden>
+    <div class="modal-card">
+      <h2>Replay</h2>
+      <button class="btn big primary" id="rewatchSelf">Rewatch last battle</button>
+      <button class="btn big" id="rewatchRival">Watch from rival's side</button>
+      <button class="btn ghostbtn" id="rewatchClose">Close</button>
+    </div>
+  </div>
+
+  <div id="menuModal" class="modal" hidden>
+    <div class="modal-card">
+      <h2>Menu</h2>
+      <button class="btn" id="menuMute">Sound: On</button>
+      <button class="btn" id="fbOpenMenu">Give feedback</button>
+      <button class="btn" id="menuResume">Resume</button>
+      <button class="btn danger" id="menuQuit">Quit to menu</button>
+    </div>
+  </div>
+
+  <!-- FEEDBACK MODAL -->
+  <div id="feedbackModal" class="modal" hidden>
+    <div class="modal-card">
+      <h2>Give feedback</h2>
+      <p class="tag" style="margin-bottom:10px">Tell us what you think — bugs, ideas, what's fun (or not).</p>
+      <textarea id="fbText" class="fb-text" maxlength="1000" placeholder="What would make this more fun? Tip: tap the mic on your phone keyboard to talk."></textarea>
+      <button class="btn small fb-mic" id="fbMic" hidden><img class="ic" src="assets/ui/mic.png" alt=""> Speak</button>
+      <div id="fbStatus" class="hint"></div>
+      <button class="btn big primary" id="fbSend">Send feedback</button>
+      <button class="btn ghostbtn" id="fbClose">Close</button>
+    </div>
+  </div>
+
+  <!-- HOW-TO MODAL -->
+  <div id="howModal" class="modal" hidden>
+    <div class="modal-card howto">
+      <h2>How to play</h2>
+      <ul>
+        <li>Each turn you get <b>10 <img class="ic" src="assets/ui/coin.png" alt="gold"></b> to spend in the shop. It doesn't carry over.</li>
+        <li>Every Trinkling shows two chips: a <b>grey Attack</b> and a <b>red Health</b> (X / Y). So "+2/+2" means +2 attack and +2 health.</li>
+        <li><b>Tap a shop Trinkling</b>, then <b>tap an empty squad slot</b> to buy it (<span id="howBuyCost">3</span> <img class="ic" src="assets/ui/coin.png" alt="gold">).</li>
+        <li>Tap a squad Trinkling, then another slot to <b>reorder</b> — the <b>rightmost one fights first ▶</b>.</li>
+        <li>Buy <b>copies of the same</b> Trinkling to <b>combine</b> them (bigger stats + it levels up), or drop <b>two different ones</b> together to <b>fuse</b> a brand-new Trinkling.</li>
+        <li><b>Items</b> are bonuses you buy (<span id="howSnackCost">2</span> <img class="ic" src="assets/ui/coin.png" alt="gold">) and feed to a Trinkling for a <b>permanent</b> boost.</li>
+        <li>Tap a squad Trinkling and hit <b>Sell</b> to get some gold back.</li>
+        <li><b>Reroll</b> the shop for new Trinklings, or select a shop item and hit <b>Freeze</b> to keep it next turn (free).</li>
+        <li>Hit <b>End Turn</b> to start a <b>fight</b> — the auto-battle. Boosts "for the fight" last one battle; <b>(permanent)</b> ones stay forever.</li>
+        <li><b>Win 10 fights</b> to collect 10 <img class="ic" src="assets/ui/trophy.png" alt="trophies"> and take the Cup!</li>
+        <li>Lose a fight, lose a <img class="ic" src="assets/ui/heart.png" alt="life">. At <b>0</b> the game ends — but Trinklings are never truly hurt, they just drift off and pop back.</li>
+      </ul>
+      <button class="btn big primary" id="howClose">Got it!</button>
+    </div>
+  </div>
+
+</div>
+<audio id="bgm" loop preload="auto" src="assets/audio/music.m4a"></audio>
+<audio id="bgm-battle" loop preload="auto" src="assets/audio/battle-music.m4a"></audio>
+<script type="module" src="public/app.js"></script>
+</body>
+</html>

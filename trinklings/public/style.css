@@ -1,0 +1,811 @@
+/* Trinklings — the "Twilight court" identity (see art/UI-STYLE.md). Dark indigo ground, moonlit-silver
+   text, engraved amethyst/tide-glow metal chrome framing the painterly RPG Trinklings. No gold. */
+@font-face { font-family: 'Cinzel'; src: url('../assets/fonts/Cinzel.ttf') format('truetype'); font-weight: 400 900; font-display: swap; }
+@font-face { font-family: 'Cinzel Decorative'; src: url('../assets/fonts/CinzelDecorative-Bold.ttf') format('truetype'); font-weight: 700; font-display: swap; }
+/* Font system (standardised): Nunito = body/UI text · Cinzel = all display (headings, labels, buttons,
+   HUD, banners) · Cinzel Decorative = hero titles (h1) + the battle-result stamp. (Metamorphous + Grenze
+   Gotisch were loaded but never used — removed.) */
+@font-face { font-family: 'Nunito'; src: url('../assets/fonts/Nunito.ttf') format('truetype'); font-weight: 200 1000; font-display: swap; }
+
+:root {
+  /* PIXELMON.AI palette — bright, airy fantasy-adventure: sky-blue ground, white/cream panels, dark-slate ink */
+  --bg-deep: #a9d8f0; --bg: #d6eefb; --panel: #ffffff; --panel-hi: #f1f8ff; --panel-line: #bcd8ec;
+  --struck: #16324a;
+  --ink: #122636; --ink-soft: #39505f;   /* darkened for stronger contrast on bright/glass backgrounds */
+  --scrim: rgba(20, 50, 74, .42);
+  /* accents: sky-teal (legacy --gilt names) + green glow + white */
+  --gilt: #2ba3d8; --gilt-bloom: #7fd0ee; --gilt-deep: #114f74;   /* darker teal text */
+  --silver: #eef7fd; --silver-hi: #ffffff; --glow: #35b58f; --accent-deep: #1a6f9c;
+  --metal: linear-gradient(180deg, #ffffff 0%, #dff2ff 42%, #a3e0f5 80%, #7fd0e8 100%);
+  /* currency = warm gold (pixelmon allows it); hearts = rose; freeze/shield = sky */
+  --gold: #f5c542; --gold-deep: #d99e1e; --mint: #4fc2a0; --mint-deep: #2f9d8f;
+  --coral: #ff6b81; --coral-deep: #e04b64; --sky: #4fb0e6;
+  --rule: #bcd8ec; --rule-soft: #d6e8f4;
+  /* light panel tokens (legacy parchment names) */
+  --parchment: #ffffff; --parchment-hi: #f1f8ff; --marble: #d6eefb;
+  /* tier ramp — bright ascending (slate → green → sky → violet → amber → gold) */
+  --tier1: #9db1c2; --tier2: #5fc39a; --tier3: #4fb0e6; --tier4: #a983ea; --tier5: #f0955c; --tier6: #f5c542;
+  --r-sm: 8px; --r-md: 13px; --r-lg: 18px; --r-xl: 24px;
+  --sh-soft: 0 5px 16px rgba(20,50,80,.22); --sh-pop: 0 14px 34px rgba(20,45,75,.34);
+  --ease-bounce: cubic-bezier(.34,1.56,.64,1); --ease-soft: cubic-bezier(.4,0,.2,1);
+  /* GLASSMORPHISM — frosted translucent panels floating over the painted RPG landscape */
+  --glass: rgba(255,255,255,.46); --glass-hi: rgba(255,255,255,.62); --glass-lo: rgba(255,255,255,.32);
+  --glass-brd: rgba(255,255,255,.75); --glass-blur: blur(13px) saturate(1.35);
+  /* DARK frosted glass — action buttons: white text reads on any bright scene without a bg re-render */
+  --glass-dk: rgba(16,32,52,.52); --glass-dk-hi: rgba(30,52,78,.62); --glass-dk-brd: rgba(255,255,255,.32);
+  /* frosted-glass frame: crisp white hairline + soft outer glow */
+  --frame: inset 0 0 0 1.5px rgba(255,255,255,.75), inset 0 1px 0 rgba(255,255,255,.9), 0 1px 0 rgba(120,160,200,.3);
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; height: 100%; }
+body {
+  font-family: 'Nunito', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  color: var(--ink); font-weight: 600;
+  /* the painted RPG landscape — a lush valley of mossy stone bricks, sits behind all the glass UI */
+  background: var(--bg-deep) url('../assets/ui/bg-shop.png') center center / cover no-repeat fixed;
+  overflow: hidden; user-select: none; -webkit-user-select: none;
+}
+/* a gentle vignette + top light so glass panels read against the vivid scene */
+body::before { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background: radial-gradient(120% 80% at 50% 0%, rgba(255,255,255,.22), transparent 55%),
+              radial-gradient(140% 120% at 50% 120%, rgba(20,40,70,.28), transparent 60%); }
+#app { position: relative; z-index: 1; height: 100dvh; max-width: 560px; margin: 0 auto; }
+
+h1, h2 { font-family: 'Cinzel', Georgia, serif; font-weight: 800; text-transform: uppercase; letter-spacing: .09em; color: var(--gilt-deep); }
+
+/* ---- icons ---- */
+.ic { width: 1.15em; height: 1.15em; object-fit: contain; vertical-align: -.2em; display: inline-block; }
+
+/* ---- screens ---- */
+.screen { position: absolute; inset: 0; display: none; flex-direction: column; padding: calc(env(safe-area-inset-top) + 8px) 12px calc(env(safe-area-inset-bottom) + 12px); overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; }
+.screen.show { display: flex; animation: draftIn .45s var(--ease-soft); }
+@keyframes draftIn { from { opacity: 0; filter: saturate(.4) contrast(.9); transform: translateY(5px); } }
+
+/* ---- buttons: engraved metal plates; press-lip stamp ---- */
+.btn {
+  position: relative; border: none; border-radius: var(--r-lg); padding: 13px 18px; font-family: 'Cinzel', serif; font-weight: 800;
+  background: linear-gradient(180deg, #ffffff, #e9f3fb); color: var(--ink); cursor: pointer; touch-action: manipulation;
+  box-shadow: 0 4px 0 #bcd6e8, var(--sh-soft), inset 0 1px 0 rgba(255,255,255,.8); border: 1.5px solid var(--panel-line);
+  transition: transform .12s var(--ease-bounce), box-shadow .12s var(--ease-bounce), filter .12s;
+}
+.btn:active { transform: translateY(4px); box-shadow: 0 0 0 #bcd6e8, var(--sh-soft); }
+/* the big EXCITING CTA (Fight / Continue / Nice): DARK NAVY, chunky 3D lip, glow + a periodic shine sweep */
+.btn.primary { position: relative; overflow: hidden; background: linear-gradient(180deg, #3d4d78 0%, #2c3a63 38%, #1f2b4f 72%, #141d38 100%);
+  color: #ffffff; border: 2px solid rgba(255,255,255,.82); border-radius: var(--r-lg);
+  box-shadow: 0 5px 0 #0b1230, 0 9px 20px rgba(10,20,50,.5), 0 0 24px rgba(70,110,200,.4), inset 0 2px 0 rgba(255,255,255,.3), inset 0 -3px 7px rgba(6,12,30,.5);
+  font-family: 'Cinzel', serif; text-transform: uppercase; letter-spacing: .07em; text-shadow: 0 1px 0 rgba(6,12,30,.7), 0 2px 5px rgba(4,8,20,.5); }
+.btn.primary::after { content: ""; position: absolute; top: 0; left: -60%; width: 42%; height: 100%; pointer-events: none; transform: skewX(-18deg);
+  background: linear-gradient(105deg, transparent, rgba(255,255,255,.5), transparent); animation: btnShine 3.6s ease-in-out infinite; }
+@keyframes btnShine { 0%, 60% { left: -60%; } 84%, 100% { left: 135%; } }
+.btn.primary:active { transform: translateY(4px); box-shadow: 0 1px 0 #0b1230, 0 3px 10px rgba(10,20,50,.5), 0 0 16px rgba(70,110,200,.35), inset 0 2px 0 rgba(255,255,255,.28); }
+.btn.big { padding: 15px 20px; font-size: 1.05rem; }
+.btn.danger, .btn.sell { background: linear-gradient(180deg,#8a3550,#5e2440); color: #ffdfe6; border-color: var(--coral-deep); box-shadow: 0 4px 0 #4a1c33, var(--sh-soft), inset 0 1px 0 rgba(255,255,255,.18); }
+.btn.danger:active, .btn.sell:active { box-shadow: 0 0 0 #4a1c33, var(--sh-soft); }
+/* Reroll = bare (no button plate), keeps its padding tap-target + the coin cost sub-chip */
+.btn.roll { background: none; border: none; box-shadow: none; color: var(--ink); text-shadow: 0 1px 2px rgba(255,255,255,.85); }
+.btn.roll:active { transform: translateY(1px); box-shadow: none; }
+.btn.roll:active { box-shadow: 0 0 0 #bcd6e8, var(--sh-soft); }
+.btn.ghostbtn { background: transparent; box-shadow: none; border: none; color: var(--ink-soft); font-weight: 700; text-decoration: underline; }
+.btn.ghostbtn:active { transform: translateY(1px); }
+.btn.small { padding: 8px 13px; font-size: .85rem; border-radius: var(--r-md); box-shadow: 0 3px 0 #12162f, var(--sh-soft); }
+.btn.small:active { box-shadow: 0 0 0 #12162f, var(--sh-soft); }
+.btn .cost { display: inline-flex; align-items: center; gap: 1px; background: rgba(245,197,66,.26); color: var(--gold-deep); border-radius: 999px; padding: 1px 6px 1px 5px; margin-left: 4px; font-size: .8em; font-weight: 900; }
+.btn:disabled { filter: grayscale(.5) opacity(.45); pointer-events: none; }
+.icon-btn { border: 1.5px solid var(--panel-line); background: linear-gradient(180deg,#ffffff,#e9f3fb); color: var(--gilt-deep); border-radius: 50%; width: 42px; height: 42px; font-size: 1.15rem; cursor: pointer; box-shadow: 0 3px 0 #bcd6e8, var(--sh-soft); display: flex; align-items: center; justify-content: center; }
+.icon-btn:active { transform: translateY(3px); }
+.icon-btn img { width: 22px; height: 22px; object-fit: contain; }
+.icon-btn.muted img { opacity: .38; filter: grayscale(.7); }
+.btn-col { display: flex; flex-direction: column; gap: 11px; width: 100%; max-width: 330px; margin: 6px auto 0; }
+
+/* --- action bar: ONE unified dark-frosted-glass style, white text (reads on any bright scene). The
+   per-variant selectors (.roll/.sell/.freezebtn/.primary) carry higher specificity than the base variant
+   rules above, so this wins regardless of file order. --- */
+.actionbar .btn, .actionbar .btn.roll, .actionbar .btn.sell, .actionbar .btn.freezebtn {
+  background: var(--glass-dk); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-dk-brd); color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.45);
+  box-shadow: 0 4px 14px rgba(8,20,38,.38), inset 0 1px 0 rgba(255,255,255,.16); }
+.actionbar .btn:active, .actionbar .btn.roll:active, .actionbar .btn.sell:active, .actionbar .btn.freezebtn:active {
+  transform: translateY(3px); box-shadow: 0 1px 6px rgba(8,20,38,.4), inset 0 1px 0 rgba(255,255,255,.16); }
+.actionbar .btn.primary { background: var(--glass-dk-hi); border-color: var(--glass-dk-brd); color: #fff;
+  box-shadow: 0 5px 16px rgba(8,20,38,.44), inset 0 1px 0 rgba(255,255,255,.2); }
+.actionbar .btn.action { background: linear-gradient(180deg, rgba(245,197,66,.34), rgba(16,32,52,.6)); border-color: rgba(245,197,66,.5); }
+/* the Swap alternative is a NORMAL (dark-glass) button, not gold — only the primary Combine/Fuse pops gold */
+.actionbar .btn.action.swapbtn { background: var(--glass-dk); border-color: var(--glass-dk-brd); }
+.actionbar .btn.freezebtn.on { background: rgba(79,176,230,.5); }
+.actionbar .btn .cost { background: rgba(255,255,255,.15); color: #ffe9a8; text-shadow: none; }
+/* uniform bottom-bar buttons: SAME font-size + height for every option, contents vertically centred so the
+   Reroll coin lines up (per feedback). swap/end drop their own font-size/padding below to inherit this. */
+.actionbar .btn { font-size: .84rem; min-height: 48px; padding: 0 13px; line-height: 1;
+  display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; }
+.actionbar .btn .cost { align-self: center; }
+.actionbar .btn .cost img { width: 13px; height: 13px; object-fit: contain; display: block; }
+
+/* ---- panels + engraved court frame ---- */
+.title-card, .modal-card { position: relative; background: rgba(255,255,255,.56);
+  -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); border: 1px solid var(--glass-brd);
+  border-radius: var(--r-xl); box-shadow: var(--frame), var(--sh-pop); padding: 30px 24px 26px; }
+#title, #gameover, #duel, #deckselect { align-items: center; }
+/* margin:auto centers vertically when there's room but lets tall content scroll from the top
+   (justify-content:center would clip the top of anything taller than the viewport). */
+.title-card { width: 100%; max-width: 400px; text-align: center; margin-block: auto; }
+/* a thin engraved inner rail (filigree-corner art layers on later) */
+.title-card::before, .modal-card::before { content: ""; position: absolute; inset: 6px; pointer-events: none;
+  border-radius: calc(var(--r-xl) - 6px); box-shadow: inset 0 0 0 1px rgba(205,214,244,.16); }
+.logo { font-size: 3.6rem; line-height: 1; filter: drop-shadow(0 6px 14px rgba(0,0,0,.5)); animation: bob 2.6s var(--ease-soft) infinite; }
+.logo.appicon { width: 104px; height: 104px; margin: 0 auto; border-radius: 22px; box-shadow: var(--frame), var(--sh-pop); font-size: 0; }
+@keyframes bob { 0%,100% { transform: translateY(0) rotate(-2deg);} 50% { transform: translateY(-8px) rotate(2deg);} }
+/* the engraved-metal wordmark */
+h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; letter-spacing: .06em; margin: 14px 0 2px;
+  color: var(--gilt-deep); -webkit-text-fill-color: var(--gilt-deep);
+  filter: drop-shadow(0 2px 0 #ffffff) drop-shadow(0 3px 5px rgba(40,90,130,.3)); }
+.tag { color: var(--ink-soft); margin: 6px 0 16px; line-height: 1.5; font-weight: 600; }
+.best { margin: -6px 0 12px; font-size: .9rem; font-weight: 800; color: var(--glow); display: flex; align-items: center; justify-content: center; gap: 5px; min-height: 1em; }
+.connect { margin-top: 16px; font-size: .8rem; color: var(--ink-soft); word-break: break-all; line-height: 1.5; position: relative; }
+.connect b { color: var(--glow); }
+.mute-corner { position: absolute; top: 12px; right: 12px; }
+
+/* ---- HUD: engraved ledger strip ---- */
+.hud { display: flex; align-items: center; gap: 5px; background: var(--glass-hi); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); border: 1px solid var(--glass-brd); border-radius: 999px; padding: 6px 9px; box-shadow: var(--frame), var(--sh-soft); flex-shrink: 0; }
+/* HUD indicators are BARE (no per-item bubble) — icon + number only, sitting on the frosted HUD strip */
+/* every HUD item shares ONE font + size; only the accent colour differs (per feedback) */
+.hud-item { display: flex; align-items: center; gap: 4px; font-weight: 900; font-size: .95rem; padding: 3px 6px; border-radius: 999px; background: none; color: var(--ink); }
+.hud-item.gold { color: var(--gold-deep); } .hud-item.hearts { color: var(--coral-deep); } .hud-item.trophies { color: var(--gilt-deep); }
+.hud-stack { display: flex; flex-direction: column; align-items: flex-start; gap: 0; line-height: 1.02; padding: 0 3px; }
+/* "Tier N" removed from the top bar (per feedback) — the tier-unlock modal still announces new tiers */
+.hud-item.tier { display: none; }
+.hud-item.turn { font-size: .95rem; font-weight: 900; letter-spacing: 0; color: var(--gilt-deep); white-space: nowrap; padding: 3px 6px; }
+.hud-sym { font-size: .82rem; opacity: .7; }
+.turn-lbl { font-size: 1em; font-weight: inherit; text-transform: none; letter-spacing: inherit; opacity: 1; margin-right: 4px; }
+.hud-goal { font-size: .68rem; opacity: .55; font-weight: 800; }
+/* all HUD icons the SAME visual size (per feedback) */
+.hud-item .ic { width: 19px; height: 19px; object-fit: contain; }
+.hud .icon-btn { margin-left: auto; width: 34px; height: 34px; font-size: 1rem; }
+
+/* ---- coach / hint ---- */
+/* coach & the tap-detail panel share this slot; a stable min-height keeps the board from jumping when a
+   card is selected (coach hides, detail shows) — they swap in place instead of pushing the squad down. */
+.coach { min-height: 0; flex-shrink: 0; margin: 10px 2px 0; }
+/* FIXED height (not just min): the description slot never grows, so tapping a card can't shove the board */
+.coach.show, .card-detail { height: 108px; box-sizing: border-box; overflow: hidden; }
+.card-detail { overflow-y: auto; -webkit-overflow-scrolling: touch; }   /* long ability text scrolls instead of clipping */
+.coach.show { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
+.card-detail .cd-flavor { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.coach.show { padding: 10px 13px; background: var(--glass-hi); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); border: 1px solid var(--glass-brd); border-radius: var(--r-md); font-size: .9rem; font-weight: 600; color: var(--ink); box-shadow: var(--frame), var(--sh-soft); animation: pop .3s var(--ease-bounce); }
+.coach.show b { color: var(--gilt-deep); }
+/* detail-on-tap panel — full info for the selected card (keeps the cards themselves clean) */
+.card-detail { flex-shrink: 0; margin: 10px 2px 0; padding: 9px 12px; background: var(--glass-hi); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); border: 1px solid var(--glass-brd); border-radius: var(--r-md); box-shadow: var(--frame), var(--sh-soft); animation: pop .22s var(--ease-bounce); }
+.card-detail .cd-head { display: flex; align-items: flex-start; gap: 6px; font-size: .92rem; color: var(--ink); }
+.card-detail .cd-head b { font-weight: 900; }
+.card-detail .cd-head .lvl { position: static; }
+.card-detail .cd-stats { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-weight: 900; }
+.card-detail .cd-stats .ic { width: .95em; height: .95em; vertical-align: -.16em; }
+.card-detail .cd-abil { margin-top: 6px; font-size: .82rem; font-weight: 600; line-height: 1.4; color: var(--ink); }
+.card-detail .cd-flavor { margin-top: 5px; font-size: .74rem; font-style: italic; color: var(--ink-soft); line-height: 1.35; }
+.hint { text-align: center; font-size: .85rem; color: var(--ink-soft); font-weight: 700; min-height: 1.1em; margin-top: 7px; white-space: normal; line-height: 1.3; }
+
+/* ---- rows ---- */
+.row-label { display: flex; justify-content: space-between; align-items: baseline; font-family: 'Cinzel', serif; text-transform: uppercase; letter-spacing: .05em; font-weight: 800; color: #fff; text-shadow: 0 1px 2px rgba(20,45,75,.55), 0 1px 8px rgba(20,45,75,.4); margin: 5px 4px 7px; font-size: .84rem; }
+.row-label.sub { margin-top: 8px; font-size: .72rem; color: rgba(255,255,255,.9); }   /* keep "Items" readable on the stone (was dark ink) */
+.front-tag { font-size: .68rem; font-weight: 800; color: #1f7d49; font-family: 'Nunito'; letter-spacing: 0; text-transform: none; }
+.tier-tag { font-family: 'Cinzel', serif; font-size: .72rem; font-weight: 800; background: linear-gradient(180deg,var(--gilt),var(--accent-deep)); color: var(--silver-hi); padding: 3px 10px; border-radius: 4px; box-shadow: inset 0 1px 0 rgba(255,255,255,.25); }
+.squad-wrap, .shop-wrap { flex-shrink: 0; }
+.squad, .shop-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+/* squad front (index 0) sits on the RIGHT to match the reversed battle order (pets face right → fight first);
+   direction only reverses the grid flow — card contents reset to ltr. */
+.squad { direction: rtl; }
+.squad > .card { direction: ltr; }
+.shop-row { min-height: 30px; }
+/* combined shop = ONE row of 5: 3 pet cells + 2 item cells (the two id-containers flatten into the grid) */
+.shop-row.combined > #shopPets, .shop-row.combined > #shopSnacks { display: contents; }
+/* the one seam: an engraved rule between squad and shop */
+/* Push the shop block down so it sits just above the controls; the slack lands BETWEEN the squad and shop
+   lanes and reads as the painted field between them (SAP-style) instead of dead space under the board. The
+   min-gap keeps a lane separation on short screens where auto collapses to 0. */
+/* two auto top-margins split the free vertical space so the SQUAD sits on the middle meadow and the SHOP
+   sits on the lower dirt path of bg-shop (sky at the top holds the HUD/coach). */
+.squad-wrap { margin-top: auto; }
+.shop-wrap { padding-top: 6px; margin-top: auto; }
+
+/* ---- cards (painterly portrait in an engraved frame; border = tier) ---- */
+.card { position: relative; background: var(--glass); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); border-radius: var(--r-md); box-shadow: var(--frame), var(--sh-soft); padding: 4px 3px 4px; text-align: center; cursor: pointer; min-height: 86px; display: flex; flex-direction: column;
+  border: 2px solid var(--tier1); transition: transform .14s var(--ease-bounce), box-shadow .14s, outline-color .14s; outline: 3px solid transparent; outline-offset: -1px; }
+.card.t1 { border-color: var(--tier1); } .card.t2 { border-color: var(--tier2); } .card.t3 { border-color: var(--tier3); }
+.card.t4 { border-color: var(--tier4); } .card.t5 { border-color: var(--tier5); } .card.t6 { border-color: var(--tier6); box-shadow: 0 0 11px rgba(192,140,255,.55), var(--sh-soft); }
+.card.empty { background: rgba(157,180,255,.06); border-style: dashed; border-color: var(--rule-soft); box-shadow: none; cursor: default; }
+.card.empty::after { content: "＋"; color: var(--rule); font-size: 1.6rem; margin: auto; }
+/* a bought/empty SHOP slot shows nothing (per feedback) — the "＋" only means "place here" on squad slots */
+#shopPets .card.empty::after, #shopSnacks .card.empty::after { content: none; }
+.card:active { transform: scale(.95); }
+.card.selected { outline-color: var(--glow); box-shadow: 0 0 0 3px rgba(157,180,255,.5), var(--sh-pop); transform: translateY(-4px) scale(1.02); }
+.card.frozen { outline-color: var(--sky); }
+/* a frosty ICE CUBE encases the frozen pet — translucent blue block + rim + a diagonal glint */
+.card.frozen .art-wrap { position: relative; }
+/* the painted ICE-CUBE graphic encases the frozen pet at reduced opacity, bobbing in sync with it */
+.card.frozen .art-wrap::after { content: ""; position: absolute; inset: 0; z-index: 4; pointer-events: none; --pet-scale: 1.61;
+  background: url('../assets/ui/icecube.png') center/contain no-repeat; opacity: .62;
+  transform: scale(var(--pet-scale)); transform-origin: 50% 100%; animation: petIdle 3.2s var(--ease-soft) infinite; }
+.card:nth-child(3n).frozen .art-wrap::after { animation-delay: -.7s; }
+.card:nth-child(3n+1).frozen .art-wrap::after { animation-delay: -1.7s; }
+.card:nth-child(3n+2).frozen .art-wrap::after { animation-delay: -2.5s; }
+#shopSnacks .card.frozen .art-wrap::after { --pet-scale: .9; animation: none; }   /* items are static, so is their ice */
+.card .art-wrap { flex: 1; min-height: 40px; display: flex; }
+/* no background disc behind the pet — it stands directly on the scene */
+.card .art { flex: 1; width: 100%; background: none; display: flex; align-items: center; justify-content: center; overflow: visible; position: relative; }
+/* big pet + a gentle idle bob so the board feels alive (pivots from the feet). --pet-scale drives both the
+   static size and the bob keyframes so items can shrink it in one place. */
+.card .art img { --pet-scale: 1.61; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 3px 4px rgba(20,40,70,.34)); transform: scale(var(--pet-scale)); transform-origin: 50% 88%; animation: petIdle 3.2s var(--ease-soft) infinite; }
+@keyframes petIdle { 0%,100% { transform: scale(var(--pet-scale, 1.24)) translateY(0); } 50% { transform: scale(var(--pet-scale, 1.24)) translateY(-3px); } }
+/* items read as smaller, subordinate props next to the pets — and sit still (no bob) */
+#shopSnacks .card .art img { --pet-scale: .9; animation: none; }
+.card:nth-child(3n) .art img { animation-delay: -.7s; }
+.card:nth-child(3n+1) .art img { animation-delay: -1.7s; }
+.card:nth-child(3n+2) .art img { animation-delay: -2.5s; }
+.card .art .initial { font-weight: 900; font-size: 1.4rem; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.4); }
+.card .nm { display: flex; align-items: center; justify-content: center; gap: 3px; font-size: .64rem; font-weight: 800; color: var(--ink); margin-top: 3px; min-width: 0; }
+.card .nm-txt { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+/* always-visible ability line on every creature card (shop, squad, reward) */
+.card-abil { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
+  margin-top: 3px; font-size: .5rem; line-height: 1.28; text-align: left; color: var(--ink-soft); font-weight: 700; }
+/* trigger TAG: a bordered label (Start / Hurt / Faint …) clearly set apart from the effect description */
+.card-abil .trig-badge, .cd-abil .trig-badge { display: inline-block; font-weight: 900; text-transform: uppercase; letter-spacing: .03em; font-size: .78em; line-height: 1.35;
+  background: rgba(124,92,200,.16); color: #5b3fa0; border: 1.5px solid rgba(124,92,200,.6); border-radius: 6px; padding: 0 6px; margin-right: 5px; vertical-align: baseline; }
+.card-abil .abil-txt { color: var(--ink-soft); }
+/* SAP-style stat chips: attack = slate chip, health = red chip, number INSIDE, no separate icon */
+.card .stats { display: flex; justify-content: center; margin-top: 2px; }
+/* card stat = ONE flat pill "atk / hp", no emboss (the two-chip look stays only in the tap-detail: .cd-stats) */
+.card .stat { display: inline-flex; align-items: center; justify-content: center; padding: 1px 10px; border-radius: 999px; font-size: .74rem; font-weight: 900; color: #fff; line-height: 1.45; letter-spacing: .01em; background: rgba(18,32,52,.74); }
+.cd-stats .atk, .cd-stats .hp { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; padding: 1px 6px; border-radius: 999px; font-size: .68rem; font-weight: 900; color: #fff; line-height: 1.35; box-shadow: inset 0 1px 0 rgba(255,255,255,.28), 0 1px 2px rgba(20,40,70,.45); }
+.stats .atk, .cd-stats .atk { background: linear-gradient(180deg,#5c6675,#39424f); }
+.stats .hp, .cd-stats .hp { background: linear-gradient(180deg,#ff6f84,#e0475f); }
+.cd-cost { display: inline-flex; align-items: center; gap: 2px; font-weight: 900; color: var(--gold-deep); background: rgba(245,197,66,.22); border-radius: 999px; padding: 1px 8px 1px 5px; font-size: .82rem; }
+.cd-cost .ic { width: .9em; height: .9em; }
+/* labeled Tier/Level/Atk/Def row in the tap-detail — same chip styling as the board, but clearly labelled */
+/* Tier / Level / Atk / Def pushed to the TOP-RIGHT of the detail header */
+.card-detail .cd-meta { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px 7px; margin: 0 0 0 auto; max-width: 66%; }
+.cd-m { display: inline-flex; align-items: center; gap: 4px; font-weight: 800; color: var(--ink); }
+.cd-m > i { font-style: normal; font-size: .56rem; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-soft); }
+.cd-m .atk, .cd-m .hp, .cd-m .cd-mv { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; padding: 1px 7px; border-radius: 999px; font-size: .72rem; font-weight: 900; color: #fff; box-shadow: inset 0 1px 0 rgba(255,255,255,.28), 0 1px 2px rgba(20,40,70,.4); }
+.cd-m .atk { background: linear-gradient(180deg,#5c6675,#39424f); }
+.cd-m .hp { background: linear-gradient(180deg,#ff6f84,#e0475f); }
+.cd-m .cd-mv { background: rgba(18,38,66,.55); }
+.price { position: absolute; top: 3px; left: 4px; z-index: 2; display: inline-flex; align-items: center; gap: 2px; background: linear-gradient(180deg,#ffe9a8,#f5c542); color: #6b4e12; font-size: .6rem; font-weight: 900; border-radius: 999px; padding: 1px 6px 1px 4px; box-shadow: var(--sh-soft); }
+.price .ic { width: .8em; height: .8em; }
+.freeze { position: absolute; top: 2px; right: 2px; z-index: 3; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--panel-line); background: rgba(255,255,255,.92); cursor: pointer; box-shadow: var(--sh-soft); display: flex; align-items: center; justify-content: center; padding: 0; }
+.freeze .ic { width: 13px; height: 13px; }
+.card.frozen .freeze { background: var(--sky); }
+/* level indicator: a gold "Lv" tag + two groups of segment bars (progress to L2 then L3) */
+/* level = two groups of rounded-rectangle segments, floated ABOVE the card (no tier/Lv text) */
+.lvl { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); z-index: 3; display: flex; align-items: center; gap: 4px; }
+.lvgrp { display: inline-flex; gap: 2px; padding: 2px 3px; background: rgba(18,38,66,.4); border-radius: 6px; box-shadow: 0 1px 3px rgba(20,40,70,.4); }
+.lvgrp i { width: 5px; height: 6px; border-radius: 2px; background: rgba(255,255,255,.6); display: block; }
+.lvgrp i.on { background: var(--glow); box-shadow: 0 0 4px var(--glow); }
+.cd-head .lvl { position: static; transform: none; }
+.cd-head .lvgrp i { width: 6px; height: 8px; }
+.snackpip { position: absolute; bottom: 2px; right: 3px; z-index: 2; display: flex; gap: 1px; }
+.pip-ic { width: 15px; height: 15px; object-fit: contain; filter: drop-shadow(0 1px 2px rgba(20,40,70,.5)); }
+.snacks .card { min-height: 74px; }
+
+/* ---- action bar ---- */
+.actionbar { display: flex; align-items: center; gap: 10px; margin-top: 0; padding: 12px 4px 0; }
+/* End Turn stays compact on the RIGHT (margin-left:auto), the other buttons grouped on the left with a slick gap */
+.actionbar .end { flex: 0 0 auto; margin-left: auto; }
+/* .btn.end (higher specificity) beats the later `.actionbar .btn{min-width:0}` guard so "END TURN ▶"
+   is never clipped to "END TU" when the Sell button appears and shrinks the row. */
+.actionbar .btn.end { min-width: max-content; padding: 0 16px; }   /* inherits the unified font-size + height */
+
+/* ---- battle: two grassy ledges + a central clash pit (bg-battle) ---- */
+/* bg fills 100%×100% (not cover) so the two grass LEDGES land at the SAME screen % on every device — that's
+   what keeps each team standing ON its ledge (not floating in the pit) across phones of different heights. */
+#battle { justify-content: flex-start; background: url('../assets/ui/bg-battle.png') center center / 100% 100% no-repeat; }
+.battle-top { display: flex; align-items: flex-start; justify-content: flex-end; gap: 8px; padding: 6px 2px; position: relative; z-index: 3; }
+/* the label holds the rival's TAUNT (a full sentence) — let it wrap and cap its width so it never crowds
+   the transport buttons off the right edge on narrow phones. */
+/* rival taunt removed from the top-left — it cluttered the fight. The enemy team is still named by the
+   side-label on its own ledge. (Kept in the DOM but hidden so the transport JS never errors.) */
+.vs-label { display: none; }
+/* keep the 4-button transport (Pause/Fast/💬/Skip) on one row, full-size, without clipping on ~360–390px phones */
+/* battle transport = frosted-glass bubbles, matching the app's glassmorphism (was dark solid plates) */
+.battle-actions .btn.small { padding: 7px 12px; font-size: .78rem; border-radius: 999px; color: var(--ink); text-shadow: none;
+  background: var(--glass-hi); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-brd); box-shadow: var(--frame), var(--sh-soft); }
+.battle-actions .btn.small:active { transform: translateY(2px); box-shadow: var(--frame), var(--sh-soft); }
+.battle-actions .btn.small.on { background: rgba(95,206,143,.6); color: #0a3020; }
+/* stage the two forces: enemy in the top third, you in the bottom third, a clash void between.
+   padding-top reserves a strip for the ability callout so it never covers the combatants. */
+/* push the enemy line DOWN onto the bg's upper grassy ledge and the player line onto the lower ledge (the
+   old 32px top put the enemy too high, floating over the sky). */
+/* arena fills the space BELOW the transport header (flex:1, in flow) and is the positioning context for the
+   two teams. bg fills #battle 100%×100%, so the ledges sit at fixed screen % → teams land on them on any phone. */
+.arena { position: relative; flex: 1; display: block; padding: 0; min-height: 0; }
+/* subtle vignette only — the painted bg-battle scene provides the ground; no dark twilight wash over it */
+.arena::before { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  background: radial-gradient(150% 130% at 50% 50%, transparent 66%, rgba(20,40,70,.18)); }
+/* each team is absolutely placed on its grass LEDGE (top ledge for the enemy, bottom ledge for you) */
+.side { position: absolute; left: 0; right: 0; z-index: 1; background: none; padding: 0 8px; }
+.side.enemy { top: 16%; }     /* enemy line rests on the TOP grass ledge */
+.side.mine { bottom: 13%; }   /* your line rests on the BOTTOM grass ledge */
+.side-label { font-family: 'Cinzel', serif; font-size: .74rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: #fff; text-shadow: 0 1px 2px rgba(20,45,75,.7), 0 1px 6px rgba(20,45,75,.5); margin-bottom: 3px; }
+.side.enemy .side-label { text-align: right; }
+/* row-reverse → index 0 (the front unit that fights first) renders on the RIGHT, since the art faces right */
+.line { display: flex; flex-direction: row-reverse; justify-content: center; gap: 8px; min-height: 84px; align-items: flex-end; }
+.arena-mid { display: none; }
+/* impact bloom pulsed at the seam between two combatants on every attack (positioned by JS) */
+#clashFx { position: absolute; left: 50%; top: 50%; width: 58px; height: 58px; margin: -29px 0 0 -29px; pointer-events: none; z-index: 6; opacity: 0; }
+#clashFx.boom { animation: clashBoom .34s var(--ease-soft); }
+#clashFx::before { content: ""; position: absolute; inset: 0; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,.96), rgba(157,180,255,.82) 34%, rgba(154,108,242,.55) 58%, transparent 72%); }
+#clashFx::after { content: ""; position: absolute; inset: 14%; border-radius: 50%; box-shadow: 0 0 0 2px rgba(198,169,255,.9), 0 0 14px 2px rgba(154,108,242,.7); }
+@keyframes clashBoom { 0% { opacity: 0; transform: scale(.28) rotate(0); } 22% { opacity: 1; transform: scale(.92) rotate(6deg); } 100% { opacity: 0; transform: scale(1.55) rotate(16deg); } }
+/* PROJECTILE: a glowing orb + comet tail (rotated along its flight by --ang) that streaks across the pit */
+.projectile { position: absolute; z-index: 8; width: 16px; height: 16px; margin: -8px 0 0 -8px; border-radius: 50%; pointer-events: none; will-change: transform;
+  background: radial-gradient(circle at 42% 38%, #fff 12%, var(--hue,#ffd66a) 60%, transparent 78%);
+  box-shadow: 0 0 10px 3px var(--hue,#ffd66a), 0 0 20px 6px var(--hue,#ffd66a); }
+.projectile::before { content: ""; position: absolute; left: 50%; top: 50%; width: 40px; height: 6px; border-radius: 6px; transform-origin: 100% 50%;
+  transform: rotate(var(--ang,0deg)) translateX(-40px); background: linear-gradient(90deg, transparent, var(--hue,#ffd66a) 92%); opacity: .8; filter: blur(1px); }
+/* battle pets stand boxless on the field, exactly like the shop/squad pets (no plate, no disc) */
+.bcard { width: 72px; flex-shrink: 0; background: none; box-shadow: none; padding: 0; text-align: center; position: relative; border: none;
+  transition: transform .18s var(--ease-bounce), opacity .3s var(--ease-soft); animation: pop .32s var(--ease-bounce) both; }
+.bcard .art { height: 62px; background: none; overflow: visible; display: flex; align-items: flex-end; justify-content: center; position: relative; }
+/* grow UP from the feet + a per-side PERSPECTIVE scale: enemy (far, top) 30% smaller, you (near, bottom) full */
+.bcard { --side-scale: 1; }
+.side.enemy .bcard { --side-scale: .7; }
+.bcard .art img { width: 100%; height: 100%; object-fit: contain; transform: scale(calc(1.49 * var(--side-scale, 1))); transform-origin: 50% 100%; filter: drop-shadow(0 3px 4px rgba(20,40,70,.34)); }
+.bcard .art::after { content: ""; position: absolute; left: 50%; bottom: -3px; transform: translateX(-50%) scale(var(--side-scale, 1)); width: 74%; height: 9px; border-radius: 50%; background: radial-gradient(ellipse, rgba(12,30,54,.4), transparent 70%); z-index: -1; }
+.bcard .art .initial { font-weight: 900; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.4); }
+/* battle stat = ONE flat pill "atk / hp", exactly like the shop/squad board (.a/.h kept for live setStat) */
+.bcard .stats { display: flex; justify-content: center; margin-top: 2px; transform: scale(var(--side-scale, 1)); transform-origin: center top; }
+.bcard .stat { display: inline-flex; align-items: center; padding: 1px 8px; border-radius: 999px; font-size: .68rem; font-weight: 900; color: #fff; background: rgba(18,32,52,.78); line-height: 1.42; }
+.bcard .stat .a, .bcard .stat .h { color: #fff; }
+.bcard .a { color: var(--glow); } .bcard .h { color: var(--coral-deep); }
+.bcard.hit { animation: shake .26s; }
+/* death punch: a quick scale-up + fade (paired with a shard puff spawned by JS) */
+.bcard.faint { opacity: 0; transform: scale(1.28) rotate(-4deg); transition: transform .26s var(--ease-bounce), opacity .3s var(--ease-soft); }
+/* shard/flash puff on a kill (positioned over the fallen unit by JS) */
+.death-burst { position: absolute; transform: translate(-50%, -50%); width: 0; height: 0; pointer-events: none; z-index: 7; }
+.death-burst::before { content: ""; position: absolute; left: -16px; top: -16px; width: 32px; height: 32px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,.9), rgba(198,169,255,.6) 45%, transparent 70%); animation: deathFlash .42s var(--ease-soft) forwards; }
+.death-burst i { position: absolute; left: 0; top: 0; width: 5px; height: 5px; margin: -2.5px; border-radius: 50%;
+  background: radial-gradient(circle, var(--silver-hi), var(--gilt)); transform: rotate(var(--a)) translateY(0) scale(1); animation: shardPuff .55s var(--ease-soft) forwards; }
+@keyframes deathFlash { 0% { opacity: 0; transform: scale(.4); } 30% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1.4); } }
+@keyframes shardPuff { 0% { opacity: 1; transform: rotate(var(--a)) translateY(0) scale(1); } 100% { opacity: 0; transform: rotate(var(--a)) translateY(calc(-1 * var(--d))) scale(.3); } }
+.shieldbadge { position: absolute; top: -7px; left: -5px; background: var(--sky); color: #0a0c1c; font-size: .58rem; font-weight: 900; border-radius: 999px; padding: 1px 5px; box-shadow: var(--sh-soft); }
+.float { position: absolute; left: 50%; top: -2px; transform: translateX(-50%); font-weight: 900; font-size: .92rem; pointer-events: none; animation: floatUp 1s var(--ease-soft) forwards; z-index: 5; white-space: nowrap; }
+.float.dmg { color: var(--coral-deep); } .float.buff { color: var(--glow); } .float.abil { color: var(--gilt-bloom); font-size: .78rem; font-family: 'Cinzel', serif; }
+@keyframes floatUp { 0% { opacity: 0; transform: translate(-50%, 8px);} 20% { opacity: 1;} 100% { opacity: 0; transform: translate(-50%, -28px);} }
+@keyframes shake { 0%,100% { transform: translateX(0);} 25% { transform: translateX(-5px);} 75% { transform: translateX(5px);} }
+
+/* the big centre callout is GONE — an ability now cues ON the pet (abilityPop). Hold a pet to read details. */
+.ability-callout { display: none; }
+/* on-pet ability cue: a sparkle pops up off the pet + the pet flashes a warm glow */
+.bcard.abil-fire::after { content: "✨"; position: absolute; top: -4px; left: 50%; font-size: 1.05rem; z-index: 6; pointer-events: none; animation: abilPopUp .76s ease-out forwards; }
+.bcard.abil-fire .art img { animation: abilGlow .6s ease-out; }
+@keyframes abilPopUp { 0% { opacity: 0; transform: translate(-50%, 6px) scale(.5); } 25% { opacity: 1; transform: translate(-50%, -10px) scale(1.15); } 100% { opacity: 0; transform: translate(-50%, -26px) scale(1); } }
+@keyframes abilGlow { 0%, 100% { filter: drop-shadow(0 3px 4px rgba(20,40,70,.34)); } 40% { filter: drop-shadow(0 3px 4px rgba(20,40,70,.34)) drop-shadow(0 0 11px rgba(255,224,130,.95)) brightness(1.16); } }
+/* drifting DUST in the fighting pit — an animated layer over the painted pit band so it feels alive */
+.arena::after { content: ""; position: absolute; left: 0; right: 0; top: 34%; height: 40%; z-index: 0; pointer-events: none; filter: blur(3px);
+  background: radial-gradient(70px 30px at 28% 38%, rgba(232,216,188,.5), transparent 72%), radial-gradient(90px 38px at 72% 62%, rgba(232,216,188,.42), transparent 72%), radial-gradient(56px 26px at 52% 26%, rgba(232,216,188,.46), transparent 72%);
+  animation: dustDrift 11s ease-in-out infinite alternate; }
+@keyframes dustDrift { 0% { transform: translate(-8px, 0); opacity: .3; } 50% { opacity: .55; } 100% { transform: translate(10px, -5px); opacity: .38; } }
+
+/* result overlay — a dim scrim so the outcome card pops, not a bright wash over the field */
+.battle-result { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(10,16,34,.5); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); padding: 22px; text-align: center; z-index: 12; }
+.result-card { position: relative; width: 100%; max-width: 336px; display: flex; flex-direction: column; align-items: center; gap: 11px; padding: 24px 22px 22px; border-radius: var(--r-lg); overflow: hidden;
+  background: var(--glass-hi); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); border: 1px solid var(--glass-brd); box-shadow: var(--frame), var(--sh-pop); animation: pop .34s var(--ease-bounce); }
+/* soft outcome-coloured wash blooming from the top of the card */
+.result-card::before { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 0; background: radial-gradient(120% 72% at 50% -8%, var(--rc-glow, rgba(120,150,255,.4)), transparent 62%); }
+.result-card > * { position: relative; z-index: 1; }
+.result-card.win  { --rc-glow: rgba(120,220,150,.5);  --rc-ring: #ffe9a8; }
+.result-card.lose { --rc-glow: rgba(255,130,150,.45); --rc-ring: #ffd0d8; }
+.result-card.draw { --rc-glow: rgba(150,170,210,.42); --rc-ring: #dbe4f4; }
+.result-emblem { width: 88px; height: 88px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(circle at 50% 38%, #fff, var(--rc-ring, #cfe0ff)); box-shadow: 0 0 0 4px rgba(255,255,255,.5), 0 8px 22px rgba(20,40,70,.3), 0 0 30px 4px var(--rc-glow, transparent);
+  animation: emblemIn .5s var(--ease-bounce) both; }
+.result-emblem img { width: 56px; height: 56px; object-fit: contain; filter: drop-shadow(0 3px 5px rgba(20,40,70,.3)); }
+@keyframes emblemIn { 0% { transform: scale(0) rotate(-25deg); opacity: 0; } 60% { transform: scale(1.12) rotate(6deg); } 100% { transform: scale(1) rotate(0); opacity: 1; } }
+.result-banner { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 1.9rem; font-weight: 900; text-transform: uppercase; letter-spacing: .05em; line-height: 1; animation: stampDown .4s var(--ease-bounce);
+  color: #2a9c5e; -webkit-text-fill-color: #2a9c5e; filter: drop-shadow(0 2px 0 #ffffff) drop-shadow(0 2px 5px rgba(40,90,130,.3)); }
+.result-banner.lose { color: #e04b64; -webkit-text-fill-color: #e04b64; }
+.result-banner.draw { color: #5f7d95; -webkit-text-fill-color: #5f7d95; }
+.result-sub { font-size: .92rem; font-weight: 600; color: var(--ink-soft); max-width: 262px; line-height: 1.35; margin-top: -2px; }
+.result-card .btn { width: 100%; margin-top: 6px; }
+@keyframes stampDown { 0% { transform: scale(1.6); opacity: 0;} 60% { transform: scale(.94);} 100% { transform: scale(1); opacity: 1;} }
+.duel-score { display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 900; font-size: 1.05rem; color: var(--ink); }
+.duel-score .me { color: var(--glow); } .duel-score .op { color: var(--coral-deep); }
+
+/* ---- modals ---- */
+.modal { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: var(--scrim); z-index: 20; padding: 16px; }
+.modal-card { width: 100%; max-width: 400px; text-align: center; padding: 22px; animation: pop .3s var(--ease-bounce); }
+.modal-card h2 { margin: 0 0 8px; color: var(--gilt-deep); }
+.modal-card .btn { width: 100%; margin-top: 10px; }
+.modal-card.howto { text-align: left; max-height: 82dvh; overflow-y: auto; }
+.modal-card.howto ul { padding-left: 2px; list-style: none; margin: 6px 0 0; }
+.modal-card.howto li { margin: 9px 0; line-height: 1.45; font-size: .95rem; font-weight: 500; }
+.modal-card.howto b { color: var(--gilt-deep); }
+.reward-opts { display: flex; gap: 12px; justify-content: center; margin: 10px 0; }
+.reward-opts .card { width: 46%; min-height: 118px; cursor: pointer; }
+/* reward cards have room — let the ability line breathe (3 lines, larger) */
+.reward-opts .card-abil { -webkit-line-clamp: 3; font-size: .64rem; line-height: 1.32; margin-top: 5px; }
+
+/* ---- duel lobby ---- */
+.duel-input { width: 100%; max-width: 260px; margin: 4px auto 12px; display: block; padding: 12px 14px; border-radius: var(--r-md); border: 1.5px solid var(--rule); background: #eaf5ff; font: inherit; font-weight: 800; text-align: center; color: var(--ink); letter-spacing: 1px; }
+.duel-input::placeholder { color: #6b74a3; }
+.duel-input:focus { outline: none; border-color: var(--gilt); box-shadow: 0 0 0 2px rgba(154,108,242,.35); }
+
+/* ---- deck select ---- */
+.deck-card { max-width: 470px; }
+.faction-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 14px 0; }
+/* each faction option is its OWN frosted-glass button (no big card wrapper around them) */
+.faction-card { position: relative; text-align: left; background: var(--glass-hi); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); border: 1px solid var(--glass-brd); border-radius: var(--r-md); padding: 9px 10px; cursor: pointer; box-shadow: var(--frame), var(--sh-soft); transition: transform .12s var(--ease-bounce), box-shadow .12s, border-color .12s; }
+.faction-card:active { transform: scale(.97); }
+/* selected = clearly DARKENED (deep teal) with a bright ring + white text, so the pick is obvious */
+.faction-card.sel { border-color: #fff; box-shadow: 0 0 0 2px var(--gilt), 0 0 18px rgba(43,163,216,.55), var(--frame), var(--sh-pop); background: rgba(14,52,78,.86); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); }
+.faction-card.sel .fname, .faction-card.sel .ftag { color: #ffffff !important; }
+.faction-card.sel .fpick { color: #7fe0c0; }
+.faction-card .fname { font-family: 'Cinzel', serif; font-weight: 800; font-size: .8rem; color: var(--gilt-bloom); text-transform: uppercase; letter-spacing: .02em; }
+.faction-card .ftag { font-weight: 900; font-size: .66rem; color: var(--ink); margin: 3px 0 2px; }
+.faction-card .flaw { font-size: .63rem; color: var(--ink-soft); line-height: 1.3; margin-top: 3px; }
+/* real strategy blurb per faction (clamped to 2 lines; tap "more" to expand) so the first pick is informed */
+.faction-card .fsyn { font-size: .6rem; color: var(--ink-soft); line-height: 1.34; margin: 3px 0 1px;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.faction-card.expanded .fsyn { -webkit-line-clamp: unset; }
+.faction-card .fmore { margin: 0 0 1px; padding: 1px 0; background: none; border: none; box-shadow: none;
+  color: var(--glow); font: inherit; font-size: .58rem; font-weight: 800; text-decoration: underline; cursor: pointer; }
+.faction-card .fmore:active { transform: translateY(1px); }
+.faction-card .fpick { position: absolute; top: 6px; right: 8px; font-size: .9rem; color: var(--glow); opacity: 0; }
+.faction-card.sel .fpick { opacity: 1; }
+@media (max-width: 420px) { .faction-grid { grid-template-columns: 1fr; } }
+@keyframes pop { 0% { transform: scale(.82); opacity: 0;} 100% { transform: scale(1); opacity: 1;} }
+@media (min-width: 620px) { .card .nm { font-size: .74rem;} .card .stats { font-size: .8rem;} .bcard { width: 78px;} }
+/* ability text makes cards taller — let the build screen scroll instead of clipping the action bar */
+#game { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+/* rejected-action feedback — a red shake/flash so a failed buy/placement is felt, not just heard */
+@keyframes invalidShake { 0%,100% { transform: translateX(0);} 15% { transform: translateX(-6px);} 30% { transform: translateX(6px);} 45% { transform: translateX(-5px);} 60% { transform: translateX(4px);} 80% { transform: translateX(-2px);} }
+.hint.invalid { color: var(--coral-deep); font-weight: 900; animation: invalidShake .42s var(--ease-soft); }
+.card.invalid { animation: invalidShake .42s var(--ease-soft); border-color: var(--coral) !important; box-shadow: 0 0 0 3px rgba(255,112,136,.55), var(--sh-pop) !important; }
+[hidden] { display: none !important; }
+/* duel HUD mirrors solo: Turn(round) + Tier + Gold + Hearts(pool) shown; only the Cup goal is hidden */
+#game.duel .hud .trophies { display: none; }
+/* while a duel round is 'waiting' for the opponent, the team is already submitted — lock the board so no
+   post-snapshot buy/combine/fuse can desync the fought team from the carried-over squad */
+#game.waiting .squad-wrap, #game.waiting .shop-wrap, #game.waiting .actionbar { pointer-events: none; opacity: .8; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; } }
+
+/* ---- level-progress bar (under a card's stats) ---- */
+.xpbar { position: relative; height: 11px; margin: 3px 2px 1px; border-radius: 999px; background: rgba(157,180,255,.14); border: 1px solid var(--panel-line); overflow: hidden; }
+.xpbar .xp-fill { position: absolute; inset: 0 auto 0 0; width: 0; border-radius: 999px; background: linear-gradient(90deg, var(--accent-deep), var(--gilt)); box-shadow: 0 0 6px rgba(154,108,242,.6); transition: width .35s var(--ease-soft); }
+.xpbar .xp-lbl { position: relative; z-index: 1; display: block; line-height: 11px; font-size: .46rem; font-weight: 900; letter-spacing: .02em; color: var(--silver-hi); text-shadow: 0 1px 1px #0a0c1c; }
+.xpbar.max { background: linear-gradient(90deg, var(--accent-deep), var(--gilt), var(--glow)); border-color: var(--gilt-bloom); box-shadow: 0 0 8px rgba(154,108,242,.55); }
+.xpbar.max .xp-lbl { color: #fff; }
+@media (min-width: 620px) { .xpbar { height: 13px; } .xpbar .xp-lbl { font-size: .56rem; line-height: 13px; } }
+
+/* ---- evolve moment (a card just leveled up) ---- */
+.card.evolving { z-index: 6; animation: evolvePop .6s var(--ease-bounce); }
+@keyframes evolvePop { 0% { transform: scale(1);} 35% { transform: scale(1.18);} 100% { transform: scale(1);} }
+.evolve-ring { position: absolute; inset: -4px; z-index: 5; pointer-events: none; border-radius: var(--r-md);
+  border: 3px solid var(--gilt-bloom); box-shadow: 0 0 18px 4px rgba(154,108,242,.8), inset 0 0 14px rgba(157,180,255,.6);
+  animation: evolveRing .9s var(--ease-soft) forwards; }
+@keyframes evolveRing { 0% { opacity: 0; transform: scale(.8);} 25% { opacity: 1;} 100% { opacity: 0; transform: scale(1.35);} }
+.evolve-label { position: absolute; top: -8px; left: 50%; z-index: 7; transform: translateX(-50%); white-space: nowrap; pointer-events: none;
+  font-family: 'Cinzel Decorative', 'Cinzel', serif; font-weight: 900; font-size: .68rem; letter-spacing: .04em;
+  color: var(--gilt-bloom); text-shadow: 0 1px 3px #0a0c1c, 0 0 10px rgba(154,108,242,.9);
+  animation: evolveLabel 1.1s var(--ease-soft) forwards; }
+@keyframes evolveLabel { 0% { opacity: 0; transform: translate(-50%, 8px) scale(.7);} 20% { opacity: 1; transform: translate(-50%, -2px) scale(1.06);} 70% { opacity: 1;} 100% { opacity: 0; transform: translate(-50%, -18px) scale(1);} }
+
+/* ---- merge affordance: show which shop pets combine, and where they land ---- */
+/* shop card you already own → a pulsing "⊕ MERGE" badge + a green rim so combining is discoverable */
+/* you own this one → a bare glowing sparkle (no pill, no rim) hinting you can combine it */
+.merge-badge { position: absolute; top: 1px; right: 3px; z-index: 3; pointer-events: none;
+  font-size: .95rem; color: #ffe27a; text-shadow: 0 0 6px rgba(255,210,80,.95), 0 1px 2px rgba(90,60,10,.6);
+  animation: mergePulse 1.4s ease-in-out infinite; }
+@keyframes mergePulse { 0%,100% { transform: scale(1); opacity: .9; } 50% { transform: scale(1.18); opacity: 1; } }
+/* squad slot that would receive the held copy → glowing dashed target + a "⊕ combine" tag */
+.card.mergeable { outline: 2px dashed var(--glow); outline-offset: 1px; box-shadow: 0 0 0 3px rgba(53,181,143,.45), 0 0 16px 2px rgba(53,181,143,.5); animation: mergePulse 1.1s ease-in-out infinite; }
+.merge-target-tag { position: absolute; bottom: 3px; left: 50%; transform: translateX(-50%); z-index: 4; pointer-events: none;
+  font-weight: 900; font-size: .5rem; letter-spacing: .03em; color: #0d3b2a; background: linear-gradient(180deg,#8bf0c4,#35b58f);
+  border-radius: 999px; padding: 1px 6px; box-shadow: 0 1px 3px rgba(20,60,45,.4); white-space: nowrap; }
+/* the combine itself (when it doesn't cross a level) — a quick pop + floating "MERGED! +x/+x" */
+.card.merging { z-index: 6; animation: evolvePop .5s var(--ease-bounce); }
+.merge-label { position: absolute; top: -6px; left: 50%; z-index: 7; transform: translateX(-50%); white-space: nowrap; pointer-events: none;
+  font-weight: 900; font-size: .6rem; letter-spacing: .02em; color: #eafff6; text-shadow: 0 1px 3px #0a2c20, 0 0 9px rgba(53,181,143,.9);
+  animation: mergeFloat .72s var(--ease-soft) forwards; }
+.merge-label b { color: #baf7dc; }
+@keyframes mergeFloat { 0% { opacity: 0; transform: translate(-50%, 6px) scale(.8);} 22% { opacity: 1; transform: translate(-50%,-2px) scale(1.05);} 70% { opacity: 1;} 100% { opacity: 0; transform: translate(-50%,-15px) scale(1);} }
+/* sparkle particle burst (merge / fuse / level-up) — gold motes fly outward from the card centre */
+.spark-burst { position: absolute; left: 50%; top: 46%; z-index: 6; pointer-events: none; }
+.spark-burst i { position: absolute; left: 0; top: 0; width: 6px; height: 6px; margin: -3px; border-radius: 50%;
+  background: radial-gradient(circle, #fff, var(--gold) 60%, transparent 74%); box-shadow: 0 0 6px 1px rgba(245,197,66,.9);
+  animation: sparkFly .8s var(--ease-soft) forwards; }
+@keyframes sparkFly { 0% { opacity: 0; transform: translate(0,0) scale(.4); } 20% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(1); } }
+/* NEW merged-pet effect: an expanding shockwave ring + a radiant brightness pulse on the card */
+.shockwave { position: absolute; left: 50%; top: 46%; width: 22px; height: 22px; margin: -11px; border-radius: 50%; z-index: 5; pointer-events: none; animation: shockwaveExpand .62s var(--ease-soft) forwards; }
+.shockwave.gold { border: 3px solid rgba(255,214,102,.95); box-shadow: 0 0 12px rgba(245,197,66,.8); }
+.shockwave.violet { border: 3px solid rgba(198,169,255,.95); box-shadow: 0 0 12px rgba(154,108,242,.85); }
+@keyframes shockwaveExpand { 0% { opacity: .95; transform: scale(.28); } 100% { opacity: 0; transform: scale(3.4); } }
+.card.flash-pulse .art img { animation: flashPulse .4s ease-out; }
+@keyframes flashPulse { 0% { filter: brightness(2.3) saturate(1.4) drop-shadow(0 0 8px rgba(255,240,190,.9)); } 100% { filter: brightness(1); } }
+
+/* ---- feedback modal textarea ---- */
+.fb-text { width: 100%; min-height: 122px; resize: vertical; padding: 12px 14px; border-radius: var(--r-md); border: 1.5px solid var(--rule); background: #eaf5ff; color: var(--ink); font: inherit; font-weight: 600; line-height: 1.45; }
+.fb-text:focus { outline: none; border-color: var(--gilt); box-shadow: 0 0 0 2px rgba(154,108,242,.35); }
+.btn.fb-mic { width: auto; margin: 10px auto 0; display: inline-flex; }
+
+/* ---- tier badge (inline in the name; reused in the codex) ---- */
+/* simplified tier symbol: a flat solid tier-colour rounded chip with the number (no gradient/bevel) */
+.tierbadge { flex: none; display: inline-flex; align-items: center; justify-content: center; min-width: 14px; height: 14px; padding: 0 3px; vertical-align: middle; font-family: 'Nunito', sans-serif; font-weight: 900; font-size: .6rem; line-height: 1; border-radius: 4px; color: #fff; background: var(--tier1); box-shadow: 0 1px 2px rgba(20,40,70,.35); }
+.tierbadge.t1 { background: var(--tier1); } .tierbadge.t2 { background: var(--tier2); } .tierbadge.t3 { background: var(--tier3); }
+.tierbadge.t4 { background: var(--tier4); } .tierbadge.t5 { background: var(--tier5); color: #4a2c00; } .tierbadge.t6 { background: var(--tier6); color: #5a3e00; }
+
+/* ---- HUD mini-labels (touch devices have no title= tooltips) ---- */
+.hud-item .hud-lbl { font-size: .5rem; opacity: .72; margin: 0 1px 0 2px; }
+
+/* ---- freeze: bigger, safer tap target ---- */
+.freeze { width: 30px; height: 30px; top: 1px; right: 1px; }
+.freeze .ic { width: 15px; height: 15px; }
+
+/* ---- persistent rank ladder on the title ---- */
+.rank-row { display: flex; flex-direction: column; align-items: center; gap: 1px; margin: 2px 0 8px; min-height: 1em; }
+.rank-name { font-family: 'Cinzel', serif; font-weight: 800; font-size: 1rem; color: var(--gilt-deep); display: inline-flex; align-items: center; gap: 5px; }
+.rank-prog { font-size: .72rem; color: var(--ink-soft); font-weight: 700; }
+.rankup-line { color: var(--glow); font-weight: 800; }
+
+/* ---- title backdrop: soft, minimal painterly sky (simplified) ---- */
+/* ---- redesigned title: layered hero (wordmark + creatures over a painted scene) ---- */
+#title { background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(20,45,75,.34)), url('../assets/ui/hero-scene.png') center/cover no-repeat fixed; justify-content: flex-start; }
+.title-settings { position: absolute; top: calc(env(safe-area-inset-top) + 10px); right: 12px; z-index: 6; }
+.title-hero { position: relative; width: 100%; flex: 1 1 auto; min-height: 0; display: flex; align-items: center; justify-content: center; margin-top: 5vh; }
+.title-wordmark { width: min(92%, 470px); filter: drop-shadow(0 6px 20px rgba(0,0,0,.55)); z-index: 2; }
+.title-creatures { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
+.title-creatures .tc { position: absolute; bottom: 0; filter: drop-shadow(0 8px 12px rgba(20,40,70,.45)); animation: titleBob 3s var(--ease-soft) infinite; }
+.tc1 { left: 3%;  height: 30%; animation-delay: 0s; }
+.tc2 { right: 4%; height: 34%; animation-delay: .7s; }
+.tc3 { left: 33%; height: 24%; z-index: 0; animation-delay: 1.3s; }
+@keyframes titleBob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
+.title-actions { width: 100%; max-width: 340px; margin: 0 auto 6px; }
+#title .rank-row { justify-content: center; }
+#title .connect { text-align: center; }
+#title .title-card { background: rgba(255,255,255,.62); backdrop-filter: blur(3px); }
+
+/* ---- Trinkling Codex ---- */
+.codex-head { text-align: center; flex-shrink: 0; }
+.codex-progress { font-size: .82rem; font-weight: 700; color: var(--ink-soft); margin: 4px 0 10px; }
+.codex-list { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.codex-faction { margin-bottom: 16px; }
+.codex-fhead { background: var(--panel-hi); border-radius: var(--r-md); padding: 8px 11px; box-shadow: var(--frame); margin-bottom: 8px; }
+.codex-fname { font-family: 'Cinzel', serif; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--gilt-deep); font-size: .92rem; }
+.codex-flaw { font-size: .68rem; font-weight: 700; color: var(--gilt-deep); margin: 2px 0; }
+.codex-fsyn { font-size: .66rem; color: var(--ink-soft); line-height: 1.35; }
+.codex-fcount { font-size: .64rem; font-weight: 800; color: var(--glow); margin-top: 4px; }
+.codex-grid { display: flex; flex-direction: column; gap: 7px; }
+.codex-entry { display: flex; gap: 9px; background: var(--panel); border: 1.5px solid var(--panel-line); border-radius: var(--r-md); padding: 7px; align-items: flex-start; position: relative; }
+.codex-entry.unseen { opacity: .55; }
+.codex-art { width: 56px; height: 56px; flex-shrink: 0; border-radius: var(--r-sm); overflow: hidden; background: radial-gradient(circle at 50% 34%, #ffffff, var(--tint, #dceeff)); }
+.codex-art img { width: 100%; height: 100%; object-fit: cover; }
+.codex-entry.unseen .codex-art img { filter: brightness(.32) saturate(0); }
+.codex-body { flex: 1; min-width: 0; }
+.codex-nm { font-weight: 800; color: var(--ink); font-size: .82rem; display: flex; align-items: center; gap: 4px; }
+.codex-abil { font-size: .68rem; color: var(--gilt-deep); font-weight: 700; margin: 2px 0; line-height: 1.28; }
+.codex-flavor { font-size: .66rem; color: var(--ink-soft); font-style: italic; line-height: 1.3; }
+.codex-lock { position: absolute; top: 7px; right: 8px; font-size: .56rem; font-weight: 800; color: var(--ink-soft); text-transform: uppercase; letter-spacing: .03em; }
+
+/* ---- visual evolution: a leveled Trinkling looks distinctly more powerful (no new art) ----
+   L2 = a moonlit-silver ring/glow; L3 = an amethyst aura + a small crown mark (+ a slight scale on
+   shop/squad cards). Applied to shop/squad cards AND battle dockets. */
+.card.evo2 { border-color: var(--gilt-deep); box-shadow: 0 0 10px rgba(205,214,244,.5), var(--sh-soft); }
+.card.evo3 { border-color: var(--gilt-bloom); box-shadow: 0 0 16px 2px rgba(154,108,242,.72), inset 0 0 10px rgba(157,180,255,.4), var(--sh-soft); transform: scale(1.04); }
+.card.evo3::after { content: "\2655"; position: absolute; top: -9px; left: -3px; z-index: 4; font-size: .82rem; line-height: 1; color: var(--gilt-bloom); text-shadow: 0 1px 3px #0a0c1c, 0 0 8px rgba(154,108,242,.9); pointer-events: none; }
+/* battle cards: aura + crown only — NO transform (a class transform here would clobber .bcard.faint's
+   death animation, since these rules come later in the file). */
+/* leveled battle pets glow via a drop-shadow on the ART (no box — pets are boxless on the field) */
+.bcard.evo2 .art img { filter: drop-shadow(0 3px 4px rgba(20,40,70,.34)) drop-shadow(0 0 6px rgba(205,214,244,.85)); }
+.bcard.evo3 .art img { filter: drop-shadow(0 3px 4px rgba(20,40,70,.34)) drop-shadow(0 0 8px rgba(154,108,242,.95)); }
+.bcard.evo3::after { content: "\2655"; position: absolute; top: -10px; left: -3px; z-index: 4; font-size: .8rem; line-height: 1; color: var(--gilt-bloom); text-shadow: 0 1px 3px #0a0c1c, 0 0 8px rgba(154,108,242,.9); pointer-events: none; }
+
+/* Lv{n} chip — only shown when a leveled ability's shape can't be cleanly number-scaled (a safety net;
+   no current Trinkling needs it). Keeps the card honest instead of showing stale base numbers. */
+.card-abil .lvchip { font-weight: 900; color: var(--gilt-bloom); background: rgba(154,108,242,.28); border-radius: 999px; padding: 0 4px; margin-left: 2px; }
+
+/* battle top-bar actions (feedback 💬 + Skip) */
+.battle-actions { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+
+/* ---- sell confirm (armed = tap again to confirm) ---- */
+.btn.sell.armed { animation: pop .2s var(--ease-bounce); box-shadow: 0 4px 0 #4a1c33, 0 0 14px rgba(255,112,136,.6), var(--sh-soft); }
+.btn.sell.armed .cost { display: none; }
+
+/* ================= RESPONSIVE — never spill, work in portrait AND landscape ================= */
+/* universal no-word-spill guards */
+.row-label > span, .coach, .hint, .tier-tag, .front-tag { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* buttons size to their content (never shrink below it) so the gold cost chip can't spill out the side;
+   compact sizing keeps the up-to-3-button bar (Reroll + Sell/Combine + End Turn) inside ~360px in Cinzel */
+.actionbar .btn { min-width: max-content; white-space: nowrap; font-size: .84rem; padding: 12px 11px; }
+.actionbar .btn.big { font-size: .92rem; padding: 13px 13px; }
+.actionbar .btn .cost { font-size: .82em; }
+
+/* PHONE LANDSCAPE (wide + short): 2-column layout so squad + shop sit side by side and everything fits */
+@media (orientation: landscape) and (max-height: 600px) {
+  /* scope to .show so the grid ONLY applies when #game is the active screen (else it bleeds through title/battle) */
+  #game.show { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto auto 1fr auto auto;
+    grid-template-areas: "hud hud" "detail detail" "squad shop" "actions actions" "hint hint";
+    align-content: start; column-gap: 14px; row-gap: 4px; padding-top: calc(env(safe-area-inset-top) + 5px); }
+  #game .hud { grid-area: hud; }
+  #game #coach, #game #cardDetail { grid-area: detail; margin: 4px 2px 0; }
+  #game .squad-wrap { grid-area: squad; min-width: 0; margin-bottom: 0; margin-top: 0; }
+  #game .shop-wrap { grid-area: shop; min-width: 0; margin-top: 0; }
+  #game .actionbar { grid-area: actions; margin-top: 6px; padding-top: 6px; }
+  #game .hint { grid-area: hint; }
+  .row-label { margin: 6px 4px 5px; font-size: .72rem; }
+  .row-label.sub { margin-top: 5px; }
+  .card { min-height: 60px; padding: 3px 2px; }
+  .card .nm { font-size: .58rem; margin-top: 2px; }
+  .card .stats { font-size: .64rem; }
+  /* short landscape: shave the fixed-height coach/detail slot (74px→44px) so the board + End Turn fit without scrolling */
+  .coach.show, .card-detail { height: 44px; -webkit-line-clamp: 2; padding: 5px 10px; font-size: .8rem; margin-top: 3px; }
+  .card-detail .cd-flavor { display: none; }   /* keep the landscape detail compact */
+  #game .card { min-height: 52px; }
+  .lvl { top: -5px; }
+  .hud { padding: 4px 7px; gap: 3px; }
+  .hud-item { padding: 2px 7px; font-size: .9rem; }
+  /* BATTLE in short landscape: the portrait arena (130px+46px padding, two 94px lines) overflows and pushes
+     the player's own line below the fold. Compact the pit so both lines + the callout fit without scrolling. */
+  #battle .arena { padding: 62px 0 14px; gap: 4px; }
+  #battle .line { min-height: 54px; }
+  #battle .bcard { width: 58px; }
+  #battle .bcard .art { height: 46px; }
+  #battle .ability-callout { top: 33%; }
+}
+
+/* PHONE (<=392px): squeeze the up-to-3-button action bar (Reroll + Sell/Combine + End Turn) so its
+   content-sized (max-content) buttons still fit a ~360px row in Cinzel without the coin spilling. */
+@media (max-width: 392px) {
+  .actionbar { gap: 5px; }
+  /* all bottom-bar buttons shrink UNIFORMLY (font only; min-height:48px keeps them the same height) */
+  .actionbar .btn { font-size: .76rem; padding: 0 9px; }
+}
+/* VERY NARROW portrait (<=340px): shrink chrome so 5 cards + labels never overflow */
+@media (max-width: 344px) {
+  .card .nm { font-size: .58rem; }
+  .squad, .shop-row { gap: 4px; }
+  .hud-item { padding: 2px 6px; font-size: .92rem; }
+  .row-label { font-size: .74rem; }
+  .actionbar .btn { font-size: .72rem; padding: 0 7px; }
+}
+
+/* ================= FUSION (merge two DIFFERENT pets → a new pet) ================= */
+/* composite art: parent A on the left half, parent B on the right, with a bright seam */
+.art.fused { position: relative; overflow: visible; }
+/* BESPOKE fused art (one painted hybrid): render it like a normal pet; hide the parent-composite beneath it.
+   If it 404s (not generated yet) the img adds .composite to the parent → the two-half fallback shows instead. */
+.art.fused .fused-solo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; z-index: 3;
+  transform: scale(var(--pet-scale, 1.49)); transform-origin: 50% 88%; filter: drop-shadow(0 3px 4px rgba(20,40,70,.34)); }
+.art.fused:not(.composite) .fa, .art.fused:not(.composite) .fb { visibility: hidden; }
+.art.fused:not(.composite)::after { opacity: 0; }              /* hide the seam when bespoke art is shown */
+.art.fused.composite .fused-solo { display: none; }
+/* fused halves are scaled to the SAME --pet-scale as a normal pet (so a fused unit isn't smaller), each
+   anchored at the central seam so they grow outward and stay adjacent; no idle bob on the composite. */
+.art.fused img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; animation: none; }
+/* fallback 1.24 so battle .bcard fused pets (which don't inherit --pet-scale) still scale to match neighbours */
+/* scale BOTH halves from the CENTRE seam so they stay aligned (edge-origins pulled them apart) */
+.art.fused .fa { clip-path: inset(0 50% 0 0); transform: scale(var(--pet-scale, 1.49)); transform-origin: 50% 88%; z-index: 1; }
+.art.fused .fb { clip-path: inset(0 0 0 50%); transform: scale(var(--pet-scale, 1.49)); transform-origin: 50% 88%; z-index: 1; }
+.art.fused::after { content: ""; position: absolute; top: 8%; bottom: 8%; left: 50%; width: 2px; transform: translateX(-50%); z-index: 2;
+  background: linear-gradient(180deg, transparent, rgba(255,214,102,.9), transparent); filter: blur(.4px); }
+.art.fused .fuse-spark { position: absolute; top: 2px; right: 3px; font-size: .7rem; filter: drop-shadow(0 0 3px rgba(255,200,80,.9)); }
+/* a FUSED unit gets a distinct solid-gold frame + glow so it reads as "merged" at a glance */
+.card.is-fused { border-color: var(--gold) !important; box-shadow: 0 0 0 2px var(--gold), 0 0 13px 2px rgba(245,197,66,.6), var(--frame), var(--sh-soft); }
+.fused-chip { flex: none; font-weight: 900; font-size: .5rem; letter-spacing: .03em; color: #5a3e00; background: linear-gradient(180deg,#ffe08a,#f5c542); border-radius: 999px; padding: 1px 6px; box-shadow: 0 1px 3px rgba(90,70,10,.4); }
+/* a squad slot you can fuse the held unit into (different type) — amber dashed target + tag */
+.card.fusable { outline: 2px dashed var(--gold); outline-offset: 1px; box-shadow: 0 0 0 3px rgba(245,197,66,.4), 0 0 16px 2px rgba(245,197,66,.5); animation: mergePulse 1.05s ease-in-out infinite; }
+.fuse-target-tag { position: absolute; bottom: 3px; left: 50%; transform: translateX(-50%); z-index: 4; pointer-events: none;
+  font-weight: 900; font-size: .5rem; letter-spacing: .03em; color: #5a3e00; background: linear-gradient(180deg,#ffe08a,#f5c542);
+  border-radius: 999px; padding: 1px 6px; box-shadow: 0 1px 3px rgba(90,70,10,.4); white-space: nowrap; }
+/* fusion burst = golden variant of the evolve ring/label */
+.evolve-ring.fuse-ring { border-color: #ffd666; box-shadow: 0 0 20px 5px rgba(245,197,66,.85), inset 0 0 14px rgba(255,224,138,.7); }
+.evolve-label.fuse-label { color: #ffe08a; text-shadow: 0 1px 3px #6b4e12, 0 0 10px rgba(245,197,66,.95); }
+
+/* ---- hold-for-ability tooltip (press & hold a pet in battle/replay) ---- */
+.hold-tip { position: absolute; z-index: 30; min-width: 150px; max-width: 210px; pointer-events: none;
+  background: var(--glass-hi); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-brd); border-radius: var(--r-md); box-shadow: var(--frame), var(--sh-pop);
+  padding: 8px 11px; animation: pop .16s var(--ease-bounce); }
+.hold-tip .ht-name { font-family: 'Cinzel', serif; font-weight: 900; font-size: .82rem; color: var(--gilt-deep); }
+.hold-tip .ht-abil { margin-top: 3px; font-size: .74rem; font-weight: 600; line-height: 1.35; color: var(--ink); }
+
+/* ---- replay transport ---- */
+.battle-actions .replay-only { display: none; }
+#battle.rewatch .battle-actions .replay-only { display: inline-flex; }
+#battle.rewatch .vs-label::after { content: " · Replaying"; opacity: .7; font-size: .8em; }
+.btn.small.on { background: linear-gradient(180deg,#5fce8f,#2a9c5e); color: #fff; }
+
+/* ---- bigger battle damage numbers (SAP-style pop) ---- */
+.float.dmg { font-family: 'Cinzel', serif; font-weight: 900; color: #ff3b46; font-size: 1.5rem;
+  text-shadow: 0 2px 0 #7a0d13, 0 0 10px rgba(255,59,70,.6), 0 1px 3px rgba(0,0,0,.5); }
+.duel-timer { font-weight: 900; color: var(--gilt-deep); } .duel-timer.low { color: var(--coral-deep); }
+.opp-ready { color: #2e9e6b; font-weight: 900; } .opp-wait { opacity: .6; font-style: italic; }
+
+/* ================= GROUNDING: pets stand on the painted scene (no glass tile) ================= */
+#squad .card:not(.empty), #shopPets .card:not(.empty), #shopSnacks .card:not(.empty) {
+  background: transparent; -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: none; border-color: transparent;
+}
+/* soft platform shadow so each pet reads as standing on the ground */
+#squad .card:not(.empty) .art-wrap, #shopPets .card:not(.empty) .art-wrap, #shopSnacks .card:not(.empty) .art-wrap { position: relative; }
+/* NB :not(.frozen) — a frozen card's ::after is the ice-cube overlay (rule above); this ID-specific shadow
+   rule would otherwise win the cascade on the same pseudo-element and the ice cube would never render. */
+#squad .card:not(.empty):not(.frozen) .art-wrap::after, #shopPets .card:not(.empty):not(.frozen) .art-wrap::after, #shopSnacks .card:not(.empty):not(.frozen) .art-wrap::after {
+  content: ""; position: absolute; left: 16%; right: 16%; bottom: -2px; height: 9px; z-index: 0;
+  background: radial-gradient(ellipse at center, rgba(12,30,54,.42), transparent 72%); }
+/* names/pips legible directly on the scene */
+/* item names sit on the bare scene → white text + dark halo (text-on-frosted stays dark; text-on-scene is white) */
+#shopSnacks .card .nm { color: #fff; text-shadow: 0 1px 2px rgba(12,26,44,.9), 0 1px 6px rgba(12,26,44,.7); }
+/* fused pets keep their gold ring (it IS the merged indicator) even without the glass tile */
+/* fused pets keep a gold glow ring but NO plate (cards have no background anywhere on the board) */
+#squad .card.is-fused { border-color: transparent !important; background: none; -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: none; filter: drop-shadow(0 0 6px rgba(245,197,66,.9)); }
+/* the chosen target while awaiting the Combine/Fuse/Swap/Feed confirm button — a bright pulsing ring */
+/* the chosen swap/fuse/combine target is UNMISTAKABLE: it pops up + gets a bright filled halo + thick ring */
+.card.target-armed { transform: scale(1.08); z-index: 5; }
+.card.target-armed::after { content: ""; position: absolute; inset: -5px; border-radius: var(--r-md); border: 3px solid #ffe27a;
+  background: radial-gradient(circle at 50% 45%, rgba(255,226,122,.32), rgba(255,210,80,.08) 70%, transparent);
+  box-shadow: 0 0 18px 5px rgba(245,197,66,.85), inset 0 0 12px rgba(255,240,190,.6); pointer-events: none; z-index: 4; animation: armedPulse .85s var(--ease-soft) infinite; }
+@keyframes armedPulse { 0%,100% { box-shadow: 0 0 12px 3px rgba(245,197,66,.65), inset 0 0 10px rgba(255,240,190,.5); } 50% { box-shadow: 0 0 24px 7px rgba(255,214,102,.95), inset 0 0 14px rgba(255,240,190,.7); } }
+
+/* tier-unlock modal */
+.tier-card { text-align: center; }
+.tier-emblem { width: 84px; height: 84px; margin: 2px auto 12px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(circle at 50% 38%, #fff, var(--gold) 80%); color: #7a4d00; font-family: 'Cinzel', serif; font-weight: 900; font-size: 2.4rem;
+  box-shadow: 0 0 0 4px rgba(255,255,255,.5), 0 8px 22px rgba(20,40,70,.3), 0 0 30px 5px rgba(245,197,66,.6); animation: emblemIn .5s var(--ease-bounce) both; }
+
+/* down-arrows over empty squad slots while a shop pet is held (SAP "place here" affordance) */
+.card.empty.drop-target { border-color: var(--glow); }
+.card.empty.drop-target::before { content: ""; position: absolute; top: -20px; left: 50%; transform: translateX(-50%);
+  width: 0; height: 0; border-left: 9px solid transparent; border-right: 9px solid transparent; border-top: 13px solid #fff;
+  filter: drop-shadow(0 2px 2px rgba(20,45,75,.5)); animation: dropbob .7s ease-in-out infinite; }
+@keyframes dropbob { 0%,100% { transform: translate(-50%,0); } 50% { transform: translate(-50%,5px); } }
+/* pets slide in at the start of a fight (SAP-style entrance) */
+.bcard.slide-mine { animation: slideMine .42s var(--ease-bounce) both; }
+.bcard.slide-enemy { animation: slideEnemy .42s var(--ease-bounce) both; }
+@keyframes slideMine { from { opacity: 0; transform: translateX(-40px); } }
+@keyframes slideEnemy { from { opacity: 0; transform: translateX(40px); } }
+
+/* settings gear: no border/background (bare icon) */
+.icon-btn.bare { border: none; background: none; box-shadow: none; }
+.icon-btn.bare:active { transform: translateY(1px); }
+/* freeze = a contextual bottom button (shown when a shop item is selected); frozen shows a passive badge */
+.btn.freezebtn { background: linear-gradient(180deg,#eaf6ff,#cfeaf8); border-color: var(--panel-line); box-shadow: 0 4px 0 #9fcfe6, var(--sh-soft), inset 0 1px 0 rgba(255,255,255,.7); color: var(--gilt-deep); }
+.btn.freezebtn:active { box-shadow: 0 0 0 #9fcfe6, var(--sh-soft); }
+.btn.freezebtn.on { background: linear-gradient(180deg,#bfe6ff,#8fd0f0); }
+.frozen-badge { position: absolute; top: 2px; right: 3px; z-index: 3; display: inline-flex; }   /* top-RIGHT so it never collides with the FREE/price tag pinned top-left */
+.frozen-badge .ic { width: 15px; height: 15px; filter: drop-shadow(0 1px 2px rgba(20,45,75,.55)); }
+
+/* pets stand directly on the painted grassy ledges of bg-shop / bg-battle — no tiled ledge strip (it doubled
+   the ground and detached the stat pills). Each pet keeps its own soft platform shadow. */
+.squad, .shop-row, #myLine, #enemyLine { position: relative; }
+.squad > .card, .shop-row > .card, #myLine > .bcard, #enemyLine > .bcard { position: relative; z-index: 1; }
+
+/* ================= extra battle juice ================= */
+/* a defeated pet is BLOWN OUT of the arena — enemies hurled up off the top, yours down off the bottom */
+.side.enemy .bcard.faint { animation: faintBlowUp .6s cubic-bezier(.4,0,.9,.5) forwards; }
+.side.mine .bcard.faint { animation: faintBlowDown .6s cubic-bezier(.4,0,.9,.5) forwards; }
+@keyframes faintBlowUp { 25% { opacity: 1; transform: translateY(10px) scale(1.15); } to { opacity: 0; transform: translateY(-240px) rotate(-38deg) scale(.45); } }
+@keyframes faintBlowDown { 25% { opacity: 1; transform: translateY(-10px) scale(1.15); } to { opacity: 0; transform: translateY(240px) rotate(38deg) scale(.45); } }
+.arena.shake { animation: arenaShake .28s ease; }
+@keyframes arenaShake { 0%,100% { transform: translate(0,0); } 20% { transform: translate(-4px,2px); } 40% { transform: translate(5px,-2px); } 60% { transform: translate(-4px,1px); } 80% { transform: translate(3px,-1px); } }
+.sparkle-rise { position: absolute; z-index: 20; pointer-events: none; font-size: .9rem; color: #5fe0a0; animation: sparkRise .8s ease-out forwards; }
+@keyframes sparkRise { from { opacity: 0; transform: translateY(6px) scale(.6); } 20% { opacity: 1; } to { opacity: 0; transform: translateY(-26px) scale(1.1); } }
+
+/* white glassy title buttons (Offline / Online) */
+.btn.glass { background: rgba(255,255,255,.5); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-brd); color: var(--ink); font-family: 'Cinzel', serif; text-transform: uppercase; letter-spacing: .05em;
+  box-shadow: var(--frame), var(--sh-soft), inset 0 1px 0 rgba(255,255,255,.7); text-shadow: 0 1px 2px rgba(255,255,255,.55); }
+.btn.glass:active { transform: translateY(2px); box-shadow: var(--frame), var(--sh-soft); }
+
+/* ---- coalition (deck-select) contrast + layout ---- */
+/* no big frosted card wrapper — the deck-select sits on the bare landscape, each faction its own glass button */
+#deckselect .deck-card { background: none; -webkit-backdrop-filter: none; backdrop-filter: none; border: none; box-shadow: none; padding: 0; max-width: 470px; width: 100%; }
+/* "Your Coalition" now reads on the bright scene → dark navy + a bright halo for contrast */
+/* centered, with a soft white glow blooming behind it */
+#deckselect .deck-card h1 { text-align: center; color: #0f2338; -webkit-text-fill-color: #0f2338; text-shadow: 0 0 22px rgba(255,255,255,.95), 0 0 11px rgba(255,255,255,.85), 0 1px 0 rgba(255,255,255,.6); }
+.faction-card .fname { color: var(--gilt-deep); }               /* dark teal → strong contrast on white */
+.faction-card.sel .fname { color: #1a6f9c; }
+#deckBegin { width: 100%; }                                     /* same width as the options grid */
+
+/* Online connection indicator dot (green = online) */
+.online-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #9aa7b3; vertical-align: middle; margin-right: 4px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.15); }
+.online-dot.on { background: #3ecb6e; box-shadow: 0 0 7px rgba(62,203,110,.9), inset 0 0 0 1px rgba(255,255,255,.4); }
