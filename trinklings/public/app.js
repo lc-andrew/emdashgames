@@ -518,7 +518,7 @@ function renderSquad() {
   for (let i = 0; i < CONFIG.squadSlots; i++) {
     const c = game.squad[i];
     const d = document.createElement('div');
-    if (!c) { d.className = 'card empty' + (sel && sel.kind !== 'shopSnack' ? ' drop-target' : ''); d.onclick = () => onSquadTap(i); }
+    if (!c) { d.className = 'card empty' + (sel && sel.kind !== 'shopSnack' ? ' drop-target' : ''); d.dataset.slot = i; d.onclick = () => onSquadTap(i); }
     else {
       // Light up this slot as a merge target when the held selection is a same-type, non-max copy.
       const selId = selectedDefId();
@@ -532,7 +532,9 @@ function renderSquad() {
       d.className = 'card t' + (unitTier(c) || 1) + evoClass(c.level) + (self ? ' selected' : '') + (armed ? ' target-armed' : '') + (isMergeTarget ? ' mergeable' : '') + (isFuseTarget ? ' fusable' : '') + (c.fused ? ' is-fused' : '');
       // no on-card action text — the amber/green target glow + the bottom confirm button convey Combine/Fuse
       d.innerHTML = creatureCardHTML(c);
+      d.dataset.slot = i;
       d.onclick = () => onSquadTap(i);
+      d.addEventListener('pointerdown', (e) => dragStart(e, { kind: 'squad', index: i }));   // drag SOURCE (alt to tap; onclick still handles taps)
     }
     el.appendChild(d);
   }
@@ -551,6 +553,7 @@ function renderShop() {
       ${mergeable ? '<span class="merge-badge" title="You own one — buy to combine">✦</span>' : ''}
       ${creatureCardHTML({ defId: item.defId, name: def.name, level: 1, atk: def.atk, hp: def.hp })}`;
     d.onclick = () => onShopPetTap(i);
+    d.addEventListener('pointerdown', (e) => dragStart(e, { kind: 'shopPet', index: i }));   // drag SOURCE (alt to tap)
     petEl.appendChild(d);
   });
   const snkEl = $('#shopSnacks'); snkEl.innerHTML = '';
@@ -563,6 +566,7 @@ function renderShop() {
     d.innerHTML = `${item.frozen ? `<span class="frozen-badge">${icon('snowflake')}</span>` : ''}
       <div class="art-wrap"><div class="art"><img src="assets/items/${item.defId}.png" alt="${s.name}"></div></div>`;
     d.onclick = () => onShopSnackTap(i);
+    d.addEventListener('pointerdown', (e) => dragStart(e, { kind: 'shopSnack', index: i }));   // drag SOURCE (alt to tap)
     snkEl.appendChild(d);
   });
 }
@@ -768,6 +772,128 @@ function flashInvalid(slot) {
   if (slot != null) requestAnimationFrame(() => { const el = $('#squad').children[slot]; if (el) { el.classList.add('invalid'); setTimeout(() => el.classList.remove('invalid'), 420); } });
 }
 
+// ---- DRAG & DROP (pointer-based; an ALTERNATIVE to tap, never a replacement) --------------------
+// A press that never travels DRAG_PX stays a pure tap (the native click still fires onSquadTap/onShopPetTap/
+// onShopSnackTap, unchanged); crossing the threshold turns the gesture into a drag and the trailing click is
+// swallowed. We NEVER call render() during the move phase (only toggle classes on the live DOM) so the source
+// card is never torn out from under an in-flight touch pointer (removing the implicitly-captured pointerdown
+// target fires pointercancel and kills the drag). All gold/fusion/validity rules stay in game.* via the shared
+// exec* actions; occupied-target decisions defer to pendingAction() so drag and tap can never disagree.
+const DRAG_PX = 8;            // travel (px) that separates a drag from a tap
+let drag = null;             // {src,pointerId,startX,startY,started,sourceEl,ghost,grabDX,grabDY,hoverSlot}
+let swallowClick = false;    // eat the one click the browser fires after a mouse drag
+
+// What a drop of `src` onto squad slot `slot` does. OCCUPIED targets borrow sel/selTarget and ask pendingAction()
+// (the verbatim tap decision), then map kind->exec*. ok:false = illegal drop (blocked / feed-empty / self).
+function dragResolve(src, slot) {
+  const tgt = game.squad[slot];
+  if (src.kind === 'shopSnack' && !tgt) return { ok: false, reason: 'no-target' };   // can't feed an empty slot
+  if (src.kind === 'squad' && src.index === slot) return { ok: false, self: true };  // dropped on itself
+  if (!tgt) {                                        // EMPTY slot -> instant place / move (mirrors onSquadTap)
+    if (src.kind === 'shopPet') return { ok: true, run: () => execBuy(src.index, slot) };
+    if (src.kind === 'squad')   return { ok: true, run: () => execMove(src.index, slot) };
+    return { ok: false };
+  }
+  const s0 = sel, t0 = selTarget;                    // OCCUPIED slot -> reuse pendingAction's Combine/Fuse/Swap/Feed
+  sel = src; selTarget = { kind: 'squad', index: slot };
+  const pend = pendingAction();
+  sel = s0; selTarget = t0;
+  if (!pend) return { ok: false, reason: 'occupied' };
+  const run = pend.kind === 'buy' ? () => execBuy(src.index, slot)
+            : pend.kind === 'buy-fuse' ? () => execBuyFuse(src.index, slot)
+            : pend.kind === 'feed' ? () => execFeed(src.index, slot)
+            : () => execMove(src.index, slot);
+  return { ok: true, label: pend.label, cost: pend.cost, run };
+}
+// Light up every squad slot's drop affordance for the current drag (reusing the tap-flow classes).
+function paintDropTargets() {
+  const kids = $('#squad').children;
+  for (let i = 0; i < kids.length; i++) {
+    const card = kids[i]; if (!card) continue;
+    card.classList.remove('drop-target', 'mergeable', 'fusable', 'drag-ok', 'target-armed');
+    const r = dragResolve(drag.src, i);
+    if (!r.ok) continue;
+    if (!game.squad[i]) card.classList.add('drop-target');   // empty valid slot (styled .card.empty.drop-target)
+    else card.classList.add(r.label === 'Combine' ? 'mergeable' : r.label === 'Fuse' ? 'fusable' : 'drag-ok');
+  }
+}
+function clearDropTargets() {
+  const kids = $('#squad').children;
+  for (let i = 0; i < kids.length; i++) kids[i]?.classList.remove('drop-target', 'mergeable', 'fusable', 'drag-ok', 'target-armed');
+}
+// Squad slot index under a screen point (ghost is pointer-events:none, so hit-testing sees the card beneath).
+function slotAtPoint(x, y) {
+  const card = document.elementFromPoint(x, y)?.closest('#squad .card[data-slot]');
+  return card ? +card.dataset.slot : null;
+}
+// pointerdown on a shop/squad card: ARM a potential drag (don't commit -- a sub-threshold press is still a tap).
+function dragStart(e, src) {
+  if (e.button != null && e.button !== 0) return;    // primary button / touch / pen only
+  if (drag) return;                                  // one pointer at a time (ignore extra fingers)
+  drag = { src, pointerId: e.pointerId, startX: e.clientX, startY: e.clientY, started: false, sourceEl: e.currentTarget, ghost: null, grabDX: 0, grabDY: 0, hoverSlot: null };
+}
+function dragBegin(e) {
+  const el = drag.sourceEl, rect = el.getBoundingClientRect();
+  drag.started = true;
+  drag.grabDX = drag.startX - rect.left; drag.grabDY = drag.startY - rect.top;
+  const g = el.cloneNode(true);
+  g.className = el.className.replace(/\bselected\b/g, '').trim() + ' drag-ghost';
+  g.style.width = rect.width + 'px'; g.style.height = rect.height + 'px';
+  document.body.appendChild(g); drag.ghost = g;
+  el.classList.add('drag-source');
+  try { document.body.setPointerCapture(e.pointerId); } catch (_) {}   // stable capture: survives drop-time re-render + lets a mouse leave the window
+  paintDropTargets();
+  moveGhost(e.clientX, e.clientY);
+  SFX.tap();
+}
+function moveGhost(x, y) { if (drag?.ghost) drag.ghost.style.transform = `translate(${x - drag.grabDX}px, ${y - drag.grabDY}px)`; }
+function onDragMove(e) {
+  if (!drag || e.pointerId !== drag.pointerId) return;
+  if (!drag.started) {
+    if (Math.hypot(e.clientX - drag.startX, e.clientY - drag.startY) < DRAG_PX) return;   // still within tap slop
+    dragBegin(e);
+  }
+  e.preventDefault();
+  moveGhost(e.clientX, e.clientY);
+  const slot = slotAtPoint(e.clientX, e.clientY);
+  if (slot !== drag.hoverSlot) {
+    const kids = $('#squad').children;
+    if (drag.hoverSlot != null) kids[drag.hoverSlot]?.classList.remove('target-armed');
+    drag.hoverSlot = slot;
+    if (slot != null && dragResolve(drag.src, slot).ok) kids[slot]?.classList.add('target-armed');
+  }
+}
+function onDragUp(e) {
+  if (!drag || e.pointerId !== drag.pointerId) return;
+  if (!drag.started) { drag = null; return; }        // never crossed threshold -> it was a tap; let the click through
+  finishDrag(slotAtPoint(e.clientX, e.clientY));
+}
+function onDragCancel(e) {
+  if (!drag || e.pointerId !== drag.pointerId) return;
+  if (drag.started) finishDrag(null); else drag = null;
+}
+// Tear down ghost + highlights, then run the resolved action (or cancel) through the shared exec* path.
+function finishDrag(slot) {
+  const src = drag.src, sourceEl = drag.sourceEl, pid = drag.pointerId;
+  clearDropTargets();
+  if (drag.ghost) drag.ghost.remove();
+  sourceEl.classList.remove('drag-source');
+  try { document.body.releasePointerCapture(pid); } catch (_) {}
+  drag = null;
+  swallowClick = true; setTimeout(() => (swallowClick = false), 350);   // eat the trailing mouse click
+  // Cancel silently on an off-board drop OR if the waiting-lock engaged mid-drag (duel/local squad already submitted).
+  if (slot == null || $('#game').classList.contains('waiting')) { render(); return; }
+  const r = dragResolve(src, slot);
+  if (!r.ok) { if (!r.self) { hint(reason(r.reason || 'occupied')); flashInvalid(slot); } render(); return; }
+  r.run();   // exec* enforces gold/fusion rules, then clearSel() + render()
+}
+// Attached ONCE: the shared move/up/cancel stream, the native-image-drag guard, and the post-drag click swallow.
+document.addEventListener('pointermove', onDragMove, { passive: false });
+document.addEventListener('pointerup', onDragUp);
+document.addEventListener('pointercancel', onDragCancel);
+document.addEventListener('dragstart', (e) => { if (drag) e.preventDefault(); }, true);   // stop the card <img> starting a native HTML5 drag that would steal the gesture
+document.addEventListener('click', (e) => { if (swallowClick || (drag && drag.started)) { e.stopPropagation(); e.preventDefault(); swallowClick = false; } }, true);   // swallow the post-drag click; also block a 2nd-finger tap from render()-wiping mid-drag
+
 // ---- reward modal ----
 function openReward() {
   const r = game.pendingReward; if (!r) return;
@@ -776,14 +902,40 @@ function openReward() {
   const box = $('#rewardOptions'); box.innerHTML = '';
   r.options.forEach((defId, idx) => {
     const def = CREATURE_BY_ID[defId];
-    const d = document.createElement('div'); d.className = 'card';
-    d.innerHTML = creatureCardHTML({ defId, name: def.name, level: 1, atk: def.atk, hp: def.hp });
-    d.onclick = () => { markSeen(defId); game.chooseReward(idx); SFX.buy(); $('#rewardModal').hidden = true; render(); };
+    const d = document.createElement('div'); d.className = 'card reward-card';
+    // Show the NAME under the art + a hover/press-hold tooltip with the tier & ability, so it's not a blind pick.
+    d.innerHTML = creatureCardHTML({ defId, name: def.name, level: 1, atk: def.atk, hp: def.hp }) + `<div class="reward-name">${def.name}</div>`;
+    attachRewardTip(d, defId);
+    d.onclick = () => { hideRewardTip(); markSeen(defId); game.chooseReward(idx); SFX.buy(); $('#rewardModal').hidden = true; render(); };
     box.appendChild(d);
   });
   $('#rewardModal').hidden = false;
 }
-$('#rewardSkip').onclick = () => { game.pendingReward = null; $('#rewardModal').hidden = true; render(); };
+$('#rewardSkip').onclick = () => { hideRewardTip(); game.pendingReward = null; $('#rewardModal').hidden = true; render(); };
+// Reward-card tooltip: hover (desktop) or press-hold (touch) to preview the pet's name/tier/ability before picking.
+let rewardTipEl = null;
+function attachRewardTip(el, defId) {
+  let held = false, timer = null;
+  el.addEventListener('mouseenter', () => showRewardTip(defId, el));
+  el.addEventListener('mouseleave', hideRewardTip);
+  el.addEventListener('pointerdown', (e) => { if (e.pointerType === 'mouse') return; held = false; timer = setTimeout(() => { held = true; showRewardTip(defId, el); }, 320); });
+  el.addEventListener('pointerup', () => { clearTimeout(timer); if (held) setTimeout(hideRewardTip, 1400); });
+  el.addEventListener('pointercancel', () => { clearTimeout(timer); hideRewardTip(); });
+  el.addEventListener('click', (e) => { if (held) { e.stopImmediatePropagation(); e.preventDefault(); held = false; } }, true);   // a hold-preview must not also pick
+}
+function showRewardTip(defId, el) {
+  hideRewardTip();
+  const def = CREATURE_BY_ID[defId]; if (!def) return;
+  const ab = scaledAbilityText(defId, 1) || def.ability?.text || 'No ability.';
+  const t = document.createElement('div'); t.className = 'hold-tip reward-tip';
+  t.innerHTML = `<div class="ht-name">${def.name} · T${def.tier}</div><div class="ht-abil">${ab}</div>`;
+  document.body.appendChild(t);
+  const r = el.getBoundingClientRect(), w = t.offsetWidth || 200;
+  t.style.left = Math.min(Math.max(6, (r.left + r.right) / 2 - w / 2), window.innerWidth - w - 6) + 'px';
+  t.style.top = (r.top - t.offsetHeight - 10 > 6 ? r.top - t.offsetHeight - 10 : r.bottom + 10) + 'px';
+  rewardTipEl = t;
+}
+function hideRewardTip() { if (rewardTipEl) { rewardTipEl.remove(); rewardTipEl = null; } }
 
 // ---- tier-unlock modal ----
 // A new Trinkling tier opens every 2 turns (unlockedTier = floor((turn+1)/2)). Announce it with a modal

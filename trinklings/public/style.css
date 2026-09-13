@@ -139,6 +139,8 @@ h1, h2 { font-family: 'Cinzel', Georgia, serif; font-weight: 800; text-transform
 #gameover.defeat .logo { animation: sadBob 3.4s var(--ease-soft) infinite; }
 @keyframes sadBob { 0%,100% { transform: translateY(0) rotate(-1.5deg); } 50% { transform: translateY(3px) rotate(1.5deg); } }
 .logo.appicon { width: 104px; height: 104px; margin: 0 auto; border-radius: 22px; box-shadow: var(--frame), var(--sh-pop); font-size: 0; }
+/* Duel/Local screen hero art: keep the wide (≈2:1) image's aspect — no square crop/squash. */
+.duel-hero { display: block; width: auto; height: 96px; max-width: 80%; margin: 0 auto 2px; object-fit: contain; filter: drop-shadow(0 5px 12px rgba(0,0,0,.35)); animation: bob 2.6s var(--ease-soft) infinite; }
 @keyframes bob { 0%,100% { transform: translateY(0) rotate(-2deg);} 50% { transform: translateY(-8px) rotate(2deg);} }
 /* the engraved-metal wordmark */
 h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; letter-spacing: .06em; margin: 14px 0 2px;
@@ -759,6 +761,8 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
   padding: 8px 11px; animation: pop .16s var(--ease-bounce); }
 .hold-tip .ht-name { font-family: 'Nunito', sans-serif; font-weight: 900; font-size: .82rem; color: var(--gilt-deep); }
 .hold-tip .ht-abil { margin-top: 3px; font-size: .74rem; font-weight: 600; line-height: 1.35; color: var(--ink); }
+.hold-tip.reward-tip { position: fixed; }   /* appended to <body> and positioned in viewport coords */
+.reward-card .reward-name { text-align: center; font-family: 'Nunito', sans-serif; font-weight: 800; font-size: .78rem; color: var(--ink); margin-top: 3px; }
 
 /* ---- replay transport ---- */
 .battle-actions .replay-only { display: none; }
@@ -809,6 +813,14 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
   width: 0; height: 0; border-left: 9px solid transparent; border-right: 9px solid transparent; border-top: 13px solid #fff;
   filter: drop-shadow(0 2px 2px rgba(20,45,75,.5)); animation: dropbob .7s ease-in-out infinite; }
 @keyframes dropbob { 0%,100% { transform: translate(-50%,0); } 50% { transform: translate(-50%,5px); } }
+/* ---- drag & drop (pointer): a ghost that follows the finger + reused drop-target glows ---- */
+.squad-wrap .card, .shop-row .card { touch-action: none; }   /* a finger-drag on a board card is a drag, not a scroll/zoom */
+.drag-ghost { position: fixed; top: 0; left: 0; z-index: 60; margin: 0; pointer-events: none;
+  transition: none;                                          /* .card eases transform (.14s) -> the ghost would lag the finger without this */
+  opacity: .92; box-shadow: 0 12px 28px rgba(10,20,40,.5), var(--frame);
+  filter: drop-shadow(0 6px 10px rgba(10,20,40,.45)); will-change: transform; }
+.card.drag-source { opacity: .4; }                            /* the picked-up card dims while the ghost carries it */
+.card.drag-ok { outline: 2px dashed var(--glow); outline-offset: 1px; box-shadow: 0 0 0 3px rgba(157,180,255,.4), 0 0 14px 2px rgba(157,180,255,.45); }   /* valid Swap/Feed drop onto an occupied pet */
 /* pets slide in at the start of a fight (SAP-style entrance) */
 .bcard.slide-mine { animation: slideMine .42s var(--ease-bounce) both; }
 .bcard.slide-enemy { animation: slideEnemy .42s var(--ease-bounce) both; }
