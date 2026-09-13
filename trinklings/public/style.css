@@ -85,7 +85,7 @@ h1, h2 { font-family: 'Cinzel', Georgia, serif; font-weight: 800; text-transform
 .btn.roll { background: none; border: none; box-shadow: none; color: var(--ink); text-shadow: 0 1px 2px rgba(255,255,255,.85); }
 .btn.roll:active { transform: translateY(1px); box-shadow: none; }
 .btn.roll:active { box-shadow: 0 0 0 #bcd6e8, var(--sh-soft); }
-.btn.ghostbtn { background: transparent; box-shadow: none; border: none; color: var(--ink-soft); font-weight: 700; text-decoration: underline; }
+.btn.ghostbtn { background: transparent; box-shadow: none; border: none; color: #fff; text-shadow: 0 1px 3px rgba(6,14,30,.85), 0 0 10px rgba(6,14,30,.5); font-weight: 800; text-decoration: underline; }
 .btn.ghostbtn:active { transform: translateY(1px); }
 .btn.small { padding: 8px 13px; font-size: .85rem; border-radius: var(--r-md); box-shadow: 0 3px 0 #12162f, var(--sh-soft); }
 .btn.small:active { box-shadow: 0 0 0 #12162f, var(--sh-soft); }
@@ -359,14 +359,14 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 /* battle pets stand boxless on the field, exactly like the shop/squad pets (no plate, no disc) */
 .bcard { width: 72px; flex-shrink: 0; background: none; box-shadow: none; padding: 0; text-align: center; position: relative; border: none;
   transition: transform .18s var(--ease-bounce), opacity .3s var(--ease-soft); animation: pop .32s var(--ease-bounce) both; }
-.bcard .art { height: 62px; background: none; overflow: visible; display: flex; align-items: flex-end; justify-content: center; position: relative; }
+.bcard .art { height: 62px; background: none; overflow: visible; display: flex; align-items: flex-end; justify-content: center; position: relative; z-index: 0; }   /* z-index:0 makes .art a stacking context so the ::after shadow (z-index:-1) stays scoped BEHIND the pet, never on top */
 /* grow UP from the feet + a per-side PERSPECTIVE scale: enemy (far, top) 30% smaller, you (near, bottom) full */
 .bcard { --side-scale: 1; }
 .side.enemy .bcard { --side-scale: .7; }
 /* STAGED FIGHTERS in the pit: force BOTH sides to ONE medium perspective scale so the two arena fighters are
    the SAME size — smaller than your bench (--side-scale 1), larger than the enemy bench (.7). (Feedback: perspective.) */
 .side.enemy .bcard.in-arena, .side.mine .bcard.in-arena { --side-scale: .75; }
-.bcard .art img { width: 100%; height: 100%; object-fit: contain; transform: scale(calc(1.49 * var(--side-scale, 1))); transform-origin: 50% 100%; filter: drop-shadow(0 3px 4px rgba(20,40,70,.34)); transition: transform var(--persp-dur, .5s) cubic-bezier(.25,-0.35,.4,1); }
+.bcard .art img { position: relative; z-index: 1; width: 100%; height: 100%; object-fit: contain; transform: scale(calc(1.49 * var(--side-scale, 1))); transform-origin: 50% 100%; filter: drop-shadow(0 3px 4px rgba(20,40,70,.34)); transition: transform var(--persp-dur, .5s) cubic-bezier(.25,-0.35,.4,1); }
 .bcard .art::after { content: ""; position: absolute; left: 50%; bottom: 2px; transform: translateX(-50%) scale(var(--side-scale, 1)); width: 74%; height: 9px; border-radius: 50%; background: radial-gradient(ellipse, rgba(12,30,54,.4), transparent 70%); z-index: -1; }
 .bcard .art .initial { font-weight: 900; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.4); }
 /* battle stat = ONE flat pill "atk / hp", exactly like the shop/squad board (.a/.h kept for live setStat) */
