@@ -1,27 +1,49 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-img-ext="webp" data-thumbs="1">
 <head>
   <meta charset="UTF-8" />
+  <script>
+    /* Graphics tier (gfx-high | gfx-lite) decided BEFORE first paint. Manual choice (cc_gfx) wins; else a cached
+       auto verdict (cc_gfx_auto, 7 days); else only clearly weak devices get lite. app.js refines it at runtime. */
+    (function () {
+      var t = 'high';
+      try {
+        var ls = window.localStorage, m = ls.getItem('cc_gfx');
+        if (m === 'high' || m === 'lite') t = m;
+        else {
+          var a = null; try { a = JSON.parse(ls.getItem('cc_gfx_auto') || 'null'); } catch (e) {}
+          var age = a ? Date.now() - (+a.t || 0) : -1;
+          if (a && (a.tier === 'high' || a.tier === 'lite') && age >= 0 && age < 6048e5) t = a.tier;
+          else { var n = navigator; if ((n.deviceMemory && n.deviceMemory <= 2) || (n.hardwareConcurrency && n.hardwareConcurrency <= 2)) t = 'lite'; }
+        }
+      } catch (e) { t = 'high'; }
+      try { var c = document.documentElement.classList; c.remove('gfx-high', 'gfx-lite'); c.add('gfx-' + t); } catch (e) {}
+    })();
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="theme-color" content="#6fd0a8" />
   <title>Trinklings</title>
   <link rel="icon" type="image/png" href="assets/ui/favicon.png?v=3" />
   <link rel="apple-touch-icon" href="assets/ui/favicon-180.png?v=3" />
-  <link rel="stylesheet" href="public/style.css" />
+  <link rel="preload" as="font" type="font/woff2" href="assets/fonts/Nunito.woff2" crossorigin />
+  <link rel="preload" as="font" type="font/woff2" href="assets/fonts/Cinzel.woff2" crossorigin />
+  <link rel="preload" as="image" href="assets/ui/hero-scene.webp" fetchpriority="high" />
+  <link rel="stylesheet" href="public/style.css?v=d324d92a54" />
+  <link rel="stylesheet" href="public/fx.css?v=969db94a22" />
 </head>
 <body>
 <div id="app">
 
   <!-- TITLE -->
   <section id="title" class="screen show">
-    <button class="icon-btn bare title-settings" id="titleSettings" title="Settings"><img src="assets/ui/gear.png" alt="Settings"></button>
+    <button class="icon-btn bare title-settings" id="titleSettings" title="Settings"><img src="assets/ui/gear.webp" alt="Settings"></button>
     <div class="title-hero">
-      <img class="title-wordmark" src="assets/ui/wordmark-trinklings.png" alt="Trinklings" />
+      <img class="title-wordmark" src="assets/ui/wordmark-trinklings.webp" alt="Trinklings" fetchpriority="high" />
       <div class="title-creatures">
-        <img class="tc tc1" src="assets/creatures/ducat.png" alt="" />
-        <img class="tc tc2" src="assets/creatures/gnash.png" alt="" />
-        <img class="tc tc3" src="assets/creatures/foxfire.png" alt="" />
+        <img class="tc tc1" src="assets/creatures/ducat.webp" alt="" />
+        <img class="tc tc2" src="assets/creatures/gnash.webp" alt="" />
+        <img class="tc tc3" src="assets/creatures/foxfire.webp" alt="" />
       </div>
     </div>
     <div class="btn-col title-actions">
@@ -38,11 +60,11 @@
         <div class="hud-item turn" title="Turn — one shop-then-fight cycle (a Round in an online/local duel)"><span class="turn-lbl">Turn</span><span id="hudTurn">1</span></div>
         <div class="hud-item tier" title="Shop tier — new Trinklings unlock every 2 turns"><span id="tierTag">Tier 1</span></div>
       </div>
-      <div class="hud-item gold" title="Gold — spend it all before End Turn"><img class="ic" src="assets/ui/coin.png" alt="Gold" /><span id="hudGold">10</span></div>
-      <div class="hud-item hearts" title="Lives left"><img class="ic" src="assets/ui/heart.png" alt="Lives" /><span id="hudHearts">5</span></div>
-      <div class="hud-item trophies" title="Wins — reach 10 to take the Cup"><img class="ic" src="assets/ui/trophy.png" alt="Wins" /><span id="hudTrophies">0</span><span class="hud-goal">/10</span></div>
-      <button class="icon-btn bare" id="replayBtn" title="Rewatch last battle" hidden><img src="assets/ui/replay.png" alt="Rewatch"></button>
-      <button class="icon-btn bare" id="menuBtn" title="Menu"><img src="assets/ui/gear.png" alt="Menu"></button>
+      <div class="hud-item gold" title="Gold — spend it all before End Turn"><img class="ic" src="assets/ui/coin.webp" alt="Gold" /><span id="hudGold">10</span></div>
+      <div class="hud-item hearts" title="Lives left"><img class="ic" src="assets/ui/heart.webp" alt="Lives" /><span id="hudHearts">5</span></div>
+      <div class="hud-item trophies" title="Wins — reach 10 to take the Cup"><img class="ic" src="assets/ui/trophy.webp" alt="Wins" /><span id="hudTrophies">0</span><span class="hud-goal">/10</span></div>
+      <button class="icon-btn bare" id="replayBtn" title="Rewatch last battle" hidden><img src="assets/ui/replay.webp" alt="Rewatch"></button>
+      <button class="icon-btn bare" id="menuBtn" title="Menu"><img src="assets/ui/gear.webp" alt="Menu"></button>
     </header>
 
     <div id="coach" class="coach"></div>
@@ -62,11 +84,11 @@
     </div>
 
     <div class="actionbar">
-      <button class="btn roll" id="rollBtn">Reroll <span class="cost"><img class="ic" src="assets/ui/coin.png" alt="" />1</span></button>
+      <button class="btn roll" id="rollBtn">Reroll <span class="cost"><img class="ic" src="assets/ui/coin.webp" alt="" />1</span></button>
       <button class="btn action" id="actionBtn" hidden><span id="actionLbl">Combine</span></button>
       <button class="btn action swapbtn" id="swapBtn" title="Swap places instead" aria-label="Swap places" hidden>⇄</button>
-      <button class="btn freezebtn" id="freezeBtn" hidden><img class="ic" src="assets/ui/snowflake.png" alt="" /> <span id="freezeLbl">Freeze</span></button>
-      <button class="btn sell" id="sellBtn" hidden><span id="sellLbl">Sell</span> <span class="cost"><img class="ic" src="assets/ui/coin.png" alt="" /><span id="sellVal">1</span></span></button>
+      <button class="btn freezebtn" id="freezeBtn" hidden><img class="ic" src="assets/ui/snowflake.webp" alt="" /> <span id="freezeLbl">Freeze</span></button>
+      <button class="btn sell" id="sellBtn" hidden><span id="sellLbl">Sell</span> <span class="cost"><img class="ic" src="assets/ui/coin.webp" alt="" /><span id="sellVal">1</span></span></button>
       <button class="btn big primary end" id="endBtn">End Turn ▶</button>
     </div>
     <div class="hint-slot"><div id="hint" class="hint"></div></div>
@@ -77,11 +99,11 @@
     <div class="battle-top">
       <div class="vs-label">Fight!</div>
       <div class="battle-actions">
-        <button class="btn small replay-only" id="rewindBtn" title="Rewind" aria-label="Rewind"><img class="ic" src="assets/ui/replay.png" alt=""></button>
+        <button class="btn small replay-only" id="rewindBtn" title="Rewind" aria-label="Rewind"><img class="ic" src="assets/ui/replay.webp" alt=""></button>
         <button class="btn small" id="pauseBtn" title="Pause">Pause</button>
         <button class="btn small" id="fastBtn" title="Fast">Fast</button>
         <button class="btn small" id="fbOpenBattle" title="Give feedback" aria-label="Give feedback">💬</button>
-        <button class="btn small" id="skipBtn">Skip <img class="ic" src="assets/ui/skip.png" alt=""></button>
+        <button class="btn small" id="skipBtn">Skip <img class="ic" src="assets/ui/skip.webp" alt=""></button>
       </div>
     </div>
     <div class="arena">
@@ -93,7 +115,7 @@
     <div id="battleResult" class="battle-result" hidden>
       <div id="resultCard" class="result-card">
         <div id="duelScore" class="duel-score" hidden></div>
-        <div class="result-emblem"><img id="resultEmblem" src="assets/ui/trophy.png" alt="" /></div>
+        <div class="result-emblem"><img id="resultEmblem" src="assets/ui/trophy.webp" alt="" /></div>
         <div id="resultBanner" class="result-banner"></div>
         <div id="resultSub" class="result-sub"></div>
         <button class="btn big primary" id="continueBtn">Continue ▶</button>
@@ -127,7 +149,7 @@
   <!-- DUEL LOBBY -->
   <section id="duel" class="screen">
     <div class="title-card">
-      <img class="duel-hero" src="assets/ui/online-duel.png" alt="Online duel" />
+      <img class="duel-hero" src="assets/ui/online-duel.webp" alt="Online duel" />
       <h1>Online Duel</h1>
       <p class="tag" id="duelTag">Share a <b>room code</b> — <b>6 lives</b> each, last standing wins.</p>
       <input id="duelCode" class="duel-input" maxlength="6" placeholder="ROOM CODE" autocapitalize="characters" autocomplete="off" />
@@ -140,7 +162,7 @@
 
   <section id="local" class="screen">
     <div class="title-card">
-      <img class="duel-hero" src="assets/ui/duel-icon.png" alt="Local" />
+      <img class="duel-hero" src="assets/ui/duel-icon.webp" alt="Local" />
       <h1>Local Duel</h1>
       <p class="tag">Same Wi-Fi, phone-to-phone. One player <b>Hosts</b>, the other <b>Joins</b> with the code.</p>
       <input id="localName" class="duel-input" maxlength="12" placeholder="Your name" autocomplete="off" />
@@ -199,6 +221,7 @@
       <button class="btn" id="settingsFeedback">Give feedback</button>
       <button class="btn" id="settingsEasy">Easy mode: Off</button>
       <button class="btn" id="settingsSound">Sound: On</button>
+      <button class="btn" id="settingsGfx">Graphics: Auto (High)</button>
       <button class="btn ghostbtn" id="settingsClose">Close</button>
     </div>
   </div>
@@ -237,7 +260,7 @@
       <h2>Give feedback</h2>
       <p class="tag" style="margin-bottom:10px">Tell us what you think — bugs, ideas, what's fun (or not).</p>
       <textarea id="fbText" class="fb-text" maxlength="1000" placeholder="What would make this more fun? Tip: tap the mic on your phone keyboard to talk."></textarea>
-      <button class="btn small fb-mic" id="fbMic" hidden><img class="ic" src="assets/ui/mic.png" alt=""> Speak</button>
+      <button class="btn small fb-mic" id="fbMic" hidden><img class="ic" src="assets/ui/mic.webp" alt=""> Speak</button>
       <div id="fbStatus" class="hint"></div>
       <button class="btn big primary" id="fbSend">Send feedback</button>
       <button class="btn ghostbtn" id="fbClose">Close</button>
@@ -249,25 +272,25 @@
     <div class="modal-card howto">
       <h2>How to play</h2>
       <ul>
-        <li>Each turn you get <b>10 <img class="ic" src="assets/ui/coin.png" alt="gold"></b> to spend in the shop. It doesn't carry over.</li>
+        <li>Each turn you get <b>10 <img class="ic" src="assets/ui/coin.webp" alt="gold"></b> to spend in the shop. It doesn't carry over.</li>
         <li>Every Trinkling shows two chips: a <b>grey Attack</b> and a <b>red Health</b> (X / Y). So "+2/+2" means +2 attack and +2 health.</li>
-        <li><b>Tap a shop Trinkling</b>, then <b>tap an empty squad slot</b> to buy it (<span id="howBuyCost">3</span> <img class="ic" src="assets/ui/coin.png" alt="gold">).</li>
+        <li><b>Tap a shop Trinkling</b>, then <b>tap an empty squad slot</b> to buy it (<span id="howBuyCost">3</span> <img class="ic" src="assets/ui/coin.webp" alt="gold">).</li>
         <li>Tap a squad Trinkling, then another slot to <b>reorder</b> — the <b>rightmost one fights first ▶</b>.</li>
         <li>Buy <b>copies of the same</b> Trinkling to <b>combine</b> them (bigger stats + it levels up), or drop <b>two different ones</b> together to <b>fuse</b> a brand-new Trinkling.</li>
-        <li><b>Items</b> are bonuses you buy (<span id="howSnackCost">2</span> <img class="ic" src="assets/ui/coin.png" alt="gold">) and feed to a Trinkling for a <b>permanent</b> boost.</li>
+        <li><b>Items</b> are bonuses you buy (<span id="howSnackCost">2</span> <img class="ic" src="assets/ui/coin.webp" alt="gold">) and feed to a Trinkling for a <b>permanent</b> boost.</li>
         <li>Tap a squad Trinkling and hit <b>Sell</b> to get some gold back.</li>
         <li><b>Reroll</b> the shop for new Trinklings, or select a shop item and hit <b>Freeze</b> to keep it next turn (free).</li>
         <li>Hit <b>End Turn</b> to start a <b>fight</b> — the auto-battle. Boosts "for the fight" last one battle; <b>(permanent)</b> ones stay forever.</li>
-        <li><b>Win 10 fights</b> to collect 10 <img class="ic" src="assets/ui/trophy.png" alt="trophies"> and take the Cup!</li>
-        <li>Lose a fight, lose a <img class="ic" src="assets/ui/heart.png" alt="life">. At <b>0</b> the game ends — no Trinkling is ever truly hurt.</li>
+        <li><b>Win 10 fights</b> to collect 10 <img class="ic" src="assets/ui/trophy.webp" alt="trophies"> and take the Cup!</li>
+        <li>Lose a fight, lose a <img class="ic" src="assets/ui/heart.webp" alt="life">. At <b>0</b> the game ends — no Trinkling is ever truly hurt.</li>
       </ul>
       <button class="btn big primary" id="howClose">Got it!</button>
     </div>
   </div>
 
 </div>
-<audio id="bgm" loop preload="auto" src="assets/audio/music.m4a"></audio>
-<audio id="bgm-battle" loop preload="auto" src="assets/audio/battle-music.m4a"></audio>
-<script type="module" src="public/app.js"></script>
+<audio id="bgm" loop preload="none" src="assets/audio/music.m4a"></audio>
+<audio id="bgm-battle" loop preload="none" src="assets/audio/battle-music.m4a"></audio>
+<script type="module" src="public/app.js?v=d35b404d0b"></script>
 </body>
 </html>

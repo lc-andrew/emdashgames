@@ -1,11 +1,11 @@
 /* Trinklings — the "Twilight court" identity (see art/UI-STYLE.md). Dark indigo ground, moonlit-silver
    text, engraved amethyst/tide-glow metal chrome framing the painterly RPG Trinklings. No gold. */
-@font-face { font-family: 'Cinzel'; src: url('../assets/fonts/Cinzel.ttf') format('truetype'); font-weight: 400 900; font-display: swap; }
-@font-face { font-family: 'Cinzel Decorative'; src: url('../assets/fonts/CinzelDecorative-Bold.ttf') format('truetype'); font-weight: 700; font-display: swap; }
+@font-face { font-family: 'Cinzel'; src: url('../assets/fonts/Cinzel.woff2') format('woff2'); font-weight: 400 900; font-display: swap; }
+@font-face { font-family: 'Cinzel Decorative'; src: url('../assets/fonts/CinzelDecorative-Bold.woff2') format('woff2'); font-weight: 700; font-display: swap; }
 /* Font system (standardised): Nunito = body/UI text · Cinzel = all display (headings, labels, buttons,
    HUD, banners) · Cinzel Decorative = hero titles (h1) + the battle-result stamp. (Metamorphous + Grenze
    Gotisch were loaded but never used — removed.) */
-@font-face { font-family: 'Nunito'; src: url('../assets/fonts/Nunito.ttf') format('truetype'); font-weight: 200 1000; font-display: swap; }
+@font-face { font-family: 'Nunito'; src: url('../assets/fonts/Nunito.woff2') format('woff2'); font-weight: 200 1000; font-display: swap; }
 
 :root {
   /* PIXELMON.AI palette — bright, airy fantasy-adventure: sky-blue ground, white/cream panels, dark-slate ink */
@@ -42,13 +42,17 @@ body {
   font-family: 'Nunito', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
   color: var(--ink); font-weight: 600;
   /* the painted RPG landscape — a lush valley of mossy stone bricks, sits behind all the glass UI */
-  background: var(--bg-deep) url('../assets/ui/bg-shop.png') center center / cover no-repeat fixed;
+  background: var(--bg-deep);   /* the painted landscape itself is the fixed body::after layer below */
   overflow: hidden; user-select: none; -webkit-user-select: none;
 }
 /* a gentle vignette + top light so glass panels read against the vivid scene */
 body::before { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 0;
   background: radial-gradient(120% 80% at 50% 0%, rgba(255,255,255,.22), transparent 55%),
               radial-gradient(140% 120% at 50% 120%, rgba(20,40,70,.28), transparent 60%); }
+/* the painted landscape (bg-shop) on its own position:fixed layer at z-index -1 (root stacking context → under the
+   vignette and #app). Same look as the old `background-attachment: fixed`, without its repaint/main-thread cost. */
+body::after { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background: url('../assets/ui/bg-shop.webp') center center / cover no-repeat; }
 #app { position: relative; z-index: 1; height: 100dvh; max-width: 560px; margin: 0 auto; }
 
 h1, h2 { font-family: 'Cinzel', Georgia, serif; font-weight: 800; text-transform: uppercase; letter-spacing: .09em; color: var(--gilt-deep); }
@@ -59,7 +63,7 @@ h1, h2 { font-family: 'Cinzel', Georgia, serif; font-weight: 800; text-transform
 /* ---- screens ---- */
 .screen { position: absolute; inset: 0; display: none; flex-direction: column; padding: calc(env(safe-area-inset-top) + 8px) 12px calc(env(safe-area-inset-bottom) + 12px); overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; }
 .screen.show { display: flex; animation: draftIn .45s var(--ease-soft); }
-@keyframes draftIn { from { opacity: 0; filter: saturate(.4) contrast(.9); transform: translateY(5px); } }
+@keyframes draftIn { from { opacity: 0; transform: translateY(5px); } }   /* (a saturate/contrast filter here forced a full-screen filter pass) */
 
 /* ---- buttons: engraved metal plates; press-lip stamp ---- */
 .btn {
@@ -74,9 +78,11 @@ h1, h2 { font-family: 'Cinzel', Georgia, serif; font-weight: 800; text-transform
   color: #ffffff; border: 2px solid rgba(255,255,255,.82); border-radius: var(--r-lg);
   box-shadow: 0 5px 0 #0b1230, 0 9px 20px rgba(10,20,50,.5), 0 0 24px rgba(70,110,200,.4), inset 0 2px 0 rgba(255,255,255,.3), inset 0 -3px 7px rgba(6,12,30,.5);
   font-family: 'Nunito', sans-serif; text-transform: uppercase; letter-spacing: .07em; text-shadow: 0 1px 0 rgba(6,12,30,.7), 0 2px 5px rgba(4,8,20,.5); }
-.btn.primary::after { content: ""; position: absolute; top: 0; left: -60%; width: 42%; height: 100%; pointer-events: none; transform: skewX(-18deg);
+.btn.primary::after { content: ""; position: absolute; top: 0; left: -60%; width: 42%; height: 100%; pointer-events: none; transform: translateX(0) skewX(-18deg);
   background: linear-gradient(105deg, transparent, rgba(255,255,255,.5), transparent); animation: btnShine 3.6s ease-in-out infinite; }
-@keyframes btnShine { 0%, 60% { left: -60%; } 84%, 100% { left: 135%; } }
+/* the sweep moves by TRANSFORM (compositor-only; animating `left` re-laid-out + repainted forever): left -60% → 135% of
+   the button = 195% ÷ the sheen's own 42% width = translateX(464.29%) */
+@keyframes btnShine { 0%, 60% { transform: translateX(0) skewX(-18deg); } 84%, 100% { transform: translateX(464.29%) skewX(-18deg); } }
 .btn.primary:active { transform: translateY(4px); box-shadow: 0 1px 0 #0b1230, 0 3px 10px rgba(10,20,50,.5), 0 0 16px rgba(70,110,200,.35), inset 0 2px 0 rgba(255,255,255,.28); }
 .btn.big { padding: 15px 20px; font-size: 1.05rem; }
 .btn.danger, .btn.sell { background: linear-gradient(180deg,#8a3550,#5e2440); color: #ffdfe6; border-color: var(--coral-deep); box-shadow: 0 4px 0 #4a1c33, var(--sh-soft), inset 0 1px 0 rgba(255,255,255,.18); }
@@ -154,7 +160,7 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 .mute-corner { position: absolute; top: 12px; right: 12px; }
 
 /* ---- HUD: engraved ledger strip ---- */
-.hud { display: flex; align-items: center; gap: 5px; background: var(--glass-hi); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); border: 1px solid var(--glass-brd); border-radius: 999px; padding: 6px 9px; box-shadow: var(--frame), var(--sh-soft); flex-shrink: 0; }
+.hud { contain: layout style; display: flex; align-items: center; gap: 5px; background: var(--glass-hi); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); border: 1px solid var(--glass-brd); border-radius: 999px; padding: 6px 9px; box-shadow: var(--frame), var(--sh-soft); flex-shrink: 0; }
 /* HUD indicators are BARE (no per-item bubble) — icon + number only, sitting on the frosted HUD strip */
 /* every HUD item shares ONE font + size; only the accent colour differs (per feedback) */
 .hud-item { display: flex; align-items: center; gap: 4px; font-weight: 900; font-size: .95rem; padding: 3px 6px; border-radius: 999px; background: none; color: var(--ink); }
@@ -175,7 +181,7 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
    card is selected (coach hides, detail shows) — they swap in place instead of pushing the squad down. */
 .coach { min-height: 0; flex-shrink: 0; margin: 10px 2px 0; }
 /* FIXED height (not just min): the description slot never grows, so tapping a card can't shove the board */
-.coach.show, .card-detail { height: 108px; box-sizing: border-box; overflow: hidden; }
+.coach.show, .card-detail { height: 108px; box-sizing: border-box; overflow: hidden; contain: layout style; }
 .card-detail { overflow-y: auto; -webkit-overflow-scrolling: touch; }   /* long ability text scrolls instead of clipping */
 .coach.show { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
 .card-detail .cd-flavor { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
@@ -222,7 +228,8 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 
 /* ---- cards (painterly portrait in an engraved frame; border = tier) ---- */
 .card { position: relative; background: var(--glass); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); border-radius: var(--r-md); box-shadow: var(--frame), var(--sh-soft); padding: 4px 3px 4px; text-align: center; cursor: pointer; min-height: 86px; display: flex; flex-direction: column;
-  border: 2px solid var(--tier1); transition: transform .14s var(--ease-bounce), box-shadow .14s, outline-color .14s; outline: 3px solid transparent; outline-offset: -1px; }
+  border: 2px solid var(--tier1); transition: transform .14s var(--ease-bounce), box-shadow .14s, outline-color .14s; outline: 3px solid transparent; outline-offset: -1px;
+  contain: layout style; }   /* layout containment only — it never clips the 1.61× pet art that overflows the card */
 .card.t1 { border-color: var(--tier1); } .card.t2 { border-color: var(--tier2); } .card.t3 { border-color: var(--tier3); }
 .card.t4 { border-color: var(--tier4); } .card.t5 { border-color: var(--tier5); } .card.t6 { border-color: var(--tier6); box-shadow: 0 0 11px rgba(192,140,255,.55), var(--sh-soft); }
 .card.empty { background: rgba(157,180,255,.06); border-style: dashed; border-color: var(--rule-soft); box-shadow: none; cursor: default; }
@@ -236,7 +243,7 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 .card.frozen .art-wrap { position: relative; }
 /* the painted ICE-CUBE graphic encases the frozen pet at reduced opacity, bobbing in sync with it */
 .card.frozen .art-wrap::after { content: ""; position: absolute; inset: 0; z-index: 4; pointer-events: none; --pet-scale: 1.61;
-  background: url('../assets/ui/icecube.png') center/contain no-repeat; opacity: .62;
+  background: url('../assets/ui/icecube.webp') center/contain no-repeat; opacity: .62;
   transform: scale(var(--pet-scale)); transform-origin: 50% 100%; animation: petIdle 3.2s var(--ease-soft) infinite; }
 .card:nth-child(3n).frozen .art-wrap::after { animation-delay: -.7s; }
 .card:nth-child(3n+1).frozen .art-wrap::after { animation-delay: -1.7s; }
@@ -310,7 +317,7 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 /* ---- battle: two grassy ledges + a central clash pit (bg-battle) ---- */
 /* bg fills 100%×100% (not cover) so the two grass LEDGES land at the SAME screen % on every device — that's
    what keeps each team standing ON its ledge (not floating in the pit) across phones of different heights. */
-#battle { justify-content: flex-start; background: url('../assets/ui/bg-battle.png') center center / 100% 100% no-repeat; }
+#battle { justify-content: flex-start; background: url('../assets/ui/bg-battle.webp') center center / 100% 100% no-repeat; }
 .battle-top { display: flex; align-items: flex-start; justify-content: flex-end; gap: 8px; padding: 6px 2px; position: relative; z-index: 3; }
 /* the label holds the rival's TAUNT (a full sentence) — let it wrap and cap its width so it never crowds
    the transport buttons off the right edge on narrow phones. */
@@ -359,7 +366,7 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
   transform: rotate(var(--ang,0deg)) translateX(-40px); background: linear-gradient(90deg, transparent, var(--hue,#ffd66a) 92%); opacity: .8; filter: blur(1px); }
 /* battle pets stand boxless on the field, exactly like the shop/squad pets (no plate, no disc) */
 .bcard { width: 72px; flex-shrink: 0; background: none; box-shadow: none; padding: 0; text-align: center; position: relative; border: none;
-  transition: transform .18s var(--ease-bounce), opacity .3s var(--ease-soft); animation: pop .32s var(--ease-bounce) both; }
+  transition: transform .18s var(--ease-bounce), opacity .3s var(--ease-soft); animation: pop .32s var(--ease-bounce) backwards; }
 .bcard .art { height: 62px; background: none; overflow: visible; display: flex; align-items: flex-end; justify-content: center; position: relative; z-index: 0; animation: battleBob 2.9s var(--ease-soft) infinite; }   /* pets stay alive — gentle bob on bench AND while fighting (per feedback); a container-level translateY so it layers cleanly over the card's staging/FLIP transforms */
 @keyframes battleBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2.4px); } }
 .side .bcard:nth-child(2n) .art { animation-delay: -1s; }
@@ -370,7 +377,7 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 /* STAGED FIGHTERS in the pit: force BOTH sides to ONE medium perspective scale so the two arena fighters are
    the SAME size — smaller than your bench (--side-scale 1), larger than the enemy bench (.7). (Feedback: perspective.) */
 .side.enemy .bcard.in-arena, .side.mine .bcard.in-arena { --side-scale: .75; }
-.bcard .art img { position: relative; z-index: 1; width: 100%; height: 100%; object-fit: contain; transform: scale(calc(1.49 * var(--side-scale, 1))); transform-origin: 50% 100%; filter: drop-shadow(0 3px 4px rgba(20,40,70,.34)); transition: transform var(--persp-dur, .5s) cubic-bezier(.25,-0.35,.4,1); }
+.bcard .art img { position: relative; z-index: 1; width: 100%; height: 100%; object-fit: contain; transform: scale(calc(1.49 * var(--side-scale, 1))); transform-origin: 50% 100%; --bsh: drop-shadow(0 3px 4px rgba(20,40,70,.34)); filter: var(--bsh); transition: transform var(--persp-dur, .5s) cubic-bezier(.25,-0.35,.4,1); }
 .bcard .art::after { content: ""; position: absolute; left: 50%; bottom: 2px; transform: translateX(-50%) scale(var(--side-scale, 1)); width: 74%; height: 9px; border-radius: 50%; background: radial-gradient(ellipse, rgba(12,30,54,.4), transparent 70%); z-index: -1; }
 .bcard .art .initial { font-weight: 900; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.4); }
 /* battle stat = ONE flat pill "atk / hp", exactly like the shop/squad board (.a/.h kept for live setStat) */
@@ -381,7 +388,7 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 /* a hit FLASHES the struck pet (filter only) — never a transform, so it can't fight the staged/lunge transform
    and it doesn't shake the whole arena (per feedback: only the fighters react) */
 .bcard.hit .art img { animation: hitFlash .25s ease; }
-@keyframes hitFlash { 0%,100% { filter: drop-shadow(0 3px 4px rgba(20,40,70,.34)); } 45% { filter: drop-shadow(0 3px 4px rgba(20,40,70,.34)) brightness(1.75) saturate(1.35); } }
+@keyframes hitFlash { 0%,100% { filter: var(--bsh); } 45% { filter: var(--bsh) brightness(1.75) saturate(1.35); } }
 /* death punch: a quick scale-up + fade (paired with a shard puff spawned by JS) */
 .bcard.faint { opacity: 0; transform: scale(1.28) rotate(-4deg); transition: transform .26s var(--ease-bounce), opacity .3s var(--ease-soft); }
 /* shard/flash puff on a kill (positioned over the fallen unit by JS) */
@@ -399,8 +406,11 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 @keyframes dirtFly { 0% { opacity: 1; transform: rotate(var(--a)) translateX(0) translateY(0); } 70% { opacity: .95; } 100% { opacity: 0; transform: rotate(var(--a)) translateX(var(--d)) translateY(26px); } }
 /* enemy pet staged in the pit is flipped to FACE you (art only — stats stay readable) */
 .bcard.face-left .art { transform: scaleX(-1); }
-.bcard.in-arena { filter: drop-shadow(0 8px 8px rgba(20,35,60,.4)); }
-.bcard.in-arena .art img { will-change: transform; }
+.bcard.in-arena { filter: none; }
+/* the staged fighter's deeper shadow rides on the pet IMG (painted into its bobbing .art layer) instead of a filter on
+   the whole .bcard — that filter sat over a composited child (a filter render pass every frame), and the old
+   will-change on the img doubled it. 7px ≈ the old 8px in card space ÷ the img's 1.49 × .75 stage scale. */
+.bcard.in-arena .art img { --bsh: drop-shadow(0 3px 4px rgba(20,40,70,.34)) drop-shadow(0 7px 7px rgba(20,35,60,.4)); }
 /* a simple SILVER SHIELD shape (per feedback) — number centred inside, no emoji */
 .shieldbadge { position: absolute; top: -8px; left: -7px; z-index: 6; width: 19px; height: 21px; display: flex; align-items: center; justify-content: center;
   color: #1a2740; font-size: .56rem; font-weight: 900; line-height: 1; padding-bottom: 2px;
@@ -418,7 +428,7 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 .bcard.abil-fire::after { content: "✨"; position: absolute; top: -4px; left: 50%; font-size: 1.05rem; z-index: 6; pointer-events: none; animation: abilPopUp .76s ease-out forwards; }
 .bcard.abil-fire .art img { animation: abilGlow .6s ease-out; }
 @keyframes abilPopUp { 0% { opacity: 0; transform: translate(-50%, 6px) scale(.5); } 25% { opacity: 1; transform: translate(-50%, -10px) scale(1.15); } 100% { opacity: 0; transform: translate(-50%, -26px) scale(1); } }
-@keyframes abilGlow { 0%, 100% { filter: drop-shadow(0 3px 4px rgba(20,40,70,.34)); } 40% { filter: drop-shadow(0 3px 4px rgba(20,40,70,.34)) drop-shadow(0 0 11px rgba(255,224,130,.95)) brightness(1.16); } }
+@keyframes abilGlow { 0%, 100% { filter: var(--bsh); } 40% { filter: var(--bsh) drop-shadow(0 0 11px rgba(255,224,130,.95)) brightness(1.16); } }
 /* drifting DUST in the fighting pit — an animated layer over the painted pit band so it feels alive */
 .arena::after { content: ""; position: absolute; left: 0; right: 0; top: 34%; height: 40%; z-index: 0; pointer-events: none; filter: blur(3px);
   background: radial-gradient(70px 30px at 28% 38%, rgba(232,216,188,.5), transparent 72%), radial-gradient(90px 38px at 72% 62%, rgba(232,216,188,.42), transparent 72%), radial-gradient(56px 26px at 52% 26%, rgba(232,216,188,.46), transparent 72%);
@@ -522,7 +532,16 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 #game.waiting .squad-wrap, #game.waiting .shop-wrap, #game.waiting .actionbar { pointer-events: none; opacity: .8; }
 /* …but the End-turn/Unready button MUST stay tappable while waiting, or you can't un-ready (per feedback). */
 #game.waiting .actionbar #endBtn { pointer-events: auto; opacity: 1; }
-@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; } }
+/* reduced motion: the DECORATIVE loops stop (idle bobs, shine sweeps, pulses, dust drift, screen shake). Functional
+   transitions (battle staging, FLIP glides) and one-shot feedback stay so the game still reads. */
+@media (prefers-reduced-motion: reduce) {
+  .logo, #gameover.defeat .logo, .duel-hero, .title-creatures .tc, .card:not(.flash-pulse) .art img, .card.frozen .art-wrap::after,
+  .bcard .art, .btn.primary::after, .merge-badge, .card.target-armed::before, .card.empty.target-armed::after,
+  .card.empty.drop-target::before, .arena::after, .arena.shake { animation: none !important; }
+  .card.mergeable:not(.evolving):not(.merging):not(.invalid), .card.fusable:not(.evolving):not(.fusing-cine):not(.invalid) { animation: none !important; }
+  .btn.primary::after { opacity: 0; }
+  .card.target-armed:not(.empty)::before { opacity: .45 !important; }   /* a steady glow instead of the breathing one */
+}
 
 /* ---- level-progress bar (under a card's stats) ---- */
 .xpbar { position: relative; height: 11px; margin: 3px 2px 1px; border-radius: 999px; background: rgba(157,180,255,.14); border: 1px solid var(--panel-line); overflow: hidden; }
@@ -604,7 +623,15 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 
 /* ---- title backdrop: soft, minimal painterly sky (simplified) ---- */
 /* ---- redesigned title: layered hero (wordmark + creatures over a painted scene) ---- */
-#title { background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(20,45,75,.34)), url('../assets/ui/hero-scene.png') center/cover no-repeat fixed; justify-content: flex-start; }
+#title { justify-content: flex-start; }
+/* the hero scene on a position:fixed layer behind the title content (was `background-attachment: fixed`): sized to the
+   viewport exactly like before and clipped to the 560px #app column (a no-op on phones). The title's entry fade skips
+   the 5px rise — a transform on #title would re-anchor this fixed layer to the column mid-animation on wide screens. */
+#title::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  -webkit-clip-path: inset(0 max(0px, calc(50% - 280px))); clip-path: inset(0 max(0px, calc(50% - 280px)));
+  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(20,45,75,.34)), url('../assets/ui/hero-scene.webp') center/cover no-repeat; }
+#title.show { animation-name: draftInFade; }
+@keyframes draftInFade { from { opacity: 0; } }
 .title-settings { position: absolute; top: calc(env(safe-area-inset-top) + 10px); right: 12px; z-index: 6; }
 .title-hero { position: relative; width: 100%; flex: 1 1 auto; min-height: 0; display: flex; align-items: center; justify-content: center; margin-top: 5vh; }
 .title-wordmark { width: min(92%, 470px); filter: drop-shadow(0 6px 20px rgba(0,0,0,.55)); z-index: 2; }
@@ -630,7 +657,7 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 .codex-fsyn { font-size: .66rem; color: var(--ink-soft); line-height: 1.35; }
 .codex-fcount { font-size: .64rem; font-weight: 800; color: var(--glow); margin-top: 4px; }
 .codex-grid { display: flex; flex-direction: column; gap: 7px; }
-.codex-entry { display: flex; gap: 9px; background: var(--panel); border: 1.5px solid var(--panel-line); border-radius: var(--r-md); padding: 7px; align-items: flex-start; position: relative; }
+.codex-entry { contain: layout style; display: flex; gap: 9px; background: var(--panel); border: 1.5px solid var(--panel-line); border-radius: var(--r-md); padding: 7px; align-items: flex-start; position: relative; }
 .codex-entry.unseen { opacity: .55; }
 .codex-art { width: 56px; height: 56px; flex-shrink: 0; border-radius: var(--r-sm); overflow: hidden; background: radial-gradient(circle at 50% 34%, #ffffff, var(--tint, #dceeff)); }
 .codex-art img { width: 100%; height: 100%; object-fit: cover; }
@@ -650,8 +677,12 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 /* battle cards: aura + crown only — NO transform (a class transform here would clobber .bcard.faint's
    death animation, since these rules come later in the file). */
 /* leveled battle pets glow via a drop-shadow on the ART (no box — pets are boxless on the field) */
-.bcard.evo2 .art img { filter: drop-shadow(0 3px 4px rgba(20,40,70,.34)) drop-shadow(0 0 6px rgba(205,214,244,.85)); }
-.bcard.evo3 .art img { filter: drop-shadow(0 3px 4px rgba(20,40,70,.34)) drop-shadow(0 0 8px rgba(154,108,242,.95)); }
+.bcard.evo2 .art img { --bsh: drop-shadow(0 3px 4px rgba(20,40,70,.34)) drop-shadow(0 0 6px rgba(205,214,244,.85)); }
+.bcard.evo3 .art img { --bsh: drop-shadow(0 3px 4px rgba(20,40,70,.34)) drop-shadow(0 0 8px rgba(154,108,242,.95)); }
+.bcard.in-arena.evo2 .art img { --bsh: drop-shadow(0 3px 4px rgba(20,40,70,.34)) drop-shadow(0 0 6px rgba(205,214,244,.85)) drop-shadow(0 7px 7px rgba(20,35,60,.4)); }
+.bcard.in-arena.evo3 .art img { --bsh: drop-shadow(0 3px 4px rgba(20,40,70,.34)) drop-shadow(0 0 8px rgba(154,108,242,.95)) drop-shadow(0 7px 7px rgba(20,35,60,.4)); }
+/* battle fused art follows the same shadow chain (the generic .art.fused .fused-solo rule would otherwise win) */
+.bcard .art.fused .fused-solo { filter: var(--bsh); }
 .bcard.evo3::after { content: "\2655"; position: absolute; top: -10px; left: -3px; z-index: 4; font-size: .8rem; line-height: 1; color: var(--gilt-bloom); text-shadow: 0 1px 3px #0a0c1c, 0 0 8px rgba(154,108,242,.9); pointer-events: none; }
 
 /* Lv{n} chip — only shown when a leveled ability's shape can't be cleanly number-scaled (a safety net;
@@ -816,7 +847,13 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 .card.target-armed { transform: scale(1.08); z-index: 5; }
 .card.target-armed::after { content: ""; position: absolute; inset: -5px; border-radius: var(--r-md); border: 3px solid #ffe27a;
   background: radial-gradient(circle at 50% 45%, rgba(255,226,122,.32), rgba(255,210,80,.08) 70%, transparent);
-  box-shadow: 0 0 18px 5px rgba(245,197,66,.85), inset 0 0 12px rgba(255,240,190,.6); pointer-events: none; z-index: 4; animation: armedPulse .85s var(--ease-soft) infinite; }
+  box-shadow: 0 0 12px 3px rgba(245,197,66,.65), inset 0 0 10px rgba(255,240,190,.5); pointer-events: none; z-index: 4; }
+/* the pulse = a brighter glow ring on ::before whose OPACITY breathes (compositor-only — animating box-shadow repainted
+   every frame). An EMPTY drag-hover slot uses ::before for its drop arrow, so it keeps the box-shadow pulse. */
+.card.target-armed:not(.empty)::before { content: ""; position: absolute; inset: -5px; border-radius: var(--r-md); border: 3px solid transparent; pointer-events: none; z-index: 4;
+  box-shadow: 0 0 24px 7px rgba(255,214,102,.95), inset 0 0 14px rgba(255,240,190,.7); opacity: 0; animation: armedGlow .85s var(--ease-soft) infinite; }
+.card.empty.target-armed::after { animation: armedPulse .85s var(--ease-soft) infinite; }
+@keyframes armedGlow { 0%,100% { opacity: 0; } 50% { opacity: .9; } }
 @keyframes armedPulse { 0%,100% { box-shadow: 0 0 12px 3px rgba(245,197,66,.65), inset 0 0 10px rgba(255,240,190,.5); } 50% { box-shadow: 0 0 24px 7px rgba(255,214,102,.95), inset 0 0 14px rgba(255,240,190,.7); } }
 
 /* tier-unlock modal */
@@ -840,8 +877,10 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 .card.drag-source { opacity: .4; }                            /* the picked-up card dims while the ghost carries it */
 .card.drag-ok { outline: 2px dashed var(--glow); outline-offset: 1px; box-shadow: 0 0 0 3px rgba(157,180,255,.4), 0 0 14px 2px rgba(157,180,255,.45); }   /* valid Swap/Feed drop onto an occupied pet */
 /* pets slide in at the start of a fight (SAP-style entrance) */
-.bcard.slide-mine { animation: slideMine .42s var(--ease-bounce) both; }
-.bcard.slide-enemy { animation: slideEnemy .42s var(--ease-bounce) both; }
+/* fill `backwards`, not `both`: a held forwards-fill kept every bench card on a compositor animation (a render pass
+   each, every frame). No delay + an implicit end keyframe → pixel-identical. */
+.bcard.slide-mine { animation: slideMine .42s var(--ease-bounce) backwards; }
+.bcard.slide-enemy { animation: slideEnemy .42s var(--ease-bounce) backwards; }
 @keyframes slideMine { from { opacity: 0; transform: translateX(-40px); } }
 @keyframes slideEnemy { from { opacity: 0; transform: translateX(40px); } }
 
@@ -900,3 +939,59 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 /* Online connection indicator dot (green = online) */
 .online-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #9aa7b3; vertical-align: middle; margin-right: 4px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.15); }
 .online-dot.on { background: #3ecb6e; box-shadow: 0 0 7px rgba(62,203,110,.9), inset 0 0 0 1px rgba(255,255,255,.4); }
+
+/* ================= GRAPHICS TIER: LITE (html.gfx-lite) =================
+   Weak-GPU tier, same art direction. No backdrop-filter anywhere: the frosted panels become denser tinted fills that
+   still read as glass over the painted scene (borders, frames and radii unchanged). Nothing that animates carries a
+   filter, nothing uses a blend mode; motion stays transform/opacity-only. No class (or gfx-high) = the full look. */
+html.gfx-lite {
+  --glass-blur: none;                               /* every `backdrop-filter: var(--glass-blur)` panel → none */
+  --glass: rgba(255,255,255,.72); --glass-hi: rgba(249,253,255,.86); --glass-lo: rgba(255,255,255,.58);
+  --glass-dk: rgba(20,36,58,.8); --glass-dk-hi: rgba(28,48,76,.88);
+}
+/* glass panels with literal fills: denser, with a soft top sheen so they still feel like glass, not flat plates */
+.gfx-lite .title-card, .gfx-lite .modal-card { background: linear-gradient(170deg, rgba(246,252,255,.985) 0%, rgba(233,245,252,.98) 55%, rgba(230,246,240,.98) 100%); -webkit-backdrop-filter: none; backdrop-filter: none; }
+.gfx-lite #gameover.defeat .title-card { background: linear-gradient(180deg, rgba(255,250,248,.94), rgba(255,241,237,.9)); }
+.gfx-lite #title .title-card { -webkit-backdrop-filter: none; backdrop-filter: none; }
+.gfx-lite .hud, .gfx-lite .coach.show, .gfx-lite .card-detail, .gfx-lite .hold-tip {
+  background: linear-gradient(180deg, rgba(255,255,255,.9), rgba(241,249,255,.84)); }
+.gfx-lite .result-card { background: linear-gradient(180deg, rgba(250,253,255,.96), rgba(236,245,251,.95)); }
+.gfx-lite .faction-card:not(.sel) { background: linear-gradient(180deg, rgba(255,255,255,.88), rgba(238,248,255,.8)); }
+.gfx-lite .btn.glass { background: linear-gradient(180deg, rgba(255,255,255,.84), rgba(232,244,250,.74)); -webkit-backdrop-filter: none; backdrop-filter: none; }
+.gfx-lite .battle-actions .btn.small { background: linear-gradient(180deg, rgba(255,255,255,.9), rgba(238,247,253,.84)); }
+.gfx-lite .battle-actions .btn.small.on { background: rgba(95,206,143,.86); }
+.gfx-lite .actionbar .btn, .gfx-lite .actionbar .btn.roll, .gfx-lite .actionbar .btn.sell, .gfx-lite .actionbar .btn.freezebtn,
+.gfx-lite .actionbar .btn.action.swapbtn { background: linear-gradient(180deg, rgba(44,58,78,.76), rgba(20,32,50,.8)); }
+.gfx-lite .actionbar .btn.primary { background: linear-gradient(180deg, rgba(54,70,94,.84), rgba(26,40,62,.88)); }
+.gfx-lite .actionbar .btn.action { background: linear-gradient(180deg, rgba(168,132,48,.88), rgba(22,38,60,.9)); }
+.gfx-lite .actionbar .btn.freezebtn.on { background: linear-gradient(180deg, rgba(92,186,236,.9), rgba(52,140,196,.9)); }
+/* empty slots: a pale frosted tint + inner sheen instead of blurring the grass behind them */
+.gfx-lite .card.empty { background: linear-gradient(180deg, rgba(255,255,255,.26), rgba(236,247,255,.14)); box-shadow: inset 0 1px 0 rgba(255,255,255,.35); }
+.gfx-lite .battle-result { background: rgba(10,16,34,.66); -webkit-backdrop-filter: none; backdrop-filter: none; }
+
+/* no filter on anything that animates (bobbing art, drag ghost, drop arrow, projectile tail, dust) — depth comes from
+   the existing static contact shadows under each pet */
+.gfx-lite .card .art img, .gfx-lite .art.fused .fused-solo, .gfx-lite .title-creatures .tc, .gfx-lite .logo, .gfx-lite .duel-hero,
+.gfx-lite .drag-ghost, .gfx-lite .card.empty.drop-target::before, .gfx-lite .projectile::before, .gfx-lite .arena::after { filter: none; }
+.gfx-lite .bcard .art img { --bsh: none; }
+/* level glows stay (they carry information) — static, painted once into the bobbing layer */
+.gfx-lite .bcard.evo2 .art img { --bsh: drop-shadow(0 0 6px rgba(205,214,244,.85)); }
+.gfx-lite .bcard.evo3 .art img { --bsh: drop-shadow(0 0 8px rgba(154,108,242,.95)); }
+/* battle hit = a quick damage blink; ability = a quick size pop (the ✨ still rises); merge flash = a pop */
+.gfx-lite .bcard.hit .art img { animation: hitBlinkLite .25s ease; }
+@keyframes hitBlinkLite { 45% { opacity: .4; } }
+.gfx-lite .bcard.abil-fire .art img { animation: abilPopLite .6s ease-out; }
+@keyframes abilPopLite { 40% { transform: scale(calc(1.68 * var(--side-scale, 1))); } }
+.gfx-lite .card.flash-pulse .art img { animation: flashPopLite .4s ease-out; }
+@keyframes flashPopLite { 0% { transform: scale(calc(var(--pet-scale, 1.24) * 1.16)); } }
+/* merge/fuse target pulse: scale only (an opacity pulse on a card over a composited pet = a render pass per frame) */
+.gfx-lite .card.mergeable, .gfx-lite .card.fusable { animation-name: mergePulseLite; }
+.gfx-lite .card.empty.target-armed::after { animation: none; }   /* the drag-hover ring on an empty slot holds steady (its pulse animates box-shadow) */
+@keyframes mergePulseLite { 0%,100% { transform: scale(1); } 50% { transform: scale(1.18); } }
+/* cinematic fusion without blend modes/blur: softer colour stops so the swirl still reads as light, not paint */
+.gfx-lite .fuse-vortex { mix-blend-mode: normal; filter: none;
+  background: conic-gradient(from 0deg, transparent, rgba(154,108,242,.5), transparent 25%, rgba(143,208,240,.5), transparent 50%, rgba(255,214,102,.55), transparent 75%, rgba(198,169,255,.5), transparent); }
+.gfx-lite .fuse-beam { mix-blend-mode: normal; filter: none; background: radial-gradient(50% 50% at 50% 55%, #fff 0%, rgba(255,246,214,.9) 38%, rgba(255,246,214,.35) 70%, transparent 100%); }
+/* pit dust: no blur (the radial puffs already fade out softly) and it holds still — a drifting layer this big is a
+   full-width redraw every frame on a weak GPU; the pets keep their idle bob so the pit still feels alive */
+.gfx-lite .arena::after { animation: none; opacity: .44; transform: translate(1px, -2px); background: radial-gradient(70px 30px at 28% 38%, rgba(232,216,188,.42), transparent 80%), radial-gradient(90px 38px at 72% 62%, rgba(232,216,188,.36), transparent 80%), radial-gradient(56px 26px at 52% 26%, rgba(232,216,188,.4), transparent 80%); }

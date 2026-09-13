@@ -1,0 +1,12 @@
+/* Trinklings battle attack FX (driven by public/fx.js).
+   Static boxes only: every motion is a Web Animations API transform/opacity animation started by fx.js,
+   so nothing here animates, filters or blends. One .fx-layer per host (default: .arena), clipped to it so an
+   arcing rocket never grows #battle's scroll area or drifts over the transport bar. z-index 8 sits above both
+   .side stacking contexts (z 1, which hold the staged pets) and below .battle-result (12), modals and the hold tip. */
+.fx-layer { position: absolute; left: 0; top: 0; right: 0; bottom: 0; z-index: 8; overflow: hidden; pointer-events: none; contain: strict; }
+.fx-layer.fx-fixed { position: fixed; }
+.fx-root, .fx-m { position: absolute; left: 0; top: 0; width: 0; height: 0; pointer-events: none; }
+.fx-m, .fx-strip { will-change: transform, opacity; }
+.fx-box { position: absolute; overflow: hidden; pointer-events: none; }
+.fx-strip { position: absolute; left: 0; top: 0; height: 100%; max-width: none; max-height: none; margin: 0; padding: 0; border: 0; display: block;
+  pointer-events: none; -webkit-user-select: none; user-select: none; -webkit-user-drag: none; }
