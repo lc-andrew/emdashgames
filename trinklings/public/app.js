@@ -906,9 +906,9 @@ function sparkleRise(uid) { const m = elMap[uid]; if (!m) return; const s = docu
 // The two front pets JUMP into the pit and stand SIDE BY SIDE (you on the left, the enemy on the right,
 // flipped to face you), trade blows there over several seconds with kicked-up dirt, and a KO'd pet is BLOWN
 // off — yours to the left, the enemy's to the right — before the next pet jumps in.
-const STAGE_XOFF = 48, STAGE_Y = 0.5;   // side-by-side offset + vertical anchor (fraction of the pit)
+const STAGE_XOFF = 78, STAGE_Y = 0.5;   // side-by-side offset (further apart) + vertical anchor
 function arenaBox() { const a = document.querySelector('.arena'); return a ? { a, r: a.getBoundingClientRect() } : null; }
-function returnToLane(s) { if (!s || !s.el) return; s.el.style.transition = 'transform .34s var(--ease-bounce)'; s.el.style.transform = ''; s.el.style.zIndex = ''; s.el.classList.remove('in-arena', 'face-left'); }
+function returnToLane(s) { if (!s || !s.el) return; s.el.style.transition = 'transform .34s var(--ease-bounce)'; s.el.style.transform = ''; s.el.style.zIndex = ''; s.el.style.willChange = ''; s.el.classList.remove('in-arena', 'face-left'); }
 // kick a spray of dirt clods up from a point in the pit (arena-local coords)
 function kickDirt(lx, ly, arena) {
   if (!arena) return;
@@ -917,6 +917,8 @@ function kickDirt(lx, ly, arena) {
   arena.appendChild(d); setTimeout(() => d.remove(), 700);
 }
 // jump one pet from its lane into the pit at (centre+xoff). Skips if it's already staged (the surviving pet).
+// Uses requestAnimationFrame so the CSS transition actually RUNS (setting transition+transform in one tick
+// teleported). transform-heavy so it composites on the GPU → smooth 60fps.
 function placeStage(m, xoff, flip) {
   if (!m || !m.el || staged[m.uid]) return;
   const box = arenaBox(); if (!box) return; const { a: arena, r: ar } = box;
@@ -924,15 +926,21 @@ function placeStage(m, xoff, flip) {
   const tx = (ar.left + ar.width / 2 + xoff) - (rr.left + rr.right) / 2;
   const ty = (ar.top + ar.height * STAGE_Y) - (rr.top + rr.bottom) / 2;
   const sp = replaySpeed || 1;
-  m.el.style.zIndex = 22; m.el.classList.add('in-arena'); if (flip) m.el.classList.add('face-left');
-  m.el.style.transition = `transform ${(0.6 / sp).toFixed(2)}s cubic-bezier(.3,-0.45,.5,1)`;   // leap up + over
-  m.el.style.transform = `translate(${tx}px, ${ty - 48}px) scale(1.12)`;
-  setTimeout(() => {                                                                            // land with a bounce
-    m.el.style.transition = `transform ${(0.34 / sp).toFixed(2)}s cubic-bezier(.3,1.5,.5,1)`;
-    m.el.style.transform = `translate(${tx}px, ${ty}px) scale(1.12)`;
-    kickDirt(ar.width / 2 + xoff, ar.height * STAGE_Y + 14, arena); arenaShake();
-  }, 600 / sp);
+  m.el.style.zIndex = 22; m.el.style.willChange = 'transform'; m.el.classList.add('in-arena'); if (flip) m.el.classList.add('face-left');
   staged[m.uid] = { el: m.el, tx, ty, fresh: true };
+  // 1) pin the current lane position with NO transition + force a reflow, 2) animate on the next frame → no teleport
+  m.el.style.transition = 'none';
+  m.el.style.transform = 'translate(0px, 0px) scale(1)';
+  void m.el.offsetWidth;
+  requestAnimationFrame(() => {
+    m.el.style.transition = `transform ${(0.6 / sp).toFixed(2)}s cubic-bezier(.25,-0.35,.4,1)`;   // leap up + over
+    m.el.style.transform = `translate(${tx}px, ${(ty - 56).toFixed(1)}px) scale(1.14)`;
+    setTimeout(() => {                                                                            // land with a bounce
+      m.el.style.transition = `transform ${(0.36 / sp).toFixed(2)}s cubic-bezier(.3,1.5,.5,1)`;
+      m.el.style.transform = `translate(${tx}px, ${ty}px) scale(1.12)`;
+      kickDirt(ar.width / 2 + xoff, ar.height * STAGE_Y + 14, arena);
+    }, 600 / sp);
+  });
 }
 // begin a matchup: return anyone staged who isn't in it, then jump the two front pets in (you left / foe right)
 function stageMatchup(A, B) {
@@ -942,27 +950,29 @@ function stageMatchup(A, B) {
   placeStage(mine, -STAGE_XOFF, false);
   placeStage(foe, STAGE_XOFF, true);
 }
-// the two staged pets lunge together and collide (a "bump"), with a spark, shake and dirt. Delayed if they've
-// only just jumped in (so you see them stand beside each other first).
+// the two staged pets CHARGE from their far-apart spots and MEET in the centre when they slam, then spring back.
+// Only the fighters move (no arena-wide shake). Delayed on first arrival so you see them stand apart first.
 function bumpFight(A, B) {
   const box = arenaBox(); if (!box) return; const { a: arena, r: ar } = box;
   const sp = replaySpeed || 1;
   const sa = staged[A?.uid], sb = staged[B?.uid];
   const justArrived = (sa && sa.fresh) || (sb && sb.fresh);
+  const dirTo = (m) => (m.side === MYSIDE ? 1 : -1);         // mine (left) lunges right; foe (right) lunges left
+  const move = (m, dx, sc, dur) => { const s = staged[m.uid]; if (!s || !m.el) return; m.el.style.transition = `transform ${(dur / sp).toFixed(2)}s ease-out`; m.el.style.transform = `translate(${(s.tx + dx).toFixed(1)}px, ${s.ty}px) scale(${(1.12 * sc).toFixed(3)})`; };
+  const toward = STAGE_XOFF - 16;                            // travel almost to the centre → they MEET when they slam
   const lunge = () => {
-    const aR = A.el.getBoundingClientRect(), bR = B.el.getBoundingClientRect();
-    fireProjectile(A.el, B.el, A.side === MYSIDE ? '#8fd0ff' : '#ff9a6a');   // occasional ranged flair
-    const set = (m, dx, sc) => { const s = staged[m.uid]; if (!s) return; m.el.style.transition = `transform ${(0.14 / sp).toFixed(2)}s ease-out`; m.el.style.transform = `translate(${s.tx + dx}px, ${s.ty}px) scale(${(1.12 * sc).toFixed(3)})`; };
-    setTimeout(() => {   // lunge toward each other
-      set(A, A.side === MYSIDE ? 22 : -22, 1.02); set(B, B.side === MYSIDE ? 22 : -22, 1.02);
-      setTimeout(() => { // contact
-        spawnClashFx(aR, bR); arenaShake(); kickDirt(ar.width / 2, ar.height * STAGE_Y + 16, arena);
-        set(A, A.side === MYSIDE ? 8 : -8, 0.97); set(B, B.side === MYSIDE ? -6 : 6, 0.9);
-        setTimeout(() => { set(A, 0, 1); set(B, 0, 1); }, 150 / sp);   // settle back beside each other
-      }, 150 / sp);
-    }, 60 / sp);
+    fireProjectile(A.el, B.el, A.side === MYSIDE ? '#8fd0ff' : '#ff9a6a');
+    requestAnimationFrame(() => {
+      move(A, dirTo(A) * toward, 1.06, 0.18); move(B, dirTo(B) * toward, 1.06, 0.18);   // charge in
+      setTimeout(() => {                                     // SLAM in the centre
+        const aR = A.el.getBoundingClientRect(), bR = B.el.getBoundingClientRect();
+        spawnClashFx(aR, bR); kickDirt(ar.width / 2, ar.height * STAGE_Y + 16, arena);
+        move(A, dirTo(A) * (toward - 18), 0.98, 0.09); move(B, dirTo(B) * (toward - 24), 0.9, 0.09);   // recoil
+        setTimeout(() => { move(A, 0, 1, 0.26); move(B, 0, 1, 0.26); }, 160 / sp);      // spring back apart
+      }, 190 / sp);
+    });
   };
-  if (justArrived) { if (sa) sa.fresh = false; if (sb) sb.fresh = false; setTimeout(lunge, 850 / sp); }  // let them land + stand first
+  if (justArrived) { if (sa) sa.fresh = false; if (sb) sb.fresh = false; setTimeout(lunge, 900 / sp); }  // stand apart first
   else lunge();
 }
 // KO: blow the fainted pet off-screen — yours to the LEFT, the enemy's to the RIGHT — with a tumble.
@@ -1058,7 +1068,7 @@ function applyEvent(e) {
     case 'damage': {
       setStat(e.uid, 'h', e.hp);
       const m = elMap[e.uid];
-      if (m && e.amount > 0) { m.el.classList.add('hit'); setTimeout(() => m.el.classList.remove('hit'), 250); floatText(e.uid, '-' + e.amount, 'dmg'); SFX.hit(); if (e.amount >= 4) arenaShake(); }
+      if (m && e.amount > 0) { m.el.classList.add('hit'); setTimeout(() => m.el.classList.remove('hit'), 250); floatText(e.uid, '-' + e.amount, 'dmg'); SFX.hit(); }
       updateShield(e.uid, e.shield);
       break;
     }

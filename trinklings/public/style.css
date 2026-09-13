@@ -366,7 +366,10 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 .bcard .stat { display: inline-flex; align-items: center; padding: 1px 8px; border-radius: 999px; font-size: .68rem; font-weight: 900; color: #fff; background: rgba(18,32,52,.78); line-height: 1.42; }
 .bcard .stat .a, .bcard .stat .h { color: #fff; }
 .bcard .a { color: var(--glow); } .bcard .h { color: var(--coral-deep); }
-.bcard.hit { animation: shake .26s; }
+/* a hit FLASHES the struck pet (filter only) — never a transform, so it can't fight the staged/lunge transform
+   and it doesn't shake the whole arena (per feedback: only the fighters react) */
+.bcard.hit .art img { animation: hitFlash .25s ease; }
+@keyframes hitFlash { 0%,100% { filter: drop-shadow(0 3px 4px rgba(20,40,70,.34)); } 45% { filter: drop-shadow(0 3px 4px rgba(20,40,70,.34)) brightness(1.75) saturate(1.35); } }
 /* death punch: a quick scale-up + fade (paired with a shard puff spawned by JS) */
 .bcard.faint { opacity: 0; transform: scale(1.28) rotate(-4deg); transition: transform .26s var(--ease-bounce), opacity .3s var(--ease-soft); }
 /* shard/flash puff on a kill (positioned over the fallen unit by JS) */
