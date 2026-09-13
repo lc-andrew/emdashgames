@@ -177,6 +177,47 @@ const TRIGGER_LABEL = {
   onKill: 'Kill', onStartBattle2: 'Start', onFirstBlood: 'First Blood', onLowHealth: 'Half HP', everyOtherRound: 'Every 2nd Round',
 };
 
+// Plain-language glossary of when each ability fires — shown in Settings ▸ "When abilities trigger".
+// Keyed to TRIGGER_LABEL so the wording here matches the tag printed on every card. Only the triggers the
+// roster actually uses are listed. (Verified in-engine by simulating each — tools sim, 2026-09-13.)
+const TRIGGER_GLOSSARY = [
+  { section: 'During a battle' },
+  { trig: 'onStartBattle', when: 'The instant the fight begins, before anyone attacks.' },
+  { trig: 'onBeforeAttack', when: 'Just before this Trinkling swings, each round it attacks.' },
+  { trig: 'onAfterAttack', when: 'Right after it swings — only if it survived the clash.' },
+  { trig: 'onHurt', when: 'When it takes damage and lives through it (some do this once per fight).' },
+  { trig: 'onLowHealth', when: 'The first time it drops to half its starting health or below.' },
+  { trig: 'onKill', when: 'When its attack knocks out an enemy.' },
+  { trig: 'onFirstBlood', when: 'On the very first faint of the whole battle — either side.' },
+  { trig: 'onFaint', when: 'As it faints and leaves the lane.' },
+  { trig: 'onFriendFaints', when: 'When another Trinkling on your side faints.' },
+  { trig: 'onFriendSummoned', when: 'When a token or new Trinkling appears on your side mid-fight.' },
+  { trig: 'everyOtherRound', when: 'At the end of every 2nd round of combat.' },
+  { trig: 'passive', when: 'Always on — an ongoing effect, no moment needed.' },
+  { section: 'Back in the shop' },
+  { trig: 'onStartTurn', when: 'At the start of each shop turn (often a little bonus gold).' },
+  { trig: 'onFriendBought', when: 'When you buy another Trinkling.' },
+  { trig: 'onLevelUp', when: 'When three combine and it reaches a new level.' },
+  { trig: 'onSell', when: 'When you sell it.' },
+  { trig: 'onEndTurn', when: 'When you press End Turn, just before the fight starts.' },
+];
+
+function openTriggers() {
+  SFX.tap();
+  const body = $('#triggersBody'); body.innerHTML = '';
+  TRIGGER_GLOSSARY.forEach((e) => {
+    if (e.section) {
+      const h = document.createElement('div'); h.className = 'trig-sec'; h.textContent = e.section;
+      body.appendChild(h); return;
+    }
+    const row = document.createElement('div'); row.className = 'trig-row';
+    row.innerHTML = `<span class="trig-tag">${TRIGGER_LABEL[e.trig] || e.trig}</span><span class="trig-when">${e.when}</span>`;
+    body.appendChild(row);
+  });
+  body.scrollTop = 0;
+  $('#triggersModal').hidden = false;
+}
+
 // ---- game state ----
 let game = null;
 let easy = false;
@@ -1655,6 +1696,8 @@ window.addEventListener('online', updateOnlineDot);
 window.addEventListener('offline', updateOnlineDot);
 updateOnlineDot();
 $('#settingsHowTo').onclick = () => { closeSettings(); $('#howModal').hidden = false; };
+$('#settingsTriggers').onclick = () => { closeSettings(); openTriggers(); };
+$('#triggersClose').onclick = () => { SFX.tap(); $('#triggersModal').hidden = true; };
 $('#settingsEasy').onclick = () => { easyPref = !easyPref; localStorage.setItem('cc_easy', easyPref ? '1' : '0'); updateEasyLabel(); };
 function updateEasyLabel() { const b = $('#settingsEasy'); if (b) b.textContent = 'Easy mode: ' + (easyPref ? 'On (7 hearts)' : 'Off'); }
 let easyPref = localStorage.getItem('cc_easy') === '1';

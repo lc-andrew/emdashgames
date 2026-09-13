@@ -458,6 +458,15 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 .modal-card h2 { margin: 0 0 8px; color: var(--gilt-deep); }
 .modal-card .btn { width: 100%; margin-top: 10px; }
 .modal-card.howto { text-align: left; max-height: 82dvh; overflow-y: auto; }
+/* Triggers glossary — Settings ▸ "When abilities trigger" */
+.triggers-card { text-align: left; max-width: 440px; width: 100%; max-height: 84dvh; display: flex; flex-direction: column; }
+.triggers-intro { font-size: .86rem; color: var(--ink-soft); line-height: 1.45; font-weight: 600; margin: 2px 0 10px; }
+.triggers-body { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; margin: 0 -4px 12px; padding: 0 4px; }
+.trig-sec { font-family: 'Cinzel', serif; text-transform: uppercase; letter-spacing: .06em; font-weight: 800; font-size: .78rem; color: var(--gilt-deep); margin: 12px 0 6px; }
+.trig-sec:first-child { margin-top: 0; }
+.trig-row { display: flex; align-items: baseline; gap: 9px; padding: 6px 0; border-top: 1px solid rgba(120,140,180,.16); }
+.trig-tag { flex: none; min-width: 88px; font-size: .68rem; font-weight: 800; text-transform: uppercase; letter-spacing: .03em; color: var(--gilt-deep); background: rgba(120,140,180,.13); border-radius: 999px; padding: 3px 8px; text-align: center; }
+.trig-when { font-size: .84rem; line-height: 1.4; color: var(--ink); font-weight: 600; }
 .modal-card.howto ul { padding-left: 2px; list-style: none; margin: 6px 0 0; }
 .modal-card.howto li { margin: 9px 0; line-height: 1.45; font-size: .95rem; font-weight: 500; }
 .modal-card.howto b { color: var(--gilt-deep); }

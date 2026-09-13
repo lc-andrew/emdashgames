@@ -35,7 +35,7 @@
   <section id="game" class="screen">
     <header class="hud">
       <div class="hud-stack">
-        <div class="hud-item turn" title="Turn"><span class="turn-lbl">Turn</span><span id="hudTurn">1</span></div>
+        <div class="hud-item turn" title="Turn — one shop-then-fight cycle (a Round in an online/local duel)"><span class="turn-lbl">Turn</span><span id="hudTurn">1</span></div>
         <div class="hud-item tier" title="Shop tier — new Trinklings unlock every 2 turns"><span id="tierTag">Tier 1</span></div>
       </div>
       <div class="hud-item gold" title="Gold — spend it all before End Turn"><img class="ic" src="assets/ui/coin.png" alt="Gold" /><span id="hudGold">10</span></div>
@@ -195,10 +195,20 @@
       <h2>Settings</h2>
       <button class="btn" id="settingsCodex">Codex</button>
       <button class="btn" id="settingsHowTo">How to play</button>
+      <button class="btn" id="settingsTriggers">When abilities trigger</button>
       <button class="btn" id="settingsFeedback">Give feedback</button>
       <button class="btn" id="settingsEasy">Easy mode: Off</button>
       <button class="btn" id="settingsSound">Sound: On</button>
       <button class="btn ghostbtn" id="settingsClose">Close</button>
+    </div>
+  </div>
+
+  <div id="triggersModal" class="modal" hidden>
+    <div class="modal-card triggers-card">
+      <h2>When abilities trigger</h2>
+      <p class="triggers-intro">A <b>Trinkling's ability</b> only fires at the moment shown below. The little tag on each card tells you which one it waits for.</p>
+      <div id="triggersBody" class="triggers-body"></div>
+      <button class="btn ghostbtn" id="triggersClose">Close</button>
     </div>
   </div>
 
