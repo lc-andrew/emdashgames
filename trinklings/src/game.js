@@ -17,7 +17,7 @@ function levelForXp(xp) { return xp >= CONFIG.xpToL3 ? 3 : xp >= CONFIG.xpToL2 ?
 
 export function makeCreature(defId) {
   const d = CREATURE_BY_ID[defId];
-  return { defId, name: d.name, world: d.world, tier: d.tier, atk: d.atk, hp: d.hp, level: 1, xp: 0, snacks: [] };
+  return { defId, name: d.name, world: d.world, tier: d.tier, atk: d.atk, hp: d.hp, level: 1, xp: 0, snacks: [], foodAtk: 0, foodHp: 0 };
 }
 
 export class GameState {
@@ -111,6 +111,19 @@ export class GameState {
     return { ok: true };
   }
 
+  // Buy a shop pet AND fuse it onto a DIFFERENT-type squad pet in one action (per feedback): cost buy + fuse.
+  buyFuse(shopIndex, slotIndex) {
+    const item = this.shop.pets[shopIndex];
+    const target = this.squad[slotIndex];
+    if (!item || !target || target.fused || target.defId === item.defId) return { ok: false, reason: 'invalid-fuse' };
+    const cost = (item.free ? 0 : CONFIG.buyCost) + (CONFIG.fuseCost ?? 10);
+    if (this.gold < cost) return { ok: false, reason: 'cannot-afford-fuse', cost };
+    this.gold -= cost;
+    this.shop.pets[shopIndex] = null;
+    this.squad[slotIndex] = fuseUnit(target, makeCreature(item.defId));   // fuseUnit inherits food from the target
+    return { ok: true, action: 'fuse' };
+  }
+
   // Merge `src` (a creature object) into `dst` in place: keeps the better stats + combine bump + XP.
   mergeInto(dst, src) {
     const before = dst.level;
@@ -118,6 +131,8 @@ export class GameState {
     dst.hp = clamp(Math.max(dst.hp, src.hp) + CONFIG.combineStat);
     dst.xp = Math.min(CONFIG.xpToL3, dst.xp + src.xp + 1);
     dst.snacks = [...dst.snacks, ...src.snacks];
+    // stats use max(dst,src)+bump, so keep the food bonus consistent with max (not sum)
+    dst.foodAtk = Math.max(dst.foodAtk || 0, src.foodAtk || 0); dst.foodHp = Math.max(dst.foodHp || 0, src.foodHp || 0);
     dst.level = levelForXp(dst.xp);
     if (dst.level > before) this.onLevelUp(dst);
   }
@@ -173,7 +188,12 @@ export class GameState {
       if (e.target === 'randomFriends') ts = this.rng.sample(this.livingSquad(), e.count || 1);
       else if (e.target === 'randomFriend') { const t = this.rng.pick(this.livingSquad()); ts = t ? [t] : []; }
       else ts = target ? [target] : [];
-      for (const t of ts) { t.atk = clamp(t.atk + (e.atk || 0)); t.hp = clamp(t.hp + (e.hp || 0)); }
+      // Track the permanent FOOD bonus on each unit that actually receives it, so a later FUSION can inherit
+      // it (fuseUnit re-adds it on top of the tier-banded base). Attributes correctly for random-target foods.
+      for (const t of ts) {
+        t.atk = clamp(t.atk + (e.atk || 0)); t.hp = clamp(t.hp + (e.hp || 0));
+        t.foodAtk = (t.foodAtk || 0) + (e.atk || 0); t.foodHp = (t.foodHp || 0) + (e.hp || 0);
+      }
     } else if (e.type === 'grantFaint') {
       if (target) target.snacks.push('honey');
     } else if (e.type === 'grantFirstStrike') {

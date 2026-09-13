@@ -91,9 +91,14 @@ export function fuseUnit(a, b) {
   const ma = meta(a), mb = meta(b);
   const [hi, lo] = ma.tier >= mb.tier ? [ma, mb] : [mb, ma];
   const tier = Math.min(6, hi.tier);
-  let atk = (a.atk + b.atk) / 2, hp = (a.hp + b.hp) / 2;
+  // Reband the FOOD-STRIPPED base stats to the tier band, then re-add the inherited food bonus on top — so a
+  // fused creature keeps the permanent food investment of BOTH parents (per feedback) instead of it being
+  // averaged away. (Battle-effect foods like Firepip/Honey already carry via the snacks array below.)
+  const foodAtk = (a.foodAtk || 0) + (b.foodAtk || 0), foodHp = (a.foodHp || 0) + (b.foodHp || 0);
+  let atk = (Math.max(1, a.atk - (a.foodAtk || 0)) + Math.max(1, b.atk - (b.foodAtk || 0))) / 2;
+  let hp = (Math.max(1, a.hp - (a.foodHp || 0)) + Math.max(1, b.hp - (b.foodHp || 0))) / 2;
   const k = BAND[tier] / Math.max(1, atk + hp);
-  atk = clampN(atk * k); hp = clampN(hp * k);
+  atk = clampN(atk * k + foodAtk); hp = clampN(hp * k + foodHp);
   const trig = [hi.ability?.trigger, lo.ability?.trigger].find((t) => BATTLE_TRIGS.includes(t)) || 'onStartBattle';
   const flevel = Math.min(a.level || 1, b.level || 1);   // inherit the LOWER parent level (per spec)
   const sig = FUSE_SIGS[pairHash(a.defId, b.defId) % FUSE_SIGS.length];   // this fusion's signature bonus
@@ -107,6 +112,8 @@ export function fuseUnit(a, b) {
     // terminal (never merge again), so this xp is display-only — it just makes the level read correctly.
     name, atk, hp, level: flevel, xp: flevel >= 3 ? CONFIG.xpToL3 : flevel >= 2 ? CONFIG.xpToL2 : 0,
     snacks: [...(a.snacks || []), ...(b.snacks || [])],
+    foodAtk, foodHp,   // carry the inherited food so a fusion-of-a-fusion keeps it too
+
     fused: {
       parents: [a.defId, b.defId], artParents: [artA, artB], tier, faction: hi.faction, world: hi.world,
       ability: { trigger: trig, effect, text: `${TRIGTXT[trig] || 'Start of the fight'}: ${describe(effect)}.` },

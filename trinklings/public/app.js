@@ -122,6 +122,20 @@ function startMusic() { if (muted) return; if (bgmBattle && !bgmBattle.paused) r
 function startBattleMusic() { fadeAudio(bgm, 0, 400); if (muted) return; if (bgmBattle) bgmBattle.currentTime = 0; fadeAudio(bgmBattle, BATTLE_VOL, 550); }
 function stopBattleMusic() { fadeAudio(bgmBattle, 0, 450); if (!muted) fadeAudio(bgm, AMBIENT_VOL, 750); }
 window.addEventListener('pointerdown', function once() { startMusic(); window.removeEventListener('pointerdown', once); }, { once: true });
+// pause music when the window/tab loses focus, resume the same track when it returns (per feedback)
+let _bgmWasOn = false, _battleWasOn = false;
+function musicBlur() {
+  _bgmWasOn = !!(bgm && !bgm.paused); _battleWasOn = !!(bgmBattle && !bgmBattle.paused);
+  if (bgm) bgm.pause(); if (bgmBattle) bgmBattle.pause();
+}
+function musicFocus() {
+  if (muted) return;
+  if (_battleWasOn && bgmBattle) bgmBattle.play().catch(() => {});
+  else if (_bgmWasOn && bgm) bgm.play().catch(() => {});
+}
+window.addEventListener('blur', musicBlur);
+window.addEventListener('focus', musicFocus);
+document.addEventListener('visibilitychange', () => (document.hidden ? musicBlur() : musicFocus()));
 
 // short trigger → badge label (fall back to 'Ability' for triggers the data agent may add)
 const TRIGGER_LABEL = {
@@ -244,8 +258,8 @@ function render() {
   if (swb) swb.hidden = !canSwap;
   if (pend) {   // source + occupied target chosen → the explicit Combine/Fuse/Swap/Feed confirm
     ab.hidden = false; sb.hidden = true; if (fb) fb.hidden = true; disarmSell();
-    // Fuse and Feed cost gold — show the price on the button and grey it out if unaffordable (per feedback).
-    const cost = pend.label === 'Fuse' ? (CONFIG.fuseCost ?? 10) : pend.kind === 'feed' ? CONFIG.snackCost : 0;
+    // every action carries its own cost now (Fuse 10, Feed 2, shop-Combine 3, shop-Fuse 13) — show it + gate.
+    const cost = pend.cost || 0;
     $('#actionLbl').innerHTML = pend.label + (cost ? ` <span class="cost"><img class="ic" src="assets/ui/coin.png" alt="">${cost}</span>` : '');
     ab.disabled = cost > 0 && game.gold < cost;
   } else if (sel && sel.kind === 'squad' && game.squad[sel.index]) {
@@ -296,16 +310,21 @@ function playMergeBurst(slot) {
   setTimeout(() => { card.classList.remove('merging'); lbl.remove(); }, 720);
 }
 // A fusion of two DIFFERENT pets into a new one — a bigger, distinct celebration than a same-type merge.
+// CINEMATIC fusion (per feedback): the card is caught in a spinning energy vortex, a light beam erupts, a
+// white flash peaks, then the new fused Trinkling is revealed with a golden shockwave + sparkles + label.
 function playFuseBurst(slot) {
   const card = $('#squad') && $('#squad').children[slot];
   if (!card) return;
   SFX.fuse();
-  card.classList.add('evolving');
-  const ring = document.createElement('div'); ring.className = 'evolve-ring fuse-ring'; card.appendChild(ring);
-  const lbl = document.createElement('div'); lbl.className = 'evolve-label fuse-label'; lbl.textContent = '✦ FUSED! ✦';
-  card.appendChild(lbl);
-  sparkleBurst(card, 14); shockwaveRing(card, 'gold');
-  setTimeout(() => { card.classList.remove('evolving'); ring.remove(); lbl.remove(); }, 950);
+  card.classList.add('evolving', 'fusing-cine');
+  const add = (cls) => { const d = document.createElement('div'); d.className = cls; card.appendChild(d); return d; };
+  const vortex = add('fuse-vortex'), beam = add('fuse-beam'), flash = add('fuse-flash'), ring = document.createElement('div');
+  ring.className = 'evolve-ring fuse-ring'; card.appendChild(ring);
+  const els = [vortex, beam, flash, ring];
+  setTimeout(() => { SFX.levelup(); sparkleBurst(card, 24); shockwaveRing(card, 'gold'); shockwaveRing(card, 'violet');   // reveal burst at the flash peak
+    const lbl = document.createElement('div'); lbl.className = 'evolve-label fuse-label'; lbl.textContent = '✦ FUSED! ✦'; card.appendChild(lbl); els.push(lbl);
+  }, 560);
+  setTimeout(() => { card.classList.remove('evolving', 'fusing-cine'); els.forEach((e) => e.remove()); }, 1550);
 }
 // A burst of sparkle particles flying out from a card — juice for merge/fuse/level-up moments.
 function sparkleBurst(card, n = 10) {
@@ -462,7 +481,7 @@ function renderSquad() {
       const canCombine = !c.fused && !heldFused;                                        // only BASE ↔ BASE combines
       const isMergeTarget = canCombine && selId && c.defId === selId && (c.xp || 0) < CONFIG.xpToL3 && !self;
       // holding one of YOUR base units over a DIFFERENT base unit → fuse into a new pet
-      const isFuseTarget = canCombine && !isMergeTarget && !self && sel && sel.kind === 'squad' && selId && c.defId !== selId;
+      const isFuseTarget = canCombine && !isMergeTarget && !self && sel && (sel.kind === 'squad' || sel.kind === 'shopPet') && selId && c.defId !== selId;
       d.className = 'card t' + (unitTier(c) || 1) + evoClass(c.level) + (self ? ' selected' : '') + (armed ? ' target-armed' : '') + (isMergeTarget ? ' mergeable' : '') + (isFuseTarget ? ' fusable' : '') + (c.fused ? ' is-fused' : '');
       // no on-card action text — the amber/green target glow + the bottom confirm button convey Combine/Fuse
       d.innerHTML = creatureCardHTML(c);
@@ -591,17 +610,19 @@ function pendingAction() {
   if (!tgt) return null;   // empty targets execute instantly and never become pending
   if (sel.kind === 'shopPet') {
     const src = game.shop.pets[sel.index]; if (!src) return null;
-    if (!tgt.fused && tgt.defId === src.defId && (tgt.xp || 0) < CONFIG.xpToL3) return { label: 'Combine', kind: 'buy' };
-    return null;   // a shop pet can't drop onto a different occupied unit
+    if (!tgt.fused && tgt.defId === src.defId && (tgt.xp || 0) < CONFIG.xpToL3) return { label: 'Combine', kind: 'buy', cost: src.free ? 0 : CONFIG.buyCost };
+    // NEW (per feedback): drop a shop pet onto a DIFFERENT-type squad pet → buy + fuse in one go (3 + 10 = 13)
+    if (!tgt.fused && tgt.defId !== src.defId) return { label: 'Fuse', kind: 'buy-fuse', cost: (src.free ? 0 : CONFIG.buyCost) + (CONFIG.fuseCost ?? 10) };
+    return null;
   }
-  if (sel.kind === 'shopSnack') { return game.shop.snacks[sel.index] ? { label: 'Feed', kind: 'feed' } : null; }
+  if (sel.kind === 'shopSnack') { return game.shop.snacks[sel.index] ? { label: 'Feed', kind: 'feed', cost: CONFIG.snackCost } : null; }
   if (sel.kind === 'squad') {
     if (sel.index === ti) return null;
     const a = game.squad[sel.index]; if (!a) return null;
     const terminal = a.fused || tgt.fused;
-    if (!terminal && tgt.defId === a.defId && (tgt.xp || 0) < CONFIG.xpToL3) return { label: 'Combine', kind: 'move' };
-    if (!terminal && tgt.defId !== a.defId) return { label: 'Fuse', kind: 'move' };
-    return { label: 'Swap', kind: 'move' };
+    if (!terminal && tgt.defId === a.defId && (tgt.xp || 0) < CONFIG.xpToL3) return { label: 'Combine', kind: 'move', cost: 0 };
+    if (!terminal && tgt.defId !== a.defId) return { label: 'Fuse', kind: 'move', cost: CONFIG.fuseCost ?? 10 };
+    return { label: 'Swap', kind: 'move', cost: 0 };
   }
   return null;
 }
@@ -616,6 +637,14 @@ function execBuy(shopIndex, slot) {
     if (after && before !== null && after.level > before) queueEvolve(slot, after.level);
     else if (before !== null) pendingMerge = { slot };
   } else { hint(reason(r.reason)); flashInvalid(slot); }
+  render();
+}
+// buy a shop pet AND fuse it onto a different squad pet in one tap (per feedback)
+function execBuyFuse(shopIndex, slot) {
+  const boughtDefId = game.shop.pets[shopIndex]?.defId;
+  const r = game.buyFuse(shopIndex, slot);
+  if (r.ok) { markSeen(boughtDefId); SFX.fuse(); hasBought = true; clearSel(); hint(''); pendingFuse = { slot }; }
+  else { hint(reason(r.reason)); flashInvalid(slot); }
   render();
 }
 function execMove(from, to) {
@@ -748,6 +777,7 @@ $('#actionBtn').onclick = () => {
   const pend = pendingAction(); if (!pend || !selTarget) return;
   const ti = selTarget.index;
   if (pend.kind === 'buy') execBuy(sel.index, ti);
+  else if (pend.kind === 'buy-fuse') execBuyFuse(sel.index, ti);
   else if (pend.kind === 'feed') execFeed(sel.index, ti);
   else execMove(sel.index, ti);
 };
@@ -792,6 +822,7 @@ function endTurn() {
 
 // ---- battle animation ----
 let animTimer = null, animQueue = [], animIdx = 0, elMap = {}, MYSIDE = 0, playbackOnEnd = null;
+let staged = {};   // uid -> {el, tx, ty, fresh} for pets currently staged (fighting) in the pit
 let animDelay = 400, replaySpeed = 1, replayPaused = false;   // replay transport state
 let curLog = null, curSide = 0, curOnEnd = null, isRewatch = false;   // remembered so Rewind can restart
 // Generalized replay: `mySide` is the side rendered at the bottom as "mine" (0 single-player, slot in duel).
@@ -804,7 +835,7 @@ function runPlayback(log, mySide, onEnd, rewatch = false) {
   $('#battleResult').hidden = true;
   hideAbilityCallout();
   const teams = log[0].teams; // startBattle snapshot
-  elMap = {};
+  elMap = {}; staged = {};
   buildLine($('#myLine'), teams[mySide], 'mine');
   buildLine($('#enemyLine'), teams[1 - mySide], 'enemy');
   animQueue = log.slice(1);
@@ -828,7 +859,7 @@ function buildLine(container, units, sideCls) {
     attachHold(d, u);   // press-and-hold a pet during the (re)play → its ability tooltip
     container.appendChild(d);
     // store name + ability text so the hold tooltip AND the battle callout work (incl. fused units)
-    elMap[u.uid] = { el: d, side: u.side, defId: u.defId, level: u.level || 1, name: u.name, abilityText: u.abilityText || '' };
+    elMap[u.uid] = { el: d, uid: u.uid, side: u.side, defId: u.defId, level: u.level || 1, name: u.name, abilityText: u.abilityText || '' };
   }
 }
 // ---- hold-for-ability (touch long-press / mouse press-hold) ----
@@ -871,52 +902,80 @@ function sparkleRise(uid) { const m = elMap[uid]; if (!m) return; const s = docu
 // wired to the 'attack' event). Earlier spell-bolt / lunge variants were removed as dead code.
 // The two combatants CHARGE into the centre PIT (both horizontally AND vertically), clash face-to-face over
 // the glowing ring, then spring back to their lanes — a proper 1v1 meet in the middle.
-function clashMeet(A, B) {
-  if (!A) return;
-  const arena = document.querySelector('.arena'); if (!arena) return;
-  const sp = replaySpeed || 1;   // scale the internal FX timers with replay speed so on Fast (2.5×) the next
-                                 // clash can't start before this one's cleanup (zIndex/transform reset) fires
-  const ar = arena.getBoundingClientRect();
-  const aR = A.el.getBoundingClientRect();
-  if (!B) {   // no defender — a lone forward jab toward the centre
-    A.el.style.transition = 'transform .17s cubic-bezier(.5,0,.9,.35)';
-    A.el.style.transform = `translateY(${A.side === MYSIDE ? -32 : 32}px) scale(1.1)`;
-    setTimeout(() => { A.el.style.transition = 'transform .24s var(--ease-bounce)'; A.el.style.transform = ''; }, 200 / sp);
-    return;
-  }
-  const bR = B.el.getBoundingClientRect();
-  const cx = ar.left + ar.width / 2, cy = ar.top + ar.height / 2;
-  const aC = { x: aR.left + aR.width / 2, y: aR.top + aR.height / 2 };
-  const bC = { x: bR.left + bR.width / 2, y: bR.top + bR.height / 2 };
-  const aTop = aC.y < cy, off = 30;                                  // attacker sits on its own side of the pit
-  const aDx = cx - aC.x, aDy = (cy + (aTop ? -off : off)) - aC.y;
-  const bDx = cx - bC.x, bDy = (cy + (aTop ? off : -off)) - bC.y;
-  // both normalize to the ~mid-distance "pit" size (enemy grows from .7, you shrink from 1.0 → ~.85 visual)
-  const cs = (el) => (el.side === MYSIDE ? 0.85 : 1.21);
-  const aCs = cs(A), bCs = cs(B);
-  A.el.style.zIndex = 20; B.el.style.zIndex = 19;
-  A.el.style.transition = 'transform .4s cubic-bezier(.4,0,.7,.5)';   // slower CHARGE into the pit (per feedback)
-  B.el.style.transition = 'transform .4s cubic-bezier(.4,0,.7,.5)';
-  A.el.style.transform = `translate(${aDx}px, ${aDy}px) scale(${aCs})`;
-  B.el.style.transform = `translate(${bDx}px, ${bDy}px) scale(${bCs})`;
-  fireProjectile(A.el, B.el, A.side === MYSIDE ? '#8fd0ff' : '#ff9a6a');   // a tinted bolt streaks across the pit
-  const pose = (dA, sA, dB, sB) => { A.el.style.transform = `translate(${aDx}px, ${aDy + dA}px) scale(${(aCs * sA).toFixed(3)})`; B.el.style.transform = `translate(${bDx}px, ${bDy + dB}px) scale(${(bCs * sB).toFixed(3)})`; };
-  setTimeout(() => {                                                 // FIRST clash — they meet in the middle
-    spawnClashFx(aR, bR); arenaShake();
-    A.el.style.transition = 'transform .1s ease-out'; B.el.style.transition = 'transform .1s ease-out';
-    pose(aTop ? -8 : 8, 0.93, aTop ? 10 : -10, 0.82);               // A recoil, B flinch
-    setTimeout(() => {                                               // SECOND clash — they TRADE blows, dwelling in the pit
-      spawnClashFx(aR, bR); arenaShake();
-      A.el.style.transition = 'transform .12s ease-out'; B.el.style.transition = 'transform .14s var(--ease-bounce)';
-      pose(aTop ? 8 : -8, 0.9, aTop ? -2 : 2, 0.96);                // now B pushes back into A
-      setTimeout(() => {                                             // spring both back to their lanes
-        A.el.style.transition = 'transform .34s var(--ease-bounce)'; A.el.style.transform = '';
-        B.el.style.transition = 'transform .34s var(--ease-bounce)'; B.el.style.transform = '';
-        setTimeout(() => { A.el.style.zIndex = ''; B.el.style.zIndex = ''; }, 340 / sp);
-      }, 300 / sp);
-    }, 260 / sp);
-  }, 430 / sp);
+// ===== CINEMATIC BATTLE STAGING (per feedback) =====
+// The two front pets JUMP into the pit and stand SIDE BY SIDE (you on the left, the enemy on the right,
+// flipped to face you), trade blows there over several seconds with kicked-up dirt, and a KO'd pet is BLOWN
+// off — yours to the left, the enemy's to the right — before the next pet jumps in.
+const STAGE_XOFF = 48, STAGE_Y = 0.5;   // side-by-side offset + vertical anchor (fraction of the pit)
+function arenaBox() { const a = document.querySelector('.arena'); return a ? { a, r: a.getBoundingClientRect() } : null; }
+function returnToLane(s) { if (!s || !s.el) return; s.el.style.transition = 'transform .34s var(--ease-bounce)'; s.el.style.transform = ''; s.el.style.zIndex = ''; s.el.classList.remove('in-arena', 'face-left'); }
+// kick a spray of dirt clods up from a point in the pit (arena-local coords)
+function kickDirt(lx, ly, arena) {
+  if (!arena) return;
+  const d = document.createElement('div'); d.className = 'dirt-kick'; d.style.left = lx + 'px'; d.style.top = ly + 'px';
+  for (let i = 0; i < 7; i++) { const c = document.createElement('i'); c.style.setProperty('--a', (i * 47 + 200) + 'deg'); c.style.setProperty('--d', (18 + Math.random() * 22).toFixed(0) + 'px'); d.appendChild(c); }
+  arena.appendChild(d); setTimeout(() => d.remove(), 700);
 }
+// jump one pet from its lane into the pit at (centre+xoff). Skips if it's already staged (the surviving pet).
+function placeStage(m, xoff, flip) {
+  if (!m || !m.el || staged[m.uid]) return;
+  const box = arenaBox(); if (!box) return; const { a: arena, r: ar } = box;
+  const rr = m.el.getBoundingClientRect();
+  const tx = (ar.left + ar.width / 2 + xoff) - (rr.left + rr.right) / 2;
+  const ty = (ar.top + ar.height * STAGE_Y) - (rr.top + rr.bottom) / 2;
+  const sp = replaySpeed || 1;
+  m.el.style.zIndex = 22; m.el.classList.add('in-arena'); if (flip) m.el.classList.add('face-left');
+  m.el.style.transition = `transform ${(0.6 / sp).toFixed(2)}s cubic-bezier(.3,-0.45,.5,1)`;   // leap up + over
+  m.el.style.transform = `translate(${tx}px, ${ty - 48}px) scale(1.12)`;
+  setTimeout(() => {                                                                            // land with a bounce
+    m.el.style.transition = `transform ${(0.34 / sp).toFixed(2)}s cubic-bezier(.3,1.5,.5,1)`;
+    m.el.style.transform = `translate(${tx}px, ${ty}px) scale(1.12)`;
+    kickDirt(ar.width / 2 + xoff, ar.height * STAGE_Y + 14, arena); arenaShake();
+  }, 600 / sp);
+  staged[m.uid] = { el: m.el, tx, ty, fresh: true };
+}
+// begin a matchup: return anyone staged who isn't in it, then jump the two front pets in (you left / foe right)
+function stageMatchup(A, B) {
+  if (!A || !B) return;
+  const mine = A.side === MYSIDE ? A : B, foe = A.side === MYSIDE ? B : A;
+  for (const uid in staged) if (uid != mine.uid && uid != foe.uid) { returnToLane(staged[uid]); delete staged[uid]; }
+  placeStage(mine, -STAGE_XOFF, false);
+  placeStage(foe, STAGE_XOFF, true);
+}
+// the two staged pets lunge together and collide (a "bump"), with a spark, shake and dirt. Delayed if they've
+// only just jumped in (so you see them stand beside each other first).
+function bumpFight(A, B) {
+  const box = arenaBox(); if (!box) return; const { a: arena, r: ar } = box;
+  const sp = replaySpeed || 1;
+  const sa = staged[A?.uid], sb = staged[B?.uid];
+  const justArrived = (sa && sa.fresh) || (sb && sb.fresh);
+  const lunge = () => {
+    const aR = A.el.getBoundingClientRect(), bR = B.el.getBoundingClientRect();
+    fireProjectile(A.el, B.el, A.side === MYSIDE ? '#8fd0ff' : '#ff9a6a');   // occasional ranged flair
+    const set = (m, dx, sc) => { const s = staged[m.uid]; if (!s) return; m.el.style.transition = `transform ${(0.14 / sp).toFixed(2)}s ease-out`; m.el.style.transform = `translate(${s.tx + dx}px, ${s.ty}px) scale(${(1.12 * sc).toFixed(3)})`; };
+    setTimeout(() => {   // lunge toward each other
+      set(A, A.side === MYSIDE ? 22 : -22, 1.02); set(B, B.side === MYSIDE ? 22 : -22, 1.02);
+      setTimeout(() => { // contact
+        spawnClashFx(aR, bR); arenaShake(); kickDirt(ar.width / 2, ar.height * STAGE_Y + 16, arena);
+        set(A, A.side === MYSIDE ? 8 : -8, 0.97); set(B, B.side === MYSIDE ? -6 : 6, 0.9);
+        setTimeout(() => { set(A, 0, 1); set(B, 0, 1); }, 150 / sp);   // settle back beside each other
+      }, 150 / sp);
+    }, 60 / sp);
+  };
+  if (justArrived) { if (sa) sa.fresh = false; if (sb) sb.fresh = false; setTimeout(lunge, 850 / sp); }  // let them land + stand first
+  else lunge();
+}
+// KO: blow the fainted pet off-screen — yours to the LEFT, the enemy's to the RIGHT — with a tumble.
+function blowOut(m) {
+  if (!m || !m.el) return;
+  const dir = m.side === MYSIDE ? -1 : 1;
+  delete staged[m.uid];
+  m.el.style.zIndex = 15;
+  m.el.style.transition = `transform ${(0.62 / (replaySpeed || 1)).toFixed(2)}s cubic-bezier(.35,0,.9,.4), opacity .6s ease-out`;
+  m.el.style.transform = `translate(${dir * 340}px, -30px) scale(1.05) rotate(${dir * 42}deg)`;
+  m.el.style.opacity = '0';
+}
+function clashMeet(A, B) { if (A && B) { stageMatchup(A, B); bumpFight(A, B); } }   // legacy name → new staging
 // A glowing projectile that streaks from one combatant across the pit to the other — the "ranged" spectacle
 // layered over the melee clash. Tinted per side; captured positions are the pre-charge spots.
 function fireProjectile(fromEl, toEl, hue) {
@@ -985,7 +1044,14 @@ function stepWeight(e) {
 }
 // Attacks get a minimum dwell so the slower charge-in + trade-blows clash always finishes before the next
 // one starts (per feedback: pets spend more time reaching + fighting in the middle).
-function stepDelay(e, base) { const d = Math.round(base * stepWeight(e)); return e.t === 'attack' ? Math.max(1200, d) : d; }
+// Cinematic pacing (per feedback): attacks dwell long (jump-in + stand + trade blows), and a KO gets time to
+// blow the pet off-screen before the next pet jumps in.
+function stepDelay(e, base) {
+  const d = Math.round(base * stepWeight(e));
+  if (e.t === 'attack') return Math.max(1700, d);
+  if (e.t === 'faint') return Math.max(820, d);
+  return d;
+}
 function applyEvent(e) {
   switch (e.t) {
     case 'attack': { clashMeet(elMap[e.a], elMap[e.b]); SFX.attack(); break; }
@@ -999,7 +1065,7 @@ function applyEvent(e) {
     case 'buff': setStat(e.uid, 'a', e.newAtk); setStat(e.uid, 'h', e.newHp); floatText(e.uid, `+${e.atk}/+${e.hp}`, 'buff'); if ((e.atk || 0) > 0 || (e.hp || 0) > 0) sparkleRise(e.uid); break;
     case 'shield': updateShield(e.uid, e.shield); floatText(e.uid, '🛡+' + e.amount, 'buff'); break;
     case 'ability': { abilityPop(e.uid); SFX.ability(); break; }
-    case 'faint': { const m = elMap[e.uid]; if (m) { deathBurst(m.el); m.el.style.zIndex = 15; m.el.classList.add('faint'); SFX.faint(); setTimeout(() => m.el.remove(), 640 / (replaySpeed || 1)); } break; }
+    case 'faint': { const m = elMap[e.uid]; if (m) { deathBurst(m.el); blowOut(m); SFX.faint(); setTimeout(() => m.el.remove(), 700 / (replaySpeed || 1)); } break; }
     case 'summon': { addSummon(e); break; }
     // steal transfers atk/hp from the victim to the stealer: the stealer updates via its own 'buff' event,
     // so here we update the VICTIM (e.from) to its new absolute stats (tatk/thp) or its numbers would desync.
@@ -1055,7 +1121,7 @@ function hideAbilityCallout() {
 function updateShield(uid, shield) {
   const m = elMap[uid]; if (!m) return;
   let b = m.el.querySelector('.shieldbadge');
-  if (shield > 0) { if (!b) { b = document.createElement('div'); b.className = 'shieldbadge'; m.el.appendChild(b); } b.textContent = '🛡' + shield; }
+  if (shield > 0) { if (!b) { b = document.createElement('div'); b.className = 'shieldbadge'; m.el.appendChild(b); } b.textContent = shield; }
   else if (b) b.remove();
 }
 function addSummon(e) {
@@ -1073,7 +1139,7 @@ function addSummon(e) {
   if (anchor && anchor.parentElement === container) anchor.insertAdjacentElement('afterend', d);
   else if (e.afterUid == null) container.prepend(d);
   else container.appendChild(d);
-  elMap[e.uid] = { el: d, side: e.side, defId: e.token, level: e.level || 1, name: nm, abilityText: u?.ability?.text || '' };
+  elMap[e.uid] = { el: d, uid: e.uid, side: e.side, defId: e.token, level: e.level || 1, name: nm, abilityText: u?.ability?.text || '' };
   SFX.tap();
 }
 $('#skipBtn').onclick = () => {
@@ -1233,8 +1299,9 @@ function gameOver(won) {
   saveBest(won);
   $('#goEmoji').innerHTML = won
     ? `<img src="assets/ui/trophy.png" alt="" style="width:104px;height:104px;object-fit:contain;filter:drop-shadow(0 6px 12px rgba(20,18,16,.28))">`
-    : `<img src="assets/ui/meantide/struck-seal.png" alt="" style="width:96px;height:96px;object-fit:contain;mix-blend-mode:multiply">`;
-  $('#goTitle').textContent = won ? 'You took the Cup!' : 'Game over';
+    : `<img src="assets/ui/trinkling-sad.png" alt="" style="width:172px;height:172px;object-fit:contain;filter:drop-shadow(0 8px 16px rgba(20,18,16,.34))">`;
+  $('#gameover').classList.toggle('defeat', !won);
+  $('#goTitle').textContent = won ? 'You took the Cup!' : 'Defeat';
   $('#goText').innerHTML = won
     ? `You topped <b>the Little Standing</b> — <b>${game.wins}</b> fights in <b>${game.turn}</b> turns, <b>${game.hearts}</b>❤️ to spare. The whole stand is chanting your Trinklings’ names!`
     : `You climbed to <b>${game.trophies}</b> <img class="ic" src="assets/ui/trophy.png" alt="trophies"> on the Little Standing over <b>${game.turn}</b> turns. The Trinklings drift off for a nap — go again?`;
@@ -1401,7 +1468,7 @@ $('#codexBack').onclick = () => { show('title'); showBest(); };
 
 // ===== LIVE DUEL (best-of-5 vs a friend on the LAN) =====
 let duelMode = false, duel = null, duelPoll = null, duelLocalPhase = null, duelGame = null;
-const DUEL_BASE_GOLD = 12, DUEL_GOLD_PER_ROUND = 8;
+const DUEL_BASE_GOLD = 10, DUEL_GOLD_PER_ROUND = 3;   // was 12 + 8/round — too much gold late (per feedback)
 
 // Duel/feedback API base: SAME-ORIGIN when running locally or on the LAN server (localhost / a bare IP);
 // the deployed Railway server when the static client is served from a real domain (e.g. GitHub Pages).
