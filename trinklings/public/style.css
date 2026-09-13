@@ -248,7 +248,7 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 .card:nth-child(3n).frozen .art-wrap::after { animation-delay: -.7s; }
 .card:nth-child(3n+1).frozen .art-wrap::after { animation-delay: -1.7s; }
 .card:nth-child(3n+2).frozen .art-wrap::after { animation-delay: -2.5s; }
-#shopSnacks .card.frozen .art-wrap::after { --pet-scale: .9; animation: none; }   /* items are static, so is their ice */
+#shopSnacks .card.frozen .art-wrap::after { --pet-scale: 1.2; animation: none; }   /* items are static, so is their ice (scale matched to the food art below) */
 .card .art-wrap { flex: 1; min-height: 40px; display: flex; }
 /* no background disc behind the pet — it stands directly on the scene */
 .card .art { flex: 1; width: 100%; background: none; display: flex; align-items: center; justify-content: center; overflow: visible; position: relative; }
@@ -256,8 +256,8 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
    static size and the bob keyframes so items can shrink it in one place. */
 .card .art img { --pet-scale: 1.61; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 3px 4px rgba(20,40,70,.34)); transform: scale(var(--pet-scale)); transform-origin: 50% 88%; animation: petIdle 3.2s var(--ease-soft) infinite; }
 @keyframes petIdle { 0%,100% { transform: scale(var(--pet-scale, 1.24)) translateY(0); } 50% { transform: scale(var(--pet-scale, 1.24)) translateY(-3px); } }
-/* items read as smaller, subordinate props next to the pets — and sit still (no bob) */
-#shopSnacks .card .art img { --pet-scale: .9; animation: petIdle 3.6s var(--ease-soft) infinite; }   /* food bobs too (per feedback), a touch slower */
+/* shop items: still a touch smaller than the pets (1.2 vs 1.61), but large enough to read at a glance (feedback: "food should show larger") */
+#shopSnacks .card .art img { --pet-scale: 1.2; animation: petIdle 3.6s var(--ease-soft) infinite; }   /* food bobs too (per feedback), a touch slower */
 .card:nth-child(3n) .art img { animation-delay: -.7s; }
 .card:nth-child(3n+1) .art img { animation-delay: -1.7s; }
 .card:nth-child(3n+2) .art img { animation-delay: -2.5s; }
@@ -302,8 +302,21 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 .lvgrp i.on { background: var(--glow); box-shadow: 0 0 4px var(--glow); }
 .cd-head .lvl { position: static; transform: none; }
 .cd-head .lvgrp i { width: 6px; height: 8px; }
-.snackpip { position: absolute; bottom: 2px; right: 3px; z-index: 2; display: flex; gap: 1px; }
-.pip-ic { width: 15px; height: 15px; object-fit: contain; filter: drop-shadow(0 1px 2px rgba(20,40,70,.5)); }
+/* HELD ITEMS: readable food badges in an "L" at the card's bottom-LEFT, sitting on the stat pill's top edge — up to 2 across,
+   a 3rd slot above (pets face right, so this is their back + feet; top-left = price/L3 crown, top-right = frozen/merge/
+   fuse-spark, top-centre = level pips, bottom-centre = stats). A dark disc + static ring gives contrast instead of a filter,
+   so nothing inside a moving card (bob / stage / FLIP) carries a filter — gfx-lite-safe with no override. */
+.card .stats { position: relative; }   /* anchor: .held lives INSIDE .stats, so a wrapped 2-digit pill pushes it up, never under it */
+.held { position: absolute; left: -7px; bottom: calc(100% + 2px); z-index: 4; display: flex; flex-wrap: wrap-reverse; align-items: flex-end; width: 46px; gap: 2px; pointer-events: none; }
+.held-it { position: relative; display: flex; align-items: center; justify-content: center; flex: none; width: 22px; height: 22px; border-radius: 50%;
+  background: rgba(18,32,52,.8); box-shadow: 0 0 0 1.5px rgba(255,255,255,.75), 0 1px 3px rgba(12,26,44,.45); transition: opacity .3s var(--ease-soft); }
+.held-it img { width: 26px; height: 26px; object-fit: contain; }   /* item art fills ~50–76% of its canvas → oversize so the object reads ~17–20px */
+.held-n { position: absolute; right: -6px; top: -5px; min-width: 14px; height: 14px; padding: 0 3px; box-sizing: border-box; border-radius: 7px;
+  background: linear-gradient(180deg,#ffe9a8,#f5c542); color: #4a3408; font: 900 .58rem/14px 'Nunito', sans-serif; text-align: center; box-shadow: 0 1px 2px rgba(20,40,70,.45); }
+.held-more { color: #fff; font: 900 .66rem/1 'Nunito', sans-serif; letter-spacing: -.02em; }
+/* spent (a Firepip's first strike landed / a Honeypot's faint fired): dims + one pop — opacity + transform only */
+.held-it.used { opacity: .38; animation: heldSpend .42s var(--ease-bounce); }
+@keyframes heldSpend { 40% { transform: scale(1.4); } }
 .snacks .card { min-height: 74px; }
 
 /* ---- action bar ---- */
@@ -995,3 +1008,35 @@ html.gfx-lite {
 /* pit dust: no blur (the radial puffs already fade out softly) and it holds still — a drifting layer this big is a
    full-width redraw every frame on a weak GPU; the pets keep their idle bob so the pit still feels alive */
 .gfx-lite .arena::after { animation: none; opacity: .44; transform: translate(1px, -2px); background: radial-gradient(70px 30px at 28% 38%, rgba(232,216,188,.42), transparent 80%), radial-gradient(90px 38px at 72% 62%, rgba(232,216,188,.36), transparent 80%), radial-gradient(56px 26px at 52% 26%, rgba(232,216,188,.4), transparent 80%); }
+
+/* ---- HELD ITEMS on battle cards (both sides): a sibling of .art (so it neither bobs nor flips with face-left), riding
+   the card's staging/FLIP transforms; perspective-scaled like .stats but floored at .82 so the far enemy bench stays legible */
+.bcard .held { left: -3px; bottom: 20px; width: 42px; transform: scale(max(.82, var(--side-scale, 1))); transform-origin: 0 100%; transition: transform var(--persp-dur, .5s) cubic-bezier(.25,-0.35,.4,1); }
+.bcard .held-it { width: 20px; height: 20px; }
+.bcard .held-it img { width: 24px; height: 24px; }
+/* battle hold-tip names them ("Holding: Firepip ×2, Honeypot") */
+.hold-tip .ht-held { margin-top: 3px; font-size: .7rem; font-weight: 800; opacity: .85; }
+/* "Levels: stats only" — a quiet slate tag after an ability whose numbers never change with level (tap-detail, battle
+   hold-tip, reward tip, codex). Static, no filter; sized in em so it follows whichever ability line it sits in. */
+.lvflat, .lvodds { display: inline-block; margin-left: 4px; padding: 0 6px; border-radius: 999px; font-family: 'Nunito', sans-serif; font-size: .8em; font-weight: 800; font-style: normal;
+  line-height: 1.45; letter-spacing: .02em; color: var(--ink-soft); background: rgba(57,80,95,.1); box-shadow: inset 0 0 0 1px rgba(57,80,95,.32); white-space: nowrap; vertical-align: 1px; }
+/* "Fed +A/+H" — the tracked stat-food total in the tap-detail header (stat foods are baked into atk/hp, so they leave no badge) */
+.cd-fed { flex: none; display: inline-flex; align-items: center; margin-top: 1px; padding: 1px 7px; border-radius: 999px; font-size: .66rem; font-weight: 900; line-height: 1.35;
+  white-space: nowrap; color: #1d6b55; background: rgba(79,194,160,.2); box-shadow: inset 0 0 0 1px rgba(47,157,143,.45); }
+@media (orientation: landscape) and (max-height: 600px) {
+  .held { width: 36px; } .held-it { width: 17px; height: 17px; } .held-it img { width: 20px; height: 20px; }
+  #battle .bcard .held { bottom: 18px; width: 34px; } #battle .bcard .held-it { width: 16px; height: 16px; } #battle .bcard .held-it img { width: 19px; height: 19px; }
+}
+/* narrow phones: a FULL 5-pet battle line (5×72 + gaps = 384px) overflowed ≤400px and cut the back pet — and its left-anchored
+   item badges — off-screen. 64px cards (art is height-bound at 62px, so pets don't shrink) + 2px gaps = 328px fit a
+   360px screen; lines of ≤4 pets are unaffected (they never reached the old 82% cap). */
+@media (max-width: 400px) { #battle .line { max-width: none; gap: 2px; } #battle .bcard { width: 64px; } }
+
+/* Fuse preview on the action button ("Fuse" over the combined A/H, then the cost pill): stacked so the wider label keeps
+   END TURN on-screen; narrow phones tighten the bar's gaps/padding (≤400px) so every action state fits a 390px screen. */
+#actionLbl .act-stack { display: inline-flex; flex-direction: column; align-items: center; line-height: 1; }
+#actionLbl .fuse-prev { display: block; font-size: .72em; opacity: .92; margin-top: 2px; }
+@media (max-width: 400px) { .actionbar { gap: 6px; } .actionbar .btn { padding-left: 8px; padding-right: 8px; } .actionbar .btn.end { padding-left: 11px; padding-right: 11px; } }
+/* <=370px (360px phones): an armed squad Fuse (label + stat preview + cost pill + the swap button) pushed END TURN ~10px off-screen
+   under the <=400px step — tighten the gaps and side padding once more; every action state measured <= innerWidth at 360. */
+@media (max-width: 370px) { .actionbar { gap: 4px; } .actionbar .btn { padding-left: 6px; padding-right: 6px; } .actionbar .btn.end { padding-left: 8px; padding-right: 8px; letter-spacing: 0; } }
