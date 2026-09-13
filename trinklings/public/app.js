@@ -1418,8 +1418,8 @@ $('#rewatchRival').onclick = () => { $('#rewatchModal').hidden = true; if (game?
 // Outcome-themed result screen: emblem + big banner + a soft subtitle, on a tinted card. No sad emoji —
 // a loss stays upbeat ("come back stronger"), keeping the whimsical tone. Shared by solo + duel.
 const RESULT_UI = {
-  win:  { txt: 'Victory!',    sub: 'Your squad holds the field.',            emblem: 'trophy',    snd: () => SFX.win() },
-  lose: { txt: 'Defeated',    sub: 'Shake it off — come back stronger.',      emblem: 'heart',     snd: () => SFX.lose() },
+  win:  { txt: 'Victory!',    sub: 'Your squad holds the field.',            emblem: 'trinkling-happy', snd: () => SFX.win() },
+  lose: { txt: 'Defeated',    sub: 'Shake it off — come back stronger.',      emblem: 'trinkling-sad',   snd: () => SFX.lose() },
   draw: { txt: "It's a draw", sub: 'Evenly matched — not a scratch on either side.', emblem: 'trinkling-draw', snd: () => {} },
 };
 function applyResultScreen(result) {
@@ -1428,8 +1428,12 @@ function applyResultScreen(result) {
   const banner = $('#resultBanner');
   banner.textContent = r.txt; banner.className = 'result-banner ' + result;
   // a loss is kept simple: just "Defeated" + how many hearts it cost / how many remain
+  // Solo: keep it succinct — mirror the "−1 ❤" defeat line with a "+1 🏆" victory line. (Duel/Local track hearts, not trophies.)
   let sub = r.sub;
-  if (result === 'lose' && !duelMode && game) sub = `−${CONFIG.heartsLostPerLoss} ❤ · ${game.hearts} left`;
+  if (!duelMode && !lMode && game) {
+    if (result === 'lose') sub = `−${CONFIG.heartsLostPerLoss} ❤ · ${game.hearts} left`;
+    else if (result === 'win') sub = `+1 🏆 · ${game.trophies}/${CONFIG.winTrophies}`;
+  }
   $('#resultSub').textContent = sub;
   $('#resultEmblem').src = `assets/ui/${r.emblem}.png`;
   $('#resultCard').className = 'result-card ' + result;

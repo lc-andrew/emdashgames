@@ -432,10 +432,12 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 .result-card.win  { --rc-glow: rgba(120,220,150,.5);  --rc-ring: #ffe9a8; }
 .result-card.lose { --rc-glow: rgba(255,130,150,.45); --rc-ring: #ffd0d8; }
 .result-card.draw { --rc-glow: rgba(150,170,210,.42); --rc-ring: #dbe4f4; }
-.result-emblem { width: 88px; height: 88px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-  background: radial-gradient(circle at 50% 38%, #fff, var(--rc-ring, #cfe0ff)); box-shadow: 0 0 0 4px rgba(255,255,255,.5), 0 8px 22px rgba(20,40,70,.3), 0 0 30px 4px var(--rc-glow, transparent);
+/* the emblem is now a CREATURE (happy=win / sad=lose / awkward=draw), not an icon in a disc — show it big
+   over a soft outcome-tinted glow instead of the old white ring. */
+.result-emblem { width: 132px; height: 124px; display: flex; align-items: flex-end; justify-content: center;
+  background: radial-gradient(circle at 50% 46%, var(--rc-glow, rgba(120,150,255,.4)), transparent 62%);
   animation: emblemIn .5s var(--ease-bounce) both; }
-.result-emblem img { width: 56px; height: 56px; object-fit: contain; filter: drop-shadow(0 3px 5px rgba(20,40,70,.3)); }
+.result-emblem img { width: 120px; height: 120px; object-fit: contain; filter: drop-shadow(0 5px 9px rgba(20,40,70,.34)); }
 @keyframes emblemIn { 0% { transform: scale(0) rotate(-25deg); opacity: 0; } 60% { transform: scale(1.12) rotate(6deg); } 100% { transform: scale(1) rotate(0); opacity: 1; } }
 .result-banner { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 1.9rem; font-weight: 900; text-transform: uppercase; letter-spacing: .05em; line-height: 1; animation: stampDown .4s var(--ease-bounce);
   color: #2a9c5e; -webkit-text-fill-color: #2a9c5e; filter: drop-shadow(0 2px 0 #ffffff) drop-shadow(0 2px 5px rgba(40,90,130,.3)); }
