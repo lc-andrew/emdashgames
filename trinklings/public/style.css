@@ -855,7 +855,12 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 #deckselect .deck-card h1 { text-align: center; color: #0f2338; -webkit-text-fill-color: #0f2338; text-shadow: 0 0 22px rgba(255,255,255,.95), 0 0 11px rgba(255,255,255,.85), 0 1px 0 rgba(255,255,255,.6); }
 .faction-card .fname { color: var(--gilt-deep); }               /* dark teal → strong contrast on white */
 .faction-card.sel .fname { color: #1a6f9c; }
-#deckBegin, #deckDaily { width: 100%; }                         /* same width as the options grid */
+#deckBegin { width: 100%; }                                     /* the primary CTA spans the grid */
+/* Daily Deck reads as a clear ALTERNATIVE to picking factions: an "— or —" divider + a compact, centred
+   secondary button (not a second full-width primary crammed under the selector). */
+.deck-or { text-align: center; margin: 13px 0 9px; opacity: .6; font-weight: 800; font-size: .8rem; letter-spacing: .06em; color: var(--ink); text-shadow: 0 1px 0 rgba(255,255,255,.7); }
+.deck-daily { display: block; width: -webkit-fit-content; width: fit-content; margin: 0 auto; padding: 9px 22px; font-size: .9rem; }
+#deckBack { margin-top: 14px; }
 .btn-ic { width: 1.3em; height: 1.3em; object-fit: contain; vertical-align: -0.28em; margin-right: 3px; }
 .btn-ic.duel-ic { width: 1.9em; height: 1.9em; vertical-align: -0.55em; margin-right: 1px; }
 .local-or { margin: 12px 0 8px; opacity: .7; font-size: .85rem; }
