@@ -110,7 +110,8 @@ export function buildAITeam(turn, seed, difficulty = 1, coalition = null) {
     if (t < turn) advanceNoBattle(g);
   }
   const team = g.squadForBattle();
-  if (difficulty < 1 && team.length > 1) team.pop(); // easier ghosts field one fewer
+  if (difficulty < 1 && team.length > 1) team.pop();                 // easier ghosts field one fewer
+  else if (difficulty > 1) for (const u of team) { u.atk = Math.max(1, Math.round(u.atk * difficulty)); u.hp = Math.max(1, Math.round(u.hp * difficulty)); }  // harder ghosts hit harder (offline difficulty)
   return team;
 }
 

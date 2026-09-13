@@ -1018,7 +1018,7 @@ function pickRival(game, ghost) {
 function endTurn() {
   if (!game.livingSquad().length) { hint('Buy at least one Trinkling before fighting!'); return; }   // QA: empty squad silently cost a heart
   clearSel();
-  const ghost = generateGhostTeam(game.turn, (runSeed + game.turn * 7919) >>> 0, easy ? 0.85 : 1);
+  const ghost = generateGhostTeam(game.turn, (runSeed + game.turn * 7919) >>> 0, easy ? 0.85 : 1.25);   // normal offline is harder — ghosts hit ~25% harder (per feedback)
   const rival = pickRival(game, ghost);
   $('#enemyLabel').textContent = rival.n;
   document.querySelector('.vs-label').textContent = rival.l;
