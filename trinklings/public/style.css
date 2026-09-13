@@ -464,6 +464,9 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 .triggers-body { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; margin: 0 -4px 12px; padding: 0 4px; }
 .trig-sec { font-family: 'Cinzel', serif; text-transform: uppercase; letter-spacing: .06em; font-weight: 800; font-size: .78rem; color: var(--gilt-deep); margin: 12px 0 6px; }
 .trig-sec:first-child { margin-top: 0; }
+.trig-note { padding: 8px 10px; margin-bottom: 8px; border-radius: var(--r-md); background: rgba(120,140,180,.10); border: 1px solid rgba(120,140,180,.18); }
+.trig-note-lbl { display: block; font-family: 'Cinzel', serif; text-transform: uppercase; letter-spacing: .05em; font-weight: 800; font-size: .72rem; color: var(--gilt-deep); margin-bottom: 2px; }
+.trig-note-txt { font-size: .82rem; line-height: 1.42; color: var(--ink); font-weight: 600; }
 .trig-row { display: flex; align-items: baseline; gap: 9px; padding: 6px 0; border-top: 1px solid rgba(120,140,180,.16); }
 .trig-tag { flex: none; min-width: 88px; font-size: .68rem; font-weight: 800; text-transform: uppercase; letter-spacing: .03em; color: var(--gilt-deep); background: rgba(120,140,180,.13); border-radius: 999px; padding: 3px 8px; text-align: center; }
 .trig-when { font-size: .84rem; line-height: 1.4; color: var(--ink); font-weight: 600; }

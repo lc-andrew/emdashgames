@@ -174,25 +174,28 @@ const TRIGGER_LABEL = {
   onStartBattle: 'Start', onHurt: 'Hurt', onFaint: 'Faint', onFriendFaints: 'Ally Down',
   onFriendSummoned: 'Summon', onEndTurn: 'Turn End', onStartTurn: 'Turn', onLevelUp: 'Level Up',
   onSell: 'Sell', onFriendBought: 'Buy', onBeforeAttack: 'Attack', onAfterAttack: 'On Hit', passive: 'Passive',
-  onKill: 'Kill', onStartBattle2: 'Start', onFirstBlood: 'First Blood', onLowHealth: 'Half HP', everyOtherRound: 'Every 2nd Round',
+  onKill: 'Kill', onStartBattle2: 'Start', onFirstBlood: 'First Blood', onLowHealth: 'Half HP', everyOtherRound: 'Every 2nd Attack',
 };
 
 // Plain-language glossary of when each ability fires — shown in Settings ▸ "When abilities trigger".
 // Keyed to TRIGGER_LABEL so the wording here matches the tag printed on every card. Only the triggers the
 // roster actually uses are listed. (Verified in-engine by simulating each — tools sim, 2026-09-13.)
 const TRIGGER_GLOSSARY = [
-  { section: 'During a battle' },
+  // Two rules that apply to EVERY trigger, called out first (matches engine.js: sortByAttackDesc + once:'battle').
+  { note: 'order', label: 'Who goes first', text: 'When several Trinklings share the same moment, the one with the highest <b>⚔ Attack</b> acts first — ties are broken at random.' },
+  { note: 'limit', label: 'Limits', text: "Some abilities fire only once per fight (or once per turn). Whenever there's a limit, it's written right on that Trinkling's card." },
+  { section: 'During a battle — an “attack” is the two front Trinklings trading blows' },
   { trig: 'onStartBattle', when: 'The instant the fight begins, before anyone attacks.' },
-  { trig: 'onBeforeAttack', when: 'Just before this Trinkling swings, each round it attacks.' },
-  { trig: 'onAfterAttack', when: 'Right after it swings — only if it survived the clash.' },
-  { trig: 'onHurt', when: 'When it takes damage and lives through it (some do this once per fight).' },
-  { trig: 'onLowHealth', when: 'The first time it drops to half its starting health or below.' },
-  { trig: 'onKill', when: 'When its attack knocks out an enemy.' },
-  { trig: 'onFirstBlood', when: 'On the very first faint of the whole battle — either side.' },
+  { trig: 'onBeforeAttack', when: 'Just before this Trinkling swings — every time it attacks.' },
+  { trig: 'onAfterAttack', when: 'Right after it swings, if it lived through the clash.' },
+  { trig: 'onHurt', when: 'Each time it takes damage and survives. (A few cards limit this to the first hit — they say so.)' },
+  { trig: 'onLowHealth', when: 'The first time it drops to half its starting health or below — once per fight.' },
+  { trig: 'onKill', when: 'Whenever its attack knocks out an enemy.' },
+  { trig: 'onFirstBlood', when: 'On the very first faint of the whole fight, friend or foe — once per fight.' },
   { trig: 'onFaint', when: 'As it faints and leaves the lane.' },
-  { trig: 'onFriendFaints', when: 'When another Trinkling on your side faints.' },
+  { trig: 'onFriendFaints', when: 'Each time another Trinkling on your side faints. (A few cards limit this to the first — they say so.)' },
   { trig: 'onFriendSummoned', when: 'When a token or new Trinkling appears on your side mid-fight.' },
-  { trig: 'everyOtherRound', when: 'At the end of every 2nd round of combat.' },
+  { trig: 'everyOtherRound', when: 'Every second attack, once the front line has started trading blows.' },
   { trig: 'passive', when: 'Always on — an ongoing effect, no moment needed.' },
   { section: 'Back in the shop' },
   { trig: 'onStartTurn', when: 'At the start of each shop turn (often a little bonus gold).' },
@@ -206,6 +209,11 @@ function openTriggers() {
   SFX.tap();
   const body = $('#triggersBody'); body.innerHTML = '';
   TRIGGER_GLOSSARY.forEach((e) => {
+    if (e.note) {
+      const n = document.createElement('div'); n.className = 'trig-note';
+      n.innerHTML = `<span class="trig-note-lbl">${e.label}</span><span class="trig-note-txt">${e.text}</span>`;
+      body.appendChild(n); return;
+    }
     if (e.section) {
       const h = document.createElement('div'); h.className = 'trig-sec'; h.textContent = e.section;
       body.appendChild(h); return;
