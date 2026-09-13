@@ -250,7 +250,7 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 .card .art img { --pet-scale: 1.61; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 3px 4px rgba(20,40,70,.34)); transform: scale(var(--pet-scale)); transform-origin: 50% 88%; animation: petIdle 3.2s var(--ease-soft) infinite; }
 @keyframes petIdle { 0%,100% { transform: scale(var(--pet-scale, 1.24)) translateY(0); } 50% { transform: scale(var(--pet-scale, 1.24)) translateY(-3px); } }
 /* items read as smaller, subordinate props next to the pets — and sit still (no bob) */
-#shopSnacks .card .art img { --pet-scale: .9; animation: none; }
+#shopSnacks .card .art img { --pet-scale: .9; animation: petIdle 3.6s var(--ease-soft) infinite; }   /* food bobs too (per feedback), a touch slower */
 .card:nth-child(3n) .art img { animation-delay: -.7s; }
 .card:nth-child(3n+1) .art img { animation-delay: -1.7s; }
 .card:nth-child(3n+2) .art img { animation-delay: -2.5s; }
@@ -360,7 +360,10 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 /* battle pets stand boxless on the field, exactly like the shop/squad pets (no plate, no disc) */
 .bcard { width: 72px; flex-shrink: 0; background: none; box-shadow: none; padding: 0; text-align: center; position: relative; border: none;
   transition: transform .18s var(--ease-bounce), opacity .3s var(--ease-soft); animation: pop .32s var(--ease-bounce) both; }
-.bcard .art { height: 62px; background: none; overflow: visible; display: flex; align-items: flex-end; justify-content: center; position: relative; z-index: 0; }   /* z-index:0 makes .art a stacking context so the ::after shadow (z-index:-1) stays scoped BEHIND the pet, never on top */
+.bcard .art { height: 62px; background: none; overflow: visible; display: flex; align-items: flex-end; justify-content: center; position: relative; z-index: 0; animation: battleBob 2.9s var(--ease-soft) infinite; }   /* pets stay alive — gentle bob on bench AND while fighting (per feedback); a container-level translateY so it layers cleanly over the card's staging/FLIP transforms */
+@keyframes battleBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2.4px); } }
+.side .bcard:nth-child(2n) .art { animation-delay: -1s; }
+.side .bcard:nth-child(3n) .art { animation-delay: -1.9s; }   /* z-index:0 makes .art a stacking context so the ::after shadow (z-index:-1) stays scoped BEHIND the pet, never on top */
 /* grow UP from the feet + a per-side PERSPECTIVE scale: enemy (far, top) 30% smaller, you (near, bottom) full */
 .bcard { --side-scale: 1; }
 .side.enemy .bcard { --side-scale: .7; }

@@ -4,8 +4,8 @@
 
 export const CONFIG = {
   startingHearts: 5, easyHearts: 7, winTrophies: 10, heartsLostPerLoss: 1, mercyTurn: 3,
-  goldPerTurn: 10, squadSlots: 5, buyCost: 3, snackCost: 2, rollCost: 1,
-  xpToL2: 2, xpToL3: 4, combineStat: 1, statCap: 50, fuseCost: 10,
+  goldPerTurn: 10, squadSlots: 5, buyCost: 3, snackCost: 3, rollCost: 1,
+  xpToL2: 2, xpToL3: 4, combineStat: 1, statCap: 50, fuseCost: 12,
   shopPetSlots: [{ upToTurn: Infinity, n: 3 }],
   shopSnackSlots: [{ upToTurn: Infinity, n: 2 }],
   maxTier: 6, levelUpReward: true, duelHearts: 6,
