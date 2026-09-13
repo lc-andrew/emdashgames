@@ -118,6 +118,7 @@ h1, h2 { font-family: 'Cinzel', Georgia, serif; font-weight: 800; text-transform
 .actionbar .btn { font-size: .84rem; min-height: 48px; padding: 0 13px; line-height: 1;
   display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; }
 .actionbar .btn .cost { align-self: center; }
+#actionLbl { display: inline-flex; align-items: center; gap: 4px; line-height: 1; }   /* keep the Fuse/Combine label vertically centred with its cost pill */
 .actionbar .btn .cost img { width: 13px; height: 13px; object-fit: contain; display: block; }
 
 /* ---- panels + engraved court frame ---- */
