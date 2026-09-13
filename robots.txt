@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://emdashgames.com/sitemap.xml

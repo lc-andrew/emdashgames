@@ -1,0 +1,22 @@
+{
+ "name": "Emdash Games",
+ "short_name": "Emdash",
+ "description": "Small games. Big moments.",
+ "start_url": "/",
+ "display": "browser",
+ "background_color": "#0b0e21",
+ "theme_color": "#0b0e21",
+ "icons": [
+  {
+   "src": "/assets/home/icon-512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "any"
+  },
+  {
+   "src": "/assets/home/apple-touch-icon.png",
+   "sizes": "180x180",
+   "type": "image/png"
+  }
+ ]
+}

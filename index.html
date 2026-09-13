@@ -1,12 +1,100 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Emdash Games</title>
-<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0e1526;color:#eef2ff;
-font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;text-align:center;padding:24px}
-a{color:#8fd3ff;font-weight:700;text-decoration:none}a:hover{text-decoration:underline}
-.card{max-width:34rem}h1{font-size:2rem;margin:0 0 .4rem}p{opacity:.82;line-height:1.5}</style>
-</head><body><div class="card">
-<h1>Emdash Games</h1>
-<p>Small, hand-crafted games.</p>
-<p><a href="/trinklings/">▶ Play Trinklings</a> — a cosy auto-battler.</p>
-</div></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Emdash Games — Small Games. Big Moments.</title>
+<meta name="description" content="Emdash Games crafts small, hand-made browser games. Play Trinklings — a cosy auto-battler.">
+<link rel="canonical" href="https://emdashgames.com/">
+<meta name="theme-color" content="#0b0e21">
+<meta name="color-scheme" content="dark">
+<meta property="og:site_name" content="Emdash Games">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://emdashgames.com/">
+<meta property="og:title" content="Emdash Games — Small Games. Big Moments.">
+<meta property="og:description" content="Small, hand-made browser games. Play Trinklings — a cosy auto-battler.">
+<meta property="og:image" content="https://emdashgames.com/assets/home/og.jpg">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Emdash Games logo — a dashing speech bubble with two eyes, purple to cyan">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Emdash Games — Small Games. Big Moments.">
+<meta name="twitter:description" content="Small, hand-made browser games. Play Trinklings — a cosy auto-battler.">
+<meta name="twitter:image" content="https://emdashgames.com/assets/home/og.jpg">
+<meta name="twitter:image:alt" content="Emdash Games logo — a dashing speech bubble with two eyes, purple to cyan">
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/home/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/assets/home/favicon-16.png">
+<link rel="icon" type="image/png" sizes="512x512" href="/assets/home/icon-512.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/assets/home/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<link rel="preload" as="font" type="font/woff2" href="/assets/home/fonts/emdash-display-700.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="/assets/home/fonts/emdash-display-600.woff2" crossorigin>
+<link rel="modulepreload" href="/assets/home/app.js">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[
+ {"@type":"Organization","@id":"https://emdashgames.com/#org","name":"Emdash Games","url":"https://emdashgames.com/","logo":"https://emdashgames.com/assets/home/icon-512.png","slogan":"Small games. Big moments."},
+ {"@type":"VideoGame","name":"Trinklings","url":"https://emdashgames.com/trinklings/","description":"A cosy auto-battler you can play in your browser.","gamePlatform":"Web browser","applicationCategory":"Game","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"publisher":{"@id":"https://emdashgames.com/#org"}}
+]}
+</script>
+<style>
+@font-face{font-family:EmdashDisplay;font-weight:700;font-display:swap;src:url(/assets/home/fonts/emdash-display-700.woff2) format("woff2")}
+@font-face{font-family:EmdashText;font-weight:800;font-display:swap;src:url(/assets/home/fonts/emdash-display-800.woff2) format("woff2")}
+@font-face{font-family:EmdashText;font-weight:600;font-display:swap;src:url(/assets/home/fonts/emdash-display-600.woff2) format("woff2")}
+:root{--primary:#7B3DFF;--secondary:#00C2FF;--navy:#0b0e21;--ink:#E6EAF2;--muted:#8b93b8;--display:EmdashDisplay,"Comfortaa","Segoe UI Rounded",ui-rounded,system-ui,sans-serif;--text:EmdashText,"Nunito","Segoe UI Rounded",ui-rounded,system-ui,sans-serif;--ease:cubic-bezier(.2,.7,.2,1)}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--navy);color:var(--ink);font-family:var(--text);-webkit-font-smoothing:antialiased;overflow:hidden}
+#scene{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:0}
+#overlay{position:fixed;inset:0;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:0 24px clamp(30px,8vh,90px);pointer-events:none;text-align:center}
+.o{opacity:0;transform:translateY(16px);transition:opacity .9s ease,transform 1s var(--ease)}
+body.ready .o{opacity:1;transform:none}
+#brand{margin:0;line-height:1}
+#brand .em{display:block;font-family:var(--display);font-weight:700;font-size:clamp(48px,9.4vw,108px);letter-spacing:-.03em;color:#fff;line-height:.92;-webkit-text-stroke:.035em #fff;paint-order:stroke fill}
+#brand .games{display:block;margin-top:.28em;font-weight:600;font-size:clamp(13px,2.2vw,24px);letter-spacing:.46em;text-indent:.46em;color:rgba(255,255,255,.95)}
+#tagline{margin:22px 0 0;font-weight:600;font-size:clamp(10px,1.15vw,13px);letter-spacing:.34em;text-indent:.34em;color:var(--muted)}
+#play-trinklings{pointer-events:auto;position:relative;display:inline-flex;align-items:center;gap:18px;margin-top:36px;padding:16px 32px 16px 18px;border-radius:20px;color:var(--ink);text-decoration:none;background:rgba(16,20,52,.55);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 10px 40px rgba(0,0,0,.35);transition:opacity .9s ease,transform 1s var(--ease),translate .35s var(--ease),scale .35s var(--ease),box-shadow .35s ease}
+#play-trinklings::before{content:"";position:absolute;inset:0;border-radius:inherit;padding:1.5px;background:linear-gradient(135deg,var(--primary),var(--secondary));-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+#play-trinklings:hover,#play-trinklings:focus-visible{translate:0 -4px;scale:1.025;box-shadow:0 18px 60px rgba(123,61,255,.4),0 0 0 1px rgba(0,194,255,.25)}
+#play-trinklings:focus-visible{outline:2px solid var(--secondary);outline-offset:4px}
+#play-trinklings .badge{flex:none;width:54px;height:54px;border-radius:15px;display:grid;place-items:center;background:linear-gradient(135deg,var(--primary),var(--secondary));color:#fff;box-shadow:0 6px 18px rgba(123,61,255,.45)}
+#play-trinklings .badge svg{width:21px;height:21px;margin-left:3px}
+#play-trinklings .t{text-align:left;line-height:1.15}
+#play-trinklings .t b{display:block;font-weight:800;font-size:20px;letter-spacing:-.01em}
+#play-trinklings .t span{display:block;margin-top:4px;font-weight:600;font-size:13px;letter-spacing:.06em;color:var(--muted)}
+#brand{transition-delay:.85s}#tagline{transition-delay:1.05s}#play-trinklings{transition-delay:1.25s,1.25s,0s,0s,0s}#corner,#copy{transition-delay:1.5s}
+#corner,#copy{position:fixed;bottom:22px;font-weight:600;font-size:10px;letter-spacing:.34em;color:var(--muted);line-height:1.9;z-index:1;pointer-events:none}
+#corner{left:26px;text-align:left}#copy{right:26px;letter-spacing:.12em}
+#fallback,.fallback-ns{display:none;width:min(64vw,440px);height:auto;margin:0 auto 5vh;border-radius:24px}
+.fallback-ns{display:block}
+body.webgl-failed #scene{display:none}
+body.webgl-failed #overlay{justify-content:center}
+body.webgl-failed #fallback{display:block}
+body.webgl-failed .o{opacity:1;transform:none;transition:none}
+@media (max-width:640px){#overlay{padding-bottom:max(72px,env(safe-area-inset-bottom,0px) + 10vh)}#play-trinklings{margin-top:26px}#corner{display:none}#copy{left:0;right:0;text-align:center;bottom:16px}}
+@media (prefers-reduced-motion:reduce){.o,#play-trinklings{transition:none}}
+</style>
+<noscript><style>.o{opacity:1;transform:none}#scene{display:none}#overlay{justify-content:center}</style></noscript>
+</head>
+<body>
+<canvas id="scene" aria-hidden="true"></canvas>
+<main id="overlay">
+  <img id="fallback" alt="Emdash Games logo" width="800" height="671" decoding="async">
+  <noscript><img class="fallback-ns" src="/assets/home/mark-fallback.png" alt="Emdash Games logo" width="800" height="671"></noscript>
+  <h1 id="brand" class="o"><span class="em">emdash</span><span class="games">GAMES</span></h1>
+  <p id="tagline" class="o">SMALL GAMES. BIG MOMENTS.</p>
+  <a id="play-trinklings" class="o" href="/trinklings/">
+    <span class="badge" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4.5v15a1 1 0 0 0 1.5.86l12.5-7.5a1 1 0 0 0 0-1.72L7.5 3.64A1 1 0 0 0 6 4.5z"/></svg></span>
+    <span class="t"><b>Play Trinklings</b><span>a cosy auto-battler</span></span>
+  </a>
+</main>
+<div id="corner" class="o" aria-hidden="true">PLAY<br>MORE<br>FURTHER</div>
+<div id="copy" class="o">© 2026 EMDASH GAMES</div>
+<script>
+window.emdashFail=function(){document.body.classList.add('webgl-failed');var i=document.getElementById('fallback');if(i&&!i.getAttribute('src'))i.src='/assets/home/mark-fallback.png'};
+addEventListener('error',function(){if(!(window.__emdash&&window.__emdash.ready))window.emdashFail()});
+setTimeout(function(){document.body.classList.add('ready')},4500);
+</script>
+<script type="module" src="/assets/home/app.js" onerror="window.emdashFail()"></script>
+</body>
+</html>
