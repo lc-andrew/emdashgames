@@ -26,8 +26,8 @@
     </div>
     <div class="btn-col title-actions">
       <button class="btn big glass" data-start="offline">Offline</button>
-      <button class="btn big glass" id="dailyBtn">Daily</button>
-      <button class="btn big glass" id="onlineBtn"><span class="online-dot" id="onlineDot" title="Connection"></span> Online</button>
+      <button class="btn big glass" id="onlineBtn"><img class="btn-ic duel-ic" src="assets/ui/duel-icon.png" alt=""> Online</button>
+      <button class="btn big glass" id="localBtn"><img class="btn-ic duel-ic" src="assets/ui/duel-icon.png" alt=""> Local</button>
     </div>
   </section>
 
@@ -118,6 +118,7 @@
       <h1>Your Alliance</h1>
       <div id="factionGrid" class="faction-grid"></div>
       <button class="btn big primary" id="deckBegin" disabled>Pick 2 factions</button>
+      <button class="btn big glass" id="deckDaily">Daily Deck — all factions</button>
       <button class="btn ghostbtn" id="deckBack">Back</button>
     </div>
   </section>
@@ -127,12 +128,34 @@
     <div class="title-card">
       <img class="logo appicon" src="assets/ui/sword.png" alt="Duel" style="border-radius:0;box-shadow:none;background:none" />
       <h1>Online Duel</h1>
-      <p class="tag" id="duelTag">Share a <b>room code</b> — first to <b>3 wins</b>.</p>
+      <p class="tag" id="duelTag">Share a <b>room code</b> — <b>6 lives</b> each, last standing wins.</p>
       <input id="duelCode" class="duel-input" maxlength="6" placeholder="ROOM CODE" autocapitalize="characters" autocomplete="off" />
       <input id="duelName" class="duel-input" maxlength="12" placeholder="Your name" autocomplete="off" />
       <button class="btn big primary" id="duelJoin">Join room</button>
       <div id="duelStatus" class="tag" style="margin-top:12px"></div>
       <button class="btn ghostbtn" id="duelBack">Back</button>
+    </div>
+  </section>
+
+  <section id="local" class="screen">
+    <div class="title-card">
+      <img class="logo appicon" src="assets/ui/duel-icon.png" alt="Local" style="border-radius:0;box-shadow:none;background:none" />
+      <h1>Local Duel</h1>
+      <p class="tag">Same Wi-Fi, phone-to-phone. One player <b>Hosts</b>, the other <b>Joins</b> with the code.</p>
+      <input id="localName" class="duel-input" maxlength="12" placeholder="Your name" autocomplete="off" />
+      <div id="localPick">
+        <button class="btn big primary" id="localHostBtn">Host a game</button>
+        <div class="local-or">— or join one —</div>
+        <input id="localCode" class="duel-input" maxlength="4" placeholder="CODE" autocapitalize="characters" autocomplete="off" />
+        <button class="btn big glass" id="localJoinBtn">Join</button>
+      </div>
+      <div id="localHostView" hidden>
+        <div class="local-code" id="localCodeShow">----</div>
+        <canvas id="localQR" width="176" height="176" class="local-qr"></canvas>
+        <p class="tag">On the other phone: open <b>Local → Join</b> and enter this code, or scan the QR.</p>
+      </div>
+      <div id="localStatus" class="tag" style="margin-top:12px"></div>
+      <button class="btn ghostbtn" id="localBack">Back</button>
     </div>
   </section>
 

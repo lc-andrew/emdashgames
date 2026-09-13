@@ -1,5 +1,6 @@
 // Trinklings — mobile web client. Tap-to-place shop, animated battle replay, teach-by-play.
 import { GameState, unlockedTier } from '../src/game.js';
+import { simulateBattle, resetUid } from '../src/engine.js';   // host resolves LOCAL P2P battles client-side
 import { generateGhostTeam } from '../tools/ai.js';
 import { CREATURE_BY_ID, SNACK_BY_ID, ALL_UNITS_BY_ID, CONFIG, FACTIONS } from '../src/data/creatures.js';
 // NOTE: `snacks` / `SNACK_BY_ID` / `shopSnacks` are the code identifiers for what the UI calls "Items".
@@ -387,12 +388,18 @@ function shockwaveRing(card, hue = 'gold') {
 // renders as "equal to its level" — no number to touch); chance scales the branch magnitudes (its
 // probability is never stated numerically in copy); multi/randomEffect recurse. Anything we can't
 // cleanly map → return null so the caller falls back to base text + a "Lv{n}" chip.
-export function scaledAbilityText(defId, level) {
-  const ab = CREATURE_BY_ID[defId]?.ability;
+// abOverride/tierOverride: for FUSED units (defId 'fus:…') and any unit NOT in CREATURE_BY_ID — pass the
+// snapshot's { text, effect } ability + its tier so battle tooltips scale exactly like the engine does.
+const SHOP_TRIGS = new Set(['onStartTurn', 'onEndTurn', 'onSell', 'onFriendBought', 'onLevelUp', 'onBuy', 'onFriendSold']);
+export function scaledAbilityText(defId, level, abOverride, tierOverride) {
+  const ab = abOverride || CREATURE_BY_ID[defId]?.ability;
   if (!ab || !ab.text) return '';
+  // SHOP-phase effects are applied by game.js at ×1 (the anti-scaler-stack guard), so their text must NOT be
+  // inflated by level/tier — only BATTLE effects scale. (QA: shop perm-buff text over-stated the applied value.)
+  if (ab.trigger && SHOP_TRIGS.has(ab.trigger)) return ab.text;
   level = level || 1;
   // Mirror engine.js scaled(base, actor) EXACTLY: round(base * level * tierMult), tierMult=1+(tier-1)*0.25.
-  const tier = CREATURE_BY_ID[defId]?.tier || 1;
+  const tier = (tierOverride != null ? tierOverride : CREATURE_BY_ID[defId]?.tier) || 1;
   const tierMult = 1 + ((tier - 1) * 0.25);
   const mag = (base) => Math.round(base * level * tierMult);
   if (level <= 1 && tier <= 1) return ab.text;   // only truly unscaled at level 1, tier 1
@@ -835,7 +842,7 @@ $('#swapBtn').onclick = () => {
   [s[from], s[to]] = [s[to], s[from]];
   SFX.tap(); clearSel(); hint(''); render();
 };
-$('#endBtn').onclick = () => (duelMode ? (duelLocalPhase === 'waiting' ? duelUnready() : duelReady()) : endTurn());
+$('#endBtn').onclick = () => (lMode ? (lPhase === 'waiting' ? localUnready() : localReady()) : duelMode ? (duelLocalPhase === 'waiting' ? duelUnready() : duelReady()) : endTurn());
 
 let runWinStreak = 0; // consecutive single-player wins this run — drives reactive rival taunts
 
@@ -857,6 +864,7 @@ function pickRival(game, ghost) {
 }
 
 function endTurn() {
+  if (!game.livingSquad().length) { hint('Buy at least one Trinkling before fighting!'); return; }   // QA: empty squad silently cost a heart
   clearSel();
   const ghost = generateGhostTeam(game.turn, (runSeed + game.turn * 7919) >>> 0, easy ? 0.85 : 1);
   const rival = pickRival(game, ghost);
@@ -925,8 +933,11 @@ function showHoldTip(u, el) {
   let txt = u.abilityText || CREATURE_BY_ID[u.defId]?.ability?.text || 'No ability.';
   // Show the SAME level/tier-scaled magnitudes the engine uses (mirrors the shop detail card). Base creatures
   // scale via scaledAbilityText; fused units/tokens (not in CREATURE_BY_ID) keep base text. (Feedback: battle showed L1.)
-  if (CREATURE_BY_ID[u.defId]?.ability?.text) {
-    const scaled = scaledAbilityText(u.defId, u.level || 1);
+  const inReg = !!CREATURE_BY_ID[u.defId]?.ability?.text;
+  if (inReg || (u.abilityText && u.effect)) {   // fused units (not in CREATURE_BY_ID) scale from the snapshot's carried effect+tier
+    const scaled = inReg
+      ? scaledAbilityText(u.defId, u.level || 1)
+      : scaledAbilityText(u.defId, u.level || 1, { text: u.abilityText, effect: u.effect }, u.tier);
     if (scaled) txt = scaled;
     else if ((u.level || 1) > 1) txt = `${txt} (Lv${u.level})`;   // unmappable shape → at least mark the level
   }
@@ -961,7 +972,7 @@ function sparkleRise(uid) { const m = elMap[uid]; if (!m) return; const s = docu
 // off — yours to the left, the enemy's to the right — before the next pet jumps in.
 const STAGE_XOFF = 78, STAGE_Y = 0.5;   // side-by-side offset (further apart) + vertical anchor
 function arenaBox() { const a = document.querySelector('.arena'); return a ? { a, r: a.getBoundingClientRect() } : null; }
-function returnToLane(s) { if (!s || !s.el) return; s.el.style.transition = 'transform .34s var(--ease-bounce)'; s.el.style.transform = ''; s.el.style.zIndex = ''; s.el.style.willChange = ''; s.el.classList.remove('in-arena', 'face-left'); }
+function returnToLane(s) { if (!s || !s.el) return; const sp = replaySpeed || 1; s.el.style.willChange = 'transform'; s.el.style.setProperty('--persp-dur', (0.5 / sp).toFixed(2) + 's'); s.el.style.transition = `transform ${(0.34 / sp).toFixed(2)}s var(--ease-bounce)`; s.el.style.transform = ''; s.el.style.zIndex = ''; s.el.classList.remove('in-arena', 'face-left'); setTimeout(() => { if (!s.el.classList.contains('in-arena')) s.el.style.willChange = ''; }, 340 / sp + 40); }
 // kick a spray of dirt clods up from a point in the pit (arena-local coords)
 function kickDirt(lx, ly, arena) {
   if (!arena) return;
@@ -979,7 +990,7 @@ function placeStage(m, xoff, flip) {
   const tx = (ar.left + ar.width / 2 + xoff) - (rr.left + rr.right) / 2;
   const ty = (ar.top + ar.height * STAGE_Y) - (rr.top + rr.bottom) / 2;
   const sp = replaySpeed || 1;
-  m.el.style.zIndex = 22; m.el.style.willChange = 'transform'; m.el.classList.add('in-arena'); if (flip) m.el.classList.add('face-left');
+  m.el.style.zIndex = 22; m.el.style.willChange = 'transform'; m.el.style.setProperty('--persp-dur', (0.5 / sp).toFixed(2) + 's'); m.el.classList.add('in-arena'); if (flip) m.el.classList.add('face-left');
   staged[m.uid] = { el: m.el, tx, ty, fresh: true };
   // 1) pin the current lane position with NO transition + force a reflow, 2) animate on the next frame → no teleport
   m.el.style.transition = 'none';
@@ -1033,8 +1044,9 @@ function blowOut(m) {
   if (!m || !m.el) return;
   const dir = m.side === MYSIDE ? -1 : 1;
   delete staged[m.uid];
-  m.el.style.zIndex = 15;
-  m.el.style.transition = `transform ${(0.62 / (replaySpeed || 1)).toFixed(2)}s cubic-bezier(.35,0,.9,.4), opacity .6s ease-out`;
+  const sp = replaySpeed || 1;
+  m.el.style.zIndex = 15; m.el.style.willChange = 'transform, opacity';
+  m.el.style.transition = `transform ${(0.62 / sp).toFixed(2)}s cubic-bezier(.35,0,.9,.4), opacity ${(0.6 / sp).toFixed(2)}s ease-out`;
   m.el.style.transform = `translate(${dir * 340}px, -30px) scale(1.05) rotate(${dir * 42}deg)`;
   m.el.style.opacity = '0';
 }
@@ -1142,7 +1154,7 @@ function applyEvent(e) {
       updateShield(e.uid, e.shield);
       break;
     }
-    case 'buff': setStat(e.uid, 'a', e.newAtk); setStat(e.uid, 'h', e.newHp); floatText(e.uid, `+${e.atk}/+${e.hp}`, 'buff'); if ((e.atk || 0) > 0 || (e.hp || 0) > 0) sparkleRise(e.uid); break;
+    case 'buff': { setStat(e.uid, 'a', e.newAtk); setStat(e.uid, 'h', e.newHp); const dn = (e.atk || 0) < 0 || (e.hp || 0) < 0; const sg = (v) => ((v || 0) >= 0 ? '+' + (v || 0) : '' + (v || 0)); floatText(e.uid, `${sg(e.atk)}/${sg(e.hp)}`, dn ? 'dmg' : 'buff'); if (!dn && ((e.atk || 0) > 0 || (e.hp || 0) > 0)) sparkleRise(e.uid); break; }
     case 'shield': updateShield(e.uid, e.shield); floatText(e.uid, '🛡+' + e.amount, 'buff'); break;
     case 'ability': { abilityPop(e.uid); SFX.ability(); break; }
     case 'faint': { const m = elMap[e.uid]; if (m) { deathBurst(m.el); blowOut(m); SFX.faint(); setTimeout(() => { const line = m.el.parentElement; if (line) compensateStagedForReflow(line, () => m.el.remove()); else m.el.remove(); }, 700 / (replaySpeed || 1)); } break; }
@@ -1217,8 +1229,7 @@ function updateShield(uid, shield) {
 function addSummon(e) {
   const container = e.side === MYSIDE ? $('#myLine') : $('#enemyLine');
   const u = ALL_UNITS_BY_ID[e.token];
-  const d = document.createElement('div'); d.className = 'bcard' + evoClass(e.level || 1); d.dataset.uid = e.uid;
-  d.style.animation = 'pop .3s ease';
+  const d = document.createElement('div'); d.className = 'bcard slide-' + (e.side === MYSIDE ? 'mine' : 'enemy') + evoClass(e.level || 1); d.dataset.uid = e.uid;
   d.innerHTML = `${artHTML(e.token, e.level || 1)}<div class="stats"><span class="stat"><b class="a">${e.atk}</b> / <b class="h">${e.hp}</b></span></div>`;
   const nm = u?.name || 'Token';
   attachHold(d, { defId: e.token, name: nm, abilityText: u?.ability?.text || '' });
@@ -1257,7 +1268,7 @@ $('#rewatchRival').onclick = () => { $('#rewatchModal').hidden = true; if (game?
 const RESULT_UI = {
   win:  { txt: 'Victory!',    sub: 'Your squad holds the field.',            emblem: 'trophy',    snd: () => SFX.win() },
   lose: { txt: 'Defeated',    sub: 'Shake it off — come back stronger.',      emblem: 'heart',     snd: () => SFX.lose() },
-  draw: { txt: "It's a draw", sub: 'Evenly matched — not a scratch on either side.', emblem: 'sword', snd: () => {} },
+  draw: { txt: "It's a draw", sub: 'Evenly matched — not a scratch on either side.', emblem: 'trinkling-draw', snd: () => {} },
 };
 function applyResultScreen(result) {
   stopBattleMusic();   // cut the battle track the instant a win/lose/draw is shown
@@ -1414,17 +1425,17 @@ function dailySeed(d = new Date()) {
   for (let i = 0; i < ymd.length; i++) { h ^= ymd.charCodeAt(i); h = Math.imul(h, 16777619); }
   return h >>> 0;                                 // 32-bit uint — runSeed must stay numeric
 }
-function startRun(mode, coalition) {
+function startRun(mode, coalition, daily) {
   easy = mode === 'easy' || (mode !== 'duel' && easyPref);   // Offline honours the Easy-mode setting
-  runCoalition = mode === 'daily' ? null : (coalition || null);   // daily → null coalition = shop draws ALL factions
+  runCoalition = daily ? null : (coalition || null);              // Daily Deck → null coalition = shop draws ALL factions
   duelMode = false; duelStopPoll(); duel = null;
   startMusic();   // ensure the loop is going once a run begins (belt-and-braces for the first-gesture start)
   $('#game').classList.remove('duel', 'waiting');
   $('#endBtn').textContent = 'End Turn ▶'; $('#endBtn').disabled = false;
   $('#continueBtn').textContent = 'Continue ▶'; $('#continueBtn').onclick = singleContinue;
   $('#duelScore').hidden = true;
-  runSeed = mode === 'daily'
-    ? dailySeed()                                                 // date-seeded: identical run for everyone playing today's daily
+  runSeed = daily
+    ? dailySeed()                                                 // date-seeded: identical run for everyone playing today's Daily Deck
     : ((Date.now() >>> 0) ^ (Math.floor(Math.random() * 1e9) >>> 0));
   game = new GameState(runSeed, { easy, coalition: runCoalition });
   sel = null; selTarget = null; hasBought = false; pendingEvolve = null; pendingMerge = null; pendingFuse = null; suppressReward = false; runWinStreak = 0;
@@ -1459,7 +1470,8 @@ function toggleFaction(key) {
   SFX.tap(); updateDeckBtn();
 }
 function updateDeckBtn() { const b = $('#deckBegin'), n = pendingCoalition.length; b.disabled = n < 2; b.classList.toggle('primary', n >= 2); b.textContent = n >= 2 ? 'FIGHT' : `${n}/2 selected`; }
-$('#deckBegin').onclick = () => { if (pendingCoalition.length < 2) return; const co = [...pendingCoalition]; if (pendingMode === 'duel') enterDuelLobby(co); else startRun(pendingMode, co); };
+$('#deckBegin').onclick = () => { if (pendingCoalition.length < 2) return; const co = [...pendingCoalition]; if (pendingMode === 'duel') enterDuelLobby(co); else if (pendingMode === 'local') enterLocalLobby(co); else startRun(pendingMode, co); };
+$('#deckDaily').onclick = () => { if (pendingMode === 'duel') enterDuelLobby(null, true); else if (pendingMode === 'local') enterLocalLobby(null, true); else startRun(pendingMode, null, true); };   // Daily Deck: date-seeded all-factions pool — offline, duel, OR local
 $('#deckBack').onclick = () => { show('title'); showBest(); };
 $$('[data-start]').forEach((b) => (b.onclick = () => openDeckSelect(b.dataset.start)));
 $('#goTitleBtn').onclick = () => { show('title'); showBest(); };
@@ -1468,7 +1480,7 @@ const closeSettings = () => ($('#settingsModal').hidden = true);
 $('#titleSettings').onclick = () => { updateMuteLabels(); updateEasyLabel(); $('#settingsModal').hidden = false; };
 $('#settingsClose').onclick = closeSettings;
 $('#onlineBtn').onclick = () => openDeckSelect('duel');
-$('#dailyBtn').onclick = () => startRun('daily');   // daily skips deck-select — the deck is fixed for the calendar day
+$('#localBtn').onclick = () => openDeckSelect('local');   // Local P2P duel over same-Wi-Fi WebRTC — pick a deck first, then Host/Join
 // simple connection indicator on the Online button (green dot when the device is online)
 function updateOnlineDot() { const d = $('#onlineDot'); if (d) d.classList.toggle('on', navigator.onLine); }
 window.addEventListener('online', updateOnlineDot);
@@ -1483,7 +1495,7 @@ $('#howClose').onclick = () => ($('#howModal').hidden = true);
 // menu
 $('#menuBtn').onclick = () => { updateMuteLabels(); $('#menuModal').hidden = false; };
 $('#menuResume').onclick = () => ($('#menuModal').hidden = true);
-$('#menuQuit').onclick = () => { $('#menuModal').hidden = true; show('title'); showBest(); };
+$('#menuQuit').onclick = () => { $('#menuModal').hidden = true; if (duelMode) { duelStopPoll(); duelMode = false; duel = null; duelGame = null; } lReset(); show('title'); showBest(); };   // QA: stop the duel poll so we're not yanked back into the match
 $('#menuMute').onclick = toggleMute;
 $('#settingsSound').onclick = toggleMute;
 function toggleMute() { muted = !muted; localStorage.setItem('cc_mute', muted ? '1' : '0'); updateMuteLabels(); if (muted) { if (bgm) bgm.pause(); } else { startMusic(); SFX.tap(); } }
@@ -1581,19 +1593,19 @@ const SERVER_BASE = (/^(localhost|127\.|0\.0\.0\.0)/.test(location.hostname) || 
 const api = (path, body) => fetch(SERVER_BASE + path, body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {}).then((r) => r.json());
 function randomCode() { const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let s = ''; for (let i = 0; i < 4; i++) s += c[Math.floor(Math.random() * c.length)]; return s; }
 
-let pendingDuelCoalition = null;
-function enterDuelLobby(coalition) { pendingDuelCoalition = coalition; $('#duelCode').value = randomCode(); $('#duelName').value = ''; $('#duelStatus').textContent = ''; show('duel'); }
+let pendingDuelCoalition = null, pendingDuelDaily = false;
+function enterDuelLobby(coalition, daily) { pendingDuelCoalition = daily ? null : coalition; pendingDuelDaily = !!daily; $('#duelCode').value = randomCode(); $('#duelName').value = ''; $('#duelStatus').textContent = ''; show('duel'); }
 $('#duelBack').onclick = () => { duelStopPoll(); duel = null; duelMode = false; show('title'); showBest(); };
 
 $('#duelJoin').onclick = async () => {
   const code = ($('#duelCode').value || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
-  const name = ($('#duelName').value || 'Player').slice(0, 12) || 'Player';
+  const name = (($('#duelName').value || '').slice(0, 12) || ('Player-' + randomCode()));   // QA: unique default so two blank-name players don't collide on reconnect-by-name
   if (code.length < 3) { $('#duelStatus').textContent = 'Enter a room code (at least 3 characters).'; return; }
   $('#duelStatus').textContent = 'Joining…';
   let r; try { r = await api('/duel/join', { code, name }); } catch { $('#duelStatus').textContent = 'Could not reach the server.'; return; }
   if (r.error === 'full') { $('#duelStatus').textContent = 'That room is full (2 players). Try another code.'; return; }
   if (r.error) { $('#duelStatus').textContent = 'Could not join — try again.'; return; }
-  duel = { code, id: r.id, slot: r.slot, name, scores: r.scores, round: r.round, oppName: r.oppName, coalition: pendingDuelCoalition };
+  duel = { code, id: r.id, slot: r.slot, name, scores: r.scores, round: r.round, oppName: r.oppName, coalition: pendingDuelCoalition, daily: pendingDuelDaily };
   duelMode = true; duelLocalPhase = 'lobby'; duelGame = null;
   $('#duelStatus').innerHTML = r.players < 2 ? `In room <b>${code}</b> — waiting for a friend to join…` : 'Starting…';
   duelStartPoll();
@@ -1623,8 +1635,9 @@ async function duelTick() {
     // reconnected into a round that already resolved while we were away → play it out instead of deadlocking
     else if ((s.phase === 'result' || s.phase === 'over') && s.battle) { duelLocalPhase = 'battle'; duelPlay(s); }
     else $('#duelStatus').innerHTML = `In room <b>${duel.code}</b> — waiting for a friend…`;
-  } else if (duelLocalPhase === 'waiting') {
-    if (s.phase === 'result' || s.phase === 'over') { duelLocalPhase = 'battle'; duelPlay(s); }
+  } else if (duelLocalPhase === 'waiting' || duelLocalPhase === 'build') {
+    // 'build' too: if the server force-resolved the round past its deadline, don't hard-stick on the shop — play it out.
+    if ((s.phase === 'result' || s.phase === 'over') && s.battle) { duelLocalPhase = 'battle'; duelPlay(s); }
   } else if (duelLocalPhase === 'result') {
     if (s.phase === 'build') duelBeginRound(s);
   }
@@ -1635,7 +1648,9 @@ function duelBeginRound(s) {
   duel.round = s.round; duel.scores = s.scores; duel.hearts = s.hearts || duel.hearts; duel.oppName = s.oppName || duel.oppName;
   duel.deadline = s.deadline || duel.deadline; duelReadySent = false;   // fresh turn timer
   if (!duelGame) {
-    duelGame = new GameState(((Date.now() >>> 0) ^ (duel.slot * 40503)) >>> 0, { coalition: duel.coalition }); // one squad for the whole match
+    // Daily Deck duel → date-seeded (both players share the opening shop, then diverge organically) with the all-factions pool
+    const duelSeed = duel.daily ? dailySeed() : (((Date.now() >>> 0) ^ (duel.slot * 40503)) >>> 0);
+    duelGame = new GameState(duelSeed, { coalition: duel.daily ? null : duel.coalition }); // one squad for the whole match
   } else {
     for (const c of duelGame.livingSquad()) duelGame.fireShop(c, 'onEndTurn'); // scalers grow between rounds
   }
@@ -1728,6 +1743,222 @@ function duelEnd(iWon) {
   $('#goText').textContent = iWon ? 'Nicely played — you took the match! Fancy a rematch?' : 'Good game! Want a rematch?';
   $('#goTitleBtn').textContent = 'Main menu';
   show('gameover');
+}
+
+// ================= LOCAL P2P DUEL (WebRTC over same Wi-Fi; HOST is the battle authority) =================
+// Two phones connect directly via a WebRTC data channel. A short code is exchanged through the signaling relay
+// (/rtc/*), then the whole match runs peer-to-peer: each peer keeps its OWN GameState/shop; on both-ready the
+// HOST runs simulateBattle and broadcasts the log, and both sides play it back from their own slot. Reuses the
+// shared battle playback + result screens (runPlayback/applyResultScreen), just with a P2P transport.
+let lMode = false, lHost = false, lSlot = 0, lPc = null, lDc = null, lGame = null;
+let lCoalition = null, lDaily = false, lRound = 1, lHearts = [CONFIG.duelHearts || 6, CONFIG.duelHearts || 6];
+let lName = 'You', lOppName = 'Rival', lMyTeam = null, lOppTeam = null, lReady = false, lPhase = 'lobby';
+let lMyNext = false, lOppNext = false, lPollTimer = null;
+const RTC_CFG = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+const rtcApi = (path, body) => fetch(SERVER_BASE + path, body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {}).then((r) => r.json());
+
+function lReset() {
+  if (lPollTimer) { clearInterval(lPollTimer); lPollTimer = null; }
+  try { if (lDc) lDc.close(); } catch {} try { if (lPc) lPc.close(); } catch {}
+  lPc = null; lDc = null; lMode = false; lGame = null; lReady = false; lRound = 1;
+  lHearts = [CONFIG.duelHearts || 6, CONFIG.duelHearts || 6]; lMyTeam = lOppTeam = null; lMyNext = lOppNext = false; lPhase = 'lobby';
+}
+function enterLocalLobby(coalition, daily) {
+  lReset(); lCoalition = daily ? null : coalition; lDaily = !!daily;
+  $('#localCode').value = ''; $('#localStatus').textContent = ''; $('#localHostView').hidden = true; $('#localPick').hidden = false;
+  show('local');
+}
+function waitIce(pc) {   // vanilla ICE: resolve once candidate gathering completes (or a short timeout)
+  if (pc.iceGatheringState === 'complete') return Promise.resolve();
+  return new Promise((res) => { const t = setTimeout(res, 2600); pc.addEventListener('icegatheringstatechange', () => { if (pc.iceGatheringState === 'complete') { clearTimeout(t); res(); } }); });
+}
+function lSend(m) { try { if (lDc && lDc.readyState === 'open') lDc.send(JSON.stringify(m)); } catch {} }
+function wireLocalChannel() {
+  lDc.onopen = () => { lMode = true; lSend({ t: 'hello', name: lName }); if (lHost) { lSend({ t: 'begin', round: 1 }); localBeginRound(1); } };
+  lDc.onmessage = (e) => { let m; try { m = JSON.parse(e.data); } catch { return; } onLocalMsg(m); };
+  lDc.onclose = () => { if (lMode && lPhase !== 'result') hint('Peer disconnected.'); };
+}
+async function localStartHost() {
+  lName = ($('#localName').value || 'Host').slice(0, 12); lHost = true; lSlot = 0;
+  const code = randomCode();
+  $('#localStatus').textContent = 'Setting up…';
+  try {
+    lPc = new RTCPeerConnection(RTC_CFG);
+    lDc = lPc.createDataChannel('game'); wireLocalChannel();
+    await lPc.setLocalDescription(await lPc.createOffer()); await waitIce(lPc);
+    await rtcApi('/rtc/offer', { code, sdp: JSON.stringify(lPc.localDescription) });
+  } catch { $('#localStatus').textContent = 'Setup failed (need internet to exchange the code).'; return; }
+  $('#localPick').hidden = true; $('#localHostView').hidden = false; $('#localCodeShow').textContent = code;
+  try { drawQR($('#localQR'), location.origin + location.pathname + '?local=' + code); } catch {}
+  $('#localStatus').textContent = 'Waiting for a friend to join…';
+  lPollTimer = setInterval(async () => {
+    let a; try { a = await rtcApi('/rtc/answer?code=' + code); } catch { return; }
+    if (a && a.sdp) { clearInterval(lPollTimer); lPollTimer = null; try { await lPc.setRemoteDescription(JSON.parse(a.sdp)); $('#localStatus').textContent = 'Connecting…'; } catch { $('#localStatus').textContent = 'Connection failed.'; } }
+  }, 1200);
+}
+async function localStartJoin(code) {
+  code = (code || $('#localCode').value || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4);
+  if (!code) { $('#localStatus').textContent = 'Enter the host’s code.'; return; }
+  lName = ($('#localName').value || 'Player').slice(0, 12); lHost = false; lSlot = 1;
+  $('#localStatus').textContent = 'Connecting…';
+  let o; try { o = await rtcApi('/rtc/offer?code=' + code); } catch { $('#localStatus').textContent = 'Could not reach the signaling relay.'; return; }
+  if (!o || !o.sdp) { $('#localStatus').textContent = 'No host found for that code.'; return; }
+  try {
+    lPc = new RTCPeerConnection(RTC_CFG);
+    lPc.addEventListener('datachannel', (ev) => { lDc = ev.channel; wireLocalChannel(); });
+    await lPc.setRemoteDescription(JSON.parse(o.sdp));
+    await lPc.setLocalDescription(await lPc.createAnswer()); await waitIce(lPc);
+    await rtcApi('/rtc/answer', { code, sdp: JSON.stringify(lPc.localDescription) });
+    $('#localStatus').textContent = 'Connecting to host…';
+  } catch { $('#localStatus').textContent = 'Connection failed.'; }
+}
+function localHeader() {
+  $('#hudHearts').textContent = lHearts[lSlot];
+  $('#coach').className = 'coach show';
+  $('#coach').innerHTML = `${icon('sword')} Round ${lRound} · You ${icon('heart')}<b>${lHearts[lSlot]}</b> – <b>${lHearts[1 - lSlot]}</b>${icon('heart')} ${lOppName}`;
+}
+function localBeginRound(round) {
+  lRound = round; lPhase = 'build'; lReady = false; lOppTeam = null; lMyNext = lOppNext = false;
+  if (!lGame) {
+    const seed = lDaily ? dailySeed() : (((Date.now() >>> 0) ^ (lSlot * 40503 + 7)) >>> 0);
+    lGame = new GameState(seed, { coalition: lDaily ? null : lCoalition });
+  } else { for (const c of lGame.livingSquad()) lGame.fireShop(c, 'onEndTurn'); }
+  game = lGame;
+  const prevTurn = game.turn || 1;
+  game.turn = round;
+  game.gold = Math.min(DUEL_GOLD_CAP, DUEL_BASE_GOLD + (round - 1) * DUEL_GOLD_PER_ROUND);
+  for (const c of game.livingSquad()) game.fireShop(c, 'onStartTurn');
+  game.rollShop(true);
+  sel = null; selTarget = null;
+  $('#game').classList.add('duel'); $('#game').classList.remove('waiting');
+  $('#endBtn').textContent = 'Ready ✓'; $('#endBtn').disabled = false;
+  $('#battleResult').hidden = true; $('#duelScore').hidden = true;
+  localHeader(); show('game'); render();
+  maybeTierModal(prevTurn, game.turn);
+  hint(round > 1 ? 'Your squad carried over! Upgrade, then Ready ✓' : 'Build your squad, then Ready ✓');
+}
+function localReady() {
+  if (!lGame || lPhase !== 'build') return;
+  const team = lGame.squadForBattle();
+  if (!team.length) { hint('Buy at least one Trinkling first!'); return; }
+  lMyTeam = team; lReady = true; lPhase = 'waiting';
+  clearSel(); $('#game').classList.add('waiting');
+  $('#endBtn').textContent = 'Unready'; $('#endBtn').disabled = false;
+  hint('Ready! Waiting for your opponent… (tap Unready to change your team)');
+  lSend({ t: 'ready', team }); localTryResolve();
+}
+function localUnready() {
+  if (lPhase !== 'waiting') return;
+  lReady = false; lPhase = 'build'; $('#game').classList.remove('waiting');
+  $('#endBtn').textContent = 'Ready ✓'; $('#endBtn').disabled = false;
+  hint('Un-readied — tweak your team, then Ready ✓ again.');
+  lSend({ t: 'unready' });
+}
+function localTryResolve() {   // host-only: when host is ready AND has the joiner's team, resolve the round
+  if (!lHost || !lReady || !lOppTeam) return;
+  resetUid(1);
+  const seed = ((lDaily ? dailySeed() : (Date.now() >>> 0)) ^ Math.imul(lRound, 2654435761)) >>> 0;
+  const res = simulateBattle(lMyTeam, lOppTeam, seed, lRound);   // teamA = host (slot 0), teamB = joiner (slot 1)
+  if (res.result === 'win') lHearts[1] -= 1; else if (res.result === 'lose') lHearts[0] -= 1;
+  const matchOver = Math.min(lHearts[0], lHearts[1]) <= 0;
+  const payload = { t: 'battle', log: res.log, hostResult: res.result, hearts: lHearts.slice(), round: lRound, matchOver, winnerSlot: matchOver ? (lHearts[0] > lHearts[1] ? 0 : 1) : null };
+  lSend(payload); localPlay(payload);
+}
+function localPlay(p) {
+  lPhase = 'battle'; lHearts = p.hearts;
+  const myResult = lSlot === 0 ? p.hostResult : (p.hostResult === 'win' ? 'lose' : p.hostResult === 'lose' ? 'win' : 'draw');
+  document.querySelector('.vs-label').textContent = 'Fight!'; $('#enemyLabel').textContent = lOppName;
+  runPlayback(p.log, lSlot, () => localShowResult(myResult, p));
+}
+function localShowResult(myResult, p) {
+  applyResultScreen(myResult);
+  const me = lHearts[lSlot], op = lHearts[1 - lSlot];
+  const ds = $('#duelScore'); if (ds) { ds.hidden = false; ds.innerHTML = `<span class="me">You ${icon('heart')}${me}</span> – <span class="op">${icon('heart')}${op} ${lOppName}</span>`; }
+  lPhase = 'result'; $('#continueBtn').disabled = false;
+  if (p.matchOver) { const iWon = p.winnerSlot === lSlot; $('#continueBtn').textContent = iWon ? 'You won the match! 🏆' : 'See result'; $('#continueBtn').onclick = () => localEnd(iWon); }
+  else { $('#continueBtn').textContent = 'Next round ▶'; $('#continueBtn').onclick = localNext; }
+}
+function localNext() {
+  lMyNext = true; $('#continueBtn').disabled = true; hint('Waiting for your opponent…');
+  lSend({ t: 'next' }); localTryAdvance();
+}
+function localTryAdvance() { if (lHost && lMyNext && lOppNext) { const nr = lRound + 1; lSend({ t: 'begin', round: nr }); localBeginRound(nr); } }
+function localEnd(iWon) {
+  lReset(); game = null;
+  $('#game').classList.remove('duel', 'waiting');
+  $('#continueBtn').textContent = 'Continue ▶'; $('#continueBtn').onclick = singleContinue; $('#continueBtn').disabled = false;
+  $('#goEmoji').innerHTML = iWon
+    ? `<img src="assets/ui/trophy.png" alt="" style="width:104px;height:104px;object-fit:contain;filter:drop-shadow(0 6px 12px rgba(20,18,16,.28))">`
+    : `<img src="assets/ui/trinkling-sad.png" alt="" style="width:172px;height:172px;object-fit:contain;filter:drop-shadow(0 8px 16px rgba(20,18,16,.34))">`;
+  $('#gameover').classList.toggle('defeat', !iWon);
+  $('#goTitle').textContent = iWon ? 'You won the duel!' : 'Duel over';
+  $('#goText').textContent = iWon ? 'Nicely played — you took the local match!' : 'Good game! Want a rematch?';
+  $('#goTitleBtn').textContent = 'Main menu';
+  show('gameover');
+}
+function onLocalMsg(m) {
+  if (m.t === 'hello') { lOppName = m.name || 'Rival'; if (lPhase !== 'lobby') localHeader(); }
+  else if (m.t === 'ready') { lOppTeam = m.team; if (lHost) localTryResolve(); }
+  else if (m.t === 'unready') { lOppTeam = null; }
+  else if (m.t === 'battle') { localPlay(m); }        // joiner: play the host-resolved battle from slot 1
+  else if (m.t === 'next') { lOppNext = true; if (lHost) localTryAdvance(); }
+  else if (m.t === 'begin') { localBeginRound(m.round); }
+}
+$('#localHostBtn') && ($('#localHostBtn').onclick = localStartHost);
+$('#localJoinBtn') && ($('#localJoinBtn').onclick = () => localStartJoin());
+$('#localBack') && ($('#localBack').onclick = () => { lReset(); show('title'); showBest(); });
+// Deep link: scanning the host's QR (or opening the shared URL) lands on ?local=CODE → open the Join lobby
+// with the code pre-filled (all-factions deck by default; the joiner just taps Join).
+(function () { try { const c = new URLSearchParams(location.search).get('local'); if (c) { enterLocalLobby(null, false); $('#localCode').value = c.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4); $('#localStatus').textContent = 'Tap Join to connect to the host.'; } } catch {} })();
+
+// Compact byte-mode QR encoder — single-block ECC-L, versions 2–6, mask 0. Enough for a ~46-char join URL,
+// self-contained (no external library, CSP-safe). Returns an n×n boolean matrix, or null if the text is too long.
+function qrEncode(text) {
+  const bytes = []; for (let i = 0; i < text.length; i++) { const c = text.charCodeAt(i); if (c < 128) bytes.push(c); else { bytes.push(38); } }  // ASCII only (URL); non-ASCII → '&'
+  // [version]: {size, dataCW, ecCW, align}. Single ECC-L block for v2–v6.
+  const V = { 2: [25, 34, 10, 18], 3: [29, 55, 15, 22], 4: [33, 80, 20, 26], 5: [37, 108, 26, 30], 6: [41, 136, 18, 34] };
+  let ver = 0; for (const v of [2, 3, 4, 5, 6]) { if (bytes.length + 2 <= V[v][1]) { ver = v; break; } }
+  if (!ver) return null;
+  const [size, dataCW, ecCW] = V[ver];
+  // --- bit stream: mode 0100 + 8-bit length + data + terminator + pad to a byte, then EC/11 pad codewords ---
+  const bits = []; const put = (val, len) => { for (let i = len - 1; i >= 0; i--) bits.push((val >> i) & 1); };
+  put(4, 4); put(bytes.length, 8); for (const b of bytes) put(b, 8); put(0, 4);
+  while (bits.length % 8) bits.push(0);
+  const data = []; for (let i = 0; i < bits.length; i += 8) { let b = 0; for (let j = 0; j < 8; j++) b = (b << 1) | bits[i + j]; data.push(b); }
+  for (let pad = 0; data.length < dataCW; pad++) data.push(pad % 2 ? 0x11 : 0xEC);
+  // --- GF(256) + Reed–Solomon EC codewords ---
+  const EXP = new Array(512), LOG = new Array(256); { let x = 1; for (let i = 0; i < 255; i++) { EXP[i] = x; LOG[x] = i; x <<= 1; if (x & 0x100) x ^= 0x11d; } for (let i = 255; i < 512; i++) EXP[i] = EXP[i - 255]; }
+  const mul = (a, b) => (a && b) ? EXP[LOG[a] + LOG[b]] : 0;
+  let gen = [1]; for (let i = 0; i < ecCW; i++) { const ng = new Array(gen.length + 1).fill(0); for (let j = 0; j < gen.length; j++) { ng[j] ^= mul(gen[j], EXP[i]); ng[j + 1] ^= gen[j]; } gen = ng; }
+  const ec = new Array(ecCW).fill(0); for (const d of data) { const f = d ^ ec[0]; ec.shift(); ec.push(0); if (f) for (let j = 0; j < ecCW; j++) ec[j] ^= mul(gen[j], f); }
+  const all = data.concat(ec);
+  // --- matrix ---
+  const m = Array.from({ length: size }, () => new Array(size).fill(null));
+  const fn = (r, c) => { for (let i = -1; i <= 7; i++) for (let j = -1; j <= 7; j++) { const y = r + i, x = c + j; if (y < 0 || x < 0 || y >= size || x >= size) continue; const on = i >= 0 && i <= 6 && j >= 0 && j <= 6 && (i === 0 || i === 6 || j === 0 || j === 6 || (i >= 2 && i <= 4 && j >= 2 && j <= 4)); m[y][x] = on ? 1 : 0; } };
+  fn(0, 0); fn(0, size - 7); fn(size - 7, 0);
+  for (let i = 8; i < size - 8; i++) { if (m[6][i] === null) m[6][i] = i % 2 === 0 ? 1 : 0; if (m[i][6] === null) m[i][6] = i % 2 === 0 ? 1 : 0; }
+  const ap = V[ver][3]; for (const [r, c] of [[ap, ap]]) for (let i = -2; i <= 2; i++) for (let j = -2; j <= 2; j++) m[r + i][c + j] = (Math.max(Math.abs(i), Math.abs(j)) !== 1) ? 1 : 0;
+  m[size - 8][8] = 1;   // dark module
+  // reserve format areas (set to 0 for now, filled after)
+  for (let i = 0; i < 9; i++) { if (m[8][i] === null) m[8][i] = 0; if (m[i][8] === null) m[i][8] = 0; }
+  for (let i = size - 8; i < size; i++) { if (m[8][i] === null) m[8][i] = 0; if (m[i][8] === null) m[i][8] = 0; }
+  // --- place data (mask 0: (r+c)%2==0), zig-zag up/down from bottom-right ---
+  let bi = 0; const bit = () => { const v = bi < all.length * 8 ? (all[bi >> 3] >> (7 - (bi & 7))) & 1 : 0; bi++; return v; };
+  for (let col = size - 1; col > 0; col -= 2) { if (col === 6) col--; for (let t = 0; t < size; t++) { const up = ((size - 1 - col) & 2) === 0; const row = up ? size - 1 - t : t; for (let c2 = 0; c2 < 2; c2++) { const cc = col - c2; if (m[row][cc] !== null) continue; let d = bit(); if (((row + cc) % 2) === 0) d ^= 1; m[row][cc] = d; } } }
+  // --- format info: ECC-L (01) + mask 0 (000) = 5 data bits → BCH → 15 bits, XOR 0x5412 ---
+  let fmt = 0b01000; { let v = fmt << 10; const g = 0x537; for (let i = 4; i >= 0; i--) if ((v >> (10 + i)) & 1) v ^= g << i; fmt = ((fmt << 10) | v) ^ 0x5412; }
+  const fbits = []; for (let i = 14; i >= 0; i--) fbits.push((fmt >> i) & 1);
+  const fpos1 = [[8, 0], [8, 1], [8, 2], [8, 3], [8, 4], [8, 5], [8, 7], [8, 8], [7, 8], [5, 8], [4, 8], [3, 8], [2, 8], [1, 8], [0, 8]];
+  const fpos2 = [[size - 1, 8], [size - 2, 8], [size - 3, 8], [size - 4, 8], [size - 5, 8], [size - 6, 8], [size - 7, 8], [8, size - 8], [8, size - 7], [8, size - 6], [8, size - 5], [8, size - 4], [8, size - 3], [8, size - 2], [8, size - 1]];
+  for (let i = 0; i < 15; i++) { m[fpos1[i][0]][fpos1[i][1]] = fbits[i]; m[fpos2[i][0]][fpos2[i][1]] = fbits[i]; }
+  return m;
+}
+// Minimal QR (byte mode, versions 2–6, ECC-L, mask 0) for the join URL — self-contained, no external lib.
+function drawQR(canvas, text) {
+  if (!canvas) return; const q = qrEncode(text); if (!q) return; const n = q.length;
+  const ctx = canvas.getContext('2d'); const S = canvas.width, quiet = 4, mod = S / (n + quiet * 2);
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, S, S); ctx.fillStyle = '#101c2e';
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) if (q[y][x]) ctx.fillRect(Math.floor((x + quiet) * mod), Math.floor((y + quiet) * mod), Math.ceil(mod), Math.ceil(mod));
 }
 
 // ---- connect hint on title (shows the exact phone URL from the server) ----

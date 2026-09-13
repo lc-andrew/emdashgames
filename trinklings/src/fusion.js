@@ -4,7 +4,7 @@
 // (the client composites the two parents). Works recursively for merges-of-merges (a parent may be fused).
 import { CREATURE_BY_ID, CONFIG } from './data/creatures.js';
 
-const BAND = { 1: 4, 2: 6, 3: 8, 4: 10, 5: 16, 6: 22 };   // T5/T6 raised to match the steepened base-stat curve
+const BAND = { 1: 4, 2: 6, 3: 8, 4: 10, 5: 14, 6: 18 };   // T5/T6 raised to match the steepened base-stat curve
 const BATTLE_TRIGS = ['onStartBattle','onKill','onHurt','onFaint','onFriendFaints','onBeforeAttack','onAfterAttack','onFriendSummoned','onFirstBlood','onLowHealth','everyOtherRound'];
 const clampN = (n) => Math.max(1, Math.round(n));
 
@@ -42,7 +42,7 @@ function scale(e, f) {
   else if (c.type === 'chance') { c.then = scale(c.then, f); c.else = scale(c.else, f); }
   return c;
 }
-const TGT = { self: 'itself', allFriends: 'all friends', friendBehind: 'the friend behind', friendAhead: 'the friend ahead', lowestHpFriend: 'the weakest friend', randomFriend: 'a random friend', enemyFront: 'the front enemy', lastEnemy: 'the back enemy', allEnemies: 'all enemies', randomEnemy: 'a random enemy' };
+const TGT = { self: 'itself', allFriends: 'all friends', friendBehind: 'the friend behind', friendAhead: 'the friend ahead', lowestHpFriend: 'the weakest friend', randomFriend: 'a random friend', randomFriends: 'random friends', highestAtkFriend: 'the strongest friend', triggerFriend: 'that friend', enemyFront: 'the front enemy', lastEnemy: 'the back enemy', allEnemies: 'all enemies', randomEnemy: 'a random enemy' };
 const sgn = (v) => (v >= 0 ? '+' + v : '' + v);
 function describe(e) {
   if (!e || e.type === 'none') return '';
@@ -115,7 +115,7 @@ export function fuseUnit(a, b) {
   // summon another" loop (feedback: makes fights unwinnable). Force once when a parent was guarded, OR when a
   // faint trigger drives a summon (even if neither parent was guarded — a mixed onFaint-summon combo).
   const parentOnce = hi.ability?.once === 'battle' || lo.ability?.once === 'battle';
-  const faintSummonLoop = (trig === 'onFriendFaints' || trig === 'onFaint') && hasSummon(effect);
+  const faintSummonLoop = (trig === 'onFriendFaints' || trig === 'onFaint' || trig === 'onFriendSummoned') && hasSummon(effect);
   const once = (parentOnce || faintSummonLoop) ? 'battle' : undefined;
   const TRIGTXT = { onStartBattle: 'Start of the fight', onKill: 'On a knockout', onHurt: 'When hurt', onFaint: 'When it faints', onFriendFaints: 'When a friend faints', onBeforeAttack: 'Before it attacks', onAfterAttack: 'After it attacks', onFriendSummoned: 'When a friend is summoned', onFirstBlood: 'On first blood', onLowHealth: 'At half health', everyOtherRound: 'Every other round' };
   const artA = ma.art, artB = mb.art;

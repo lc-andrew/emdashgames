@@ -488,7 +488,9 @@ class Battle {
   snapshotTeams() {
     return this.teams.map((team) => team.map((u) => ({
       uid: u.uid, defId: u.defId, name: u.name, level: u.level, atk: u.atk, hp: u.hp, side: u.side, isToken: u.isToken,
+      tier: u.tier,   // scaling input: FUSED units aren't in CREATURE_BY_ID, so the client must be told the tier
       abilityText: u.ability ? u.ability.text : '',   // for the replay hold-for-ability tooltip (+ callouts)
+      effect: u.ability ? u.ability.effect : null,    // effect tree → tooltip can render engine-exact scaled numbers for fusions
     })));
   }
 }
