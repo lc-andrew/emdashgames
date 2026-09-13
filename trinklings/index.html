@@ -26,6 +26,7 @@
     </div>
     <div class="btn-col title-actions">
       <button class="btn big glass" data-start="offline">Offline</button>
+      <button class="btn big glass" id="dailyBtn">Daily</button>
       <button class="btn big glass" id="onlineBtn"><span class="online-dot" id="onlineDot" title="Connection"></span> Online</button>
     </div>
   </section>
@@ -68,7 +69,7 @@
       <button class="btn sell" id="sellBtn" hidden><span id="sellLbl">Sell</span> <span class="cost"><img class="ic" src="assets/ui/coin.png" alt="" /><span id="sellVal">1</span></span></button>
       <button class="btn big primary end" id="endBtn">End Turn ▶</button>
     </div>
-    <div id="hint" class="hint"></div>
+    <div class="hint-slot"><div id="hint" class="hint"></div></div>
   </section>
 
   <!-- BATTLE -->
@@ -125,8 +126,8 @@
   <section id="duel" class="screen">
     <div class="title-card">
       <img class="logo appicon" src="assets/ui/sword.png" alt="Duel" style="border-radius:0;box-shadow:none;background:none" />
-      <h1>Duel a friend</h1>
-      <p class="tag" id="duelTag">Same Wi-Fi, <b>same room code</b> — first to <b>3 wins</b>.</p>
+      <h1>Online Duel</h1>
+      <p class="tag" id="duelTag">Share a <b>room code</b> — first to <b>3 wins</b>.</p>
       <input id="duelCode" class="duel-input" maxlength="6" placeholder="ROOM CODE" autocapitalize="characters" autocomplete="off" />
       <input id="duelName" class="duel-input" maxlength="12" placeholder="Your name" autocomplete="off" />
       <button class="btn big primary" id="duelJoin">Join room</button>
@@ -224,7 +225,7 @@
         <li><b>Reroll</b> the shop for new Trinklings, or select a shop item and hit <b>Freeze</b> to keep it next turn (free).</li>
         <li>Hit <b>End Turn</b> to start a <b>fight</b> — the auto-battle. Boosts "for the fight" last one battle; <b>(permanent)</b> ones stay forever.</li>
         <li><b>Win 10 fights</b> to collect 10 <img class="ic" src="assets/ui/trophy.png" alt="trophies"> and take the Cup!</li>
-        <li>Lose a fight, lose a <img class="ic" src="assets/ui/heart.png" alt="life">. At <b>0</b> the game ends — but Trinklings are never truly hurt, they just drift off and pop back.</li>
+        <li>Lose a fight, lose a <img class="ic" src="assets/ui/heart.png" alt="life">. At <b>0</b> the game ends — no Trinkling is ever truly hurt.</li>
       </ul>
       <button class="btn big primary" id="howClose">Got it!</button>
     </div>

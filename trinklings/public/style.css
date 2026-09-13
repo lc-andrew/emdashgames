@@ -63,7 +63,7 @@ h1, h2 { font-family: 'Cinzel', Georgia, serif; font-weight: 800; text-transform
 
 /* ---- buttons: engraved metal plates; press-lip stamp ---- */
 .btn {
-  position: relative; border: none; border-radius: var(--r-lg); padding: 13px 18px; font-family: 'Cinzel', serif; font-weight: 800;
+  position: relative; border: none; border-radius: var(--r-lg); padding: 13px 18px; font-family: 'Nunito', sans-serif; font-weight: 800;
   background: linear-gradient(180deg, #ffffff, #e9f3fb); color: var(--ink); cursor: pointer; touch-action: manipulation;
   box-shadow: 0 4px 0 #bcd6e8, var(--sh-soft), inset 0 1px 0 rgba(255,255,255,.8); border: 1.5px solid var(--panel-line);
   transition: transform .12s var(--ease-bounce), box-shadow .12s var(--ease-bounce), filter .12s;
@@ -73,7 +73,7 @@ h1, h2 { font-family: 'Cinzel', Georgia, serif; font-weight: 800; text-transform
 .btn.primary { position: relative; overflow: hidden; background: linear-gradient(180deg, #3d4d78 0%, #2c3a63 38%, #1f2b4f 72%, #141d38 100%);
   color: #ffffff; border: 2px solid rgba(255,255,255,.82); border-radius: var(--r-lg);
   box-shadow: 0 5px 0 #0b1230, 0 9px 20px rgba(10,20,50,.5), 0 0 24px rgba(70,110,200,.4), inset 0 2px 0 rgba(255,255,255,.3), inset 0 -3px 7px rgba(6,12,30,.5);
-  font-family: 'Cinzel', serif; text-transform: uppercase; letter-spacing: .07em; text-shadow: 0 1px 0 rgba(6,12,30,.7), 0 2px 5px rgba(4,8,20,.5); }
+  font-family: 'Nunito', sans-serif; text-transform: uppercase; letter-spacing: .07em; text-shadow: 0 1px 0 rgba(6,12,30,.7), 0 2px 5px rgba(4,8,20,.5); }
 .btn.primary::after { content: ""; position: absolute; top: 0; left: -60%; width: 42%; height: 100%; pointer-events: none; transform: skewX(-18deg);
   background: linear-gradient(105deg, transparent, rgba(255,255,255,.5), transparent); animation: btnShine 3.6s ease-in-out infinite; }
 @keyframes btnShine { 0%, 60% { left: -60%; } 84%, 100% { left: 135%; } }
@@ -89,7 +89,7 @@ h1, h2 { font-family: 'Cinzel', Georgia, serif; font-weight: 800; text-transform
 .btn.ghostbtn:active { transform: translateY(1px); }
 .btn.small { padding: 8px 13px; font-size: .85rem; border-radius: var(--r-md); box-shadow: 0 3px 0 #12162f, var(--sh-soft); }
 .btn.small:active { box-shadow: 0 0 0 #12162f, var(--sh-soft); }
-.btn .cost { display: inline-flex; align-items: center; gap: 1px; background: rgba(245,197,66,.26); color: var(--gold-deep); border-radius: 999px; padding: 1px 6px 1px 5px; margin-left: 4px; font-size: .8em; font-weight: 900; }
+.btn .cost { display: inline-flex; align-items: center; gap: 1px; background: rgba(245,197,66,.26); color: var(--gold-deep); border-radius: 999px; padding: 4px 6px 4px 5px; margin-left: 4px; font-size: .8em; font-weight: 900; }
 .btn:disabled { filter: grayscale(.5) opacity(.45); pointer-events: none; }
 .icon-btn { border: 1.5px solid var(--panel-line); background: linear-gradient(180deg,#ffffff,#e9f3fb); color: var(--gilt-deep); border-radius: 50%; width: 42px; height: 42px; font-size: 1.15rem; cursor: pointer; box-shadow: 0 3px 0 #bcd6e8, var(--sh-soft); display: flex; align-items: center; justify-content: center; }
 .icon-btn:active { transform: translateY(3px); }
@@ -190,12 +190,15 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 .hint { text-align: center; font-size: .85rem; color: var(--ink-soft); font-weight: 700; min-height: 1.1em; margin-top: 7px; white-space: normal; line-height: 1.3; }
 /* when it has text (e.g. duel "waiting for opponent…"), show it as a legible pill on ANY background (per feedback) */
 .hint:not(:empty) { color: #fff; background: rgba(16,28,46,.8); border-radius: 999px; padding: 5px 14px; width: fit-content; max-width: 94%; margin: 7px auto 0; box-shadow: var(--sh-soft); text-shadow: 0 1px 2px rgba(0,0,0,.5); }
+/* Constant-height slot: the pill appears / grows / shrinks INSIDE it, so the bottom-anchored board
+   (squad/shop margin-top:auto) never loses free space to a growing hint and the arena stops jumping. */
+.hint-slot { height: 54px; flex-shrink: 0; }
 
 /* ---- rows ---- */
-.row-label { display: flex; justify-content: space-between; align-items: baseline; font-family: 'Cinzel', serif; text-transform: uppercase; letter-spacing: .05em; font-weight: 800; color: #fff; text-shadow: 0 1px 2px rgba(20,45,75,.55), 0 1px 8px rgba(20,45,75,.4); margin: -4px 4px 6px; font-size: .84rem; }
+.row-label { position: relative; top: -7px; display: flex; justify-content: space-between; align-items: baseline; font-family: 'Cinzel', serif; text-transform: uppercase; letter-spacing: .05em; font-weight: 800; color: #fff; text-shadow: 0 1px 2px rgba(20,45,75,.55), 0 1px 8px rgba(20,45,75,.4); margin: -4px 4px 6px; font-size: .84rem; }
 .row-label.sub { margin-top: 8px; font-size: .72rem; color: rgba(255,255,255,.9); }   /* keep "Items" readable on the stone (was dark ink) */
 .front-tag { font-size: .68rem; font-weight: 800; color: #1f7d49; font-family: 'Nunito'; letter-spacing: 0; text-transform: none; }
-.tier-tag { font-family: 'Cinzel', serif; font-size: .72rem; font-weight: 800; background: linear-gradient(180deg,var(--gilt),var(--accent-deep)); color: var(--silver-hi); padding: 3px 10px; border-radius: 4px; box-shadow: inset 0 1px 0 rgba(255,255,255,.25); }
+.tier-tag { font-family: 'Nunito', sans-serif; font-size: .72rem; font-weight: 800; background: linear-gradient(180deg,var(--gilt),var(--accent-deep)); color: var(--silver-hi); padding: 3px 10px; border-radius: 4px; box-shadow: inset 0 1px 0 rgba(255,255,255,.25); }
 .squad-wrap, .shop-wrap { flex-shrink: 0; }
 .squad, .shop-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
 /* squad front (index 0) sits on the RIGHT to match the reversed battle order (pets face right → fight first);
@@ -332,7 +335,7 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 .side { position: absolute; left: 0; right: 0; z-index: 1; background: none; padding: 0 8px; }
 .side.enemy { top: 11%; }     /* enemy line rests ON the TOP grass ledge (was too low/off the platform) */
 .side.mine { bottom: 13%; }   /* your line rests on the BOTTOM grass ledge */
-.side-label { font-family: 'Cinzel', serif; font-size: .74rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: #fff; text-shadow: 0 1px 2px rgba(20,45,75,.7), 0 1px 6px rgba(20,45,75,.5); margin-bottom: 3px; }
+.side-label { font-family: 'Nunito', sans-serif; font-size: .74rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: #fff; text-shadow: 0 1px 2px rgba(20,45,75,.7), 0 1px 6px rgba(20,45,75,.5); margin-bottom: 3px; }
 .side.enemy .side-label { text-align: right; }
 /* row-reverse → index 0 (the front unit that fights first) renders on the RIGHT, since the art faces right */
 /* keep the row centred AND within the grass platform (was spilling off the sides on wider phones) */
@@ -358,8 +361,11 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 /* grow UP from the feet + a per-side PERSPECTIVE scale: enemy (far, top) 30% smaller, you (near, bottom) full */
 .bcard { --side-scale: 1; }
 .side.enemy .bcard { --side-scale: .7; }
-.bcard .art img { width: 100%; height: 100%; object-fit: contain; transform: scale(calc(1.49 * var(--side-scale, 1))); transform-origin: 50% 100%; filter: drop-shadow(0 3px 4px rgba(20,40,70,.34)); }
-.bcard .art::after { content: ""; position: absolute; left: 50%; bottom: -3px; transform: translateX(-50%) scale(var(--side-scale, 1)); width: 74%; height: 9px; border-radius: 50%; background: radial-gradient(ellipse, rgba(12,30,54,.4), transparent 70%); z-index: -1; }
+/* STAGED FIGHTERS in the pit: force BOTH sides to ONE medium perspective scale so the two arena fighters are
+   the SAME size — smaller than your bench (--side-scale 1), larger than the enemy bench (.7). (Feedback: perspective.) */
+.side.enemy .bcard.in-arena, .side.mine .bcard.in-arena { --side-scale: .75; }
+.bcard .art img { width: 100%; height: 100%; object-fit: contain; transform: scale(calc(1.49 * var(--side-scale, 1))); transform-origin: 50% 100%; filter: drop-shadow(0 3px 4px rgba(20,40,70,.34)); transition: transform .5s cubic-bezier(.25,-0.35,.4,1); }
+.bcard .art::after { content: ""; position: absolute; left: 50%; bottom: 2px; transform: translateX(-50%) scale(var(--side-scale, 1)); width: 74%; height: 9px; border-radius: 50%; background: radial-gradient(ellipse, rgba(12,30,54,.4), transparent 70%); z-index: -1; }
 .bcard .art .initial { font-weight: 900; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.4); }
 /* battle stat = ONE flat pill "atk / hp", exactly like the shop/squad board (.a/.h kept for live setStat) */
 .bcard .stats { display: flex; justify-content: center; margin-top: 2px; transform: scale(var(--side-scale, 1)); transform-origin: center top; }
@@ -466,7 +472,7 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 .faction-card.sel { border-color: #fff; box-shadow: 0 0 0 2px var(--gilt), 0 0 18px rgba(43,163,216,.55), var(--frame), var(--sh-pop); background: rgba(14,52,78,.86); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); }
 .faction-card.sel .fname, .faction-card.sel .ftag { color: #ffffff !important; }
 .faction-card.sel .fpick { color: #7fe0c0; }
-.faction-card .fname { font-family: 'Cinzel', serif; font-weight: 800; font-size: .8rem; color: var(--gilt-bloom); text-transform: uppercase; letter-spacing: .02em; }
+.faction-card .fname { font-family: 'Nunito', sans-serif; font-weight: 800; font-size: .8rem; color: var(--gilt-bloom); text-transform: uppercase; letter-spacing: .02em; }
 .faction-card .ftag { font-weight: 900; font-size: .66rem; color: var(--ink); margin: 3px 0 2px; }
 .faction-card .flaw { font-size: .63rem; color: var(--ink-soft); line-height: 1.3; margin-top: 3px; }
 /* real strategy blurb per faction (clamped to 2 lines; tap "more" to expand) so the first pick is informed */
@@ -493,6 +499,8 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 /* while a duel round is 'waiting' for the opponent, the team is already submitted — lock the board so no
    post-snapshot buy/combine/fuse can desync the fought team from the carried-over squad */
 #game.waiting .squad-wrap, #game.waiting .shop-wrap, #game.waiting .actionbar { pointer-events: none; opacity: .8; }
+/* …but the End-turn/Unready button MUST stay tappable while waiting, or you can't un-ready (per feedback). */
+#game.waiting .actionbar #endBtn { pointer-events: auto; opacity: 1; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; } }
 
 /* ---- level-progress bar (under a card's stats) ---- */
@@ -569,7 +577,7 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 
 /* ---- persistent rank ladder on the title ---- */
 .rank-row { display: flex; flex-direction: column; align-items: center; gap: 1px; margin: 2px 0 8px; min-height: 1em; }
-.rank-name { font-family: 'Cinzel', serif; font-weight: 800; font-size: 1rem; color: var(--gilt-deep); display: inline-flex; align-items: center; gap: 5px; }
+.rank-name { font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 1rem; color: var(--gilt-deep); display: inline-flex; align-items: center; gap: 5px; }
 .rank-prog { font-size: .72rem; color: var(--ink-soft); font-weight: 700; }
 .rankup-line { color: var(--glow); font-weight: 800; }
 
@@ -596,7 +604,7 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 .codex-list { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 .codex-faction { margin-bottom: 16px; }
 .codex-fhead { background: var(--panel-hi); border-radius: var(--r-md); padding: 8px 11px; box-shadow: var(--frame); margin-bottom: 8px; }
-.codex-fname { font-family: 'Cinzel', serif; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--gilt-deep); font-size: .92rem; }
+.codex-fname { font-family: 'Nunito', sans-serif; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--gilt-deep); font-size: .92rem; }
 .codex-flaw { font-size: .68rem; font-weight: 700; color: var(--gilt-deep); margin: 2px 0; }
 .codex-fsyn { font-size: .66rem; color: var(--ink-soft); line-height: 1.35; }
 .codex-fcount { font-size: .64rem; font-weight: 800; color: var(--glow); margin-top: 4px; }
@@ -656,8 +664,8 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
   #game .squad-wrap { grid-area: squad; min-width: 0; margin-bottom: 0; margin-top: 0; }
   #game .shop-wrap { grid-area: shop; min-width: 0; margin-top: 0; }
   #game .actionbar { grid-area: actions; margin-top: 6px; padding-top: 6px; }
-  #game .hint { grid-area: hint; }
-  .row-label { margin: 6px 4px 5px; font-size: .72rem; }
+  #game .hint-slot { grid-area: hint; height: 36px; }
+  .row-label { margin: 6px 4px 5px; font-size: .72rem; top: 0; }
   .row-label.sub { margin-top: 5px; }
   .card { min-height: 60px; padding: 3px 2px; }
   .card .nm { font-size: .58rem; margin-top: 2px; }
@@ -700,7 +708,7 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 /* BESPOKE fused art (one painted hybrid): render it like a normal pet; hide the parent-composite beneath it.
    If it 404s (not generated yet) the img adds .composite to the parent → the two-half fallback shows instead. */
 .art.fused .fused-solo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; z-index: 3;
-  transform: scale(var(--pet-scale, 1.49)); transform-origin: 50% 88%; filter: drop-shadow(0 3px 4px rgba(20,40,70,.34)); }
+  transform: scale(calc(var(--pet-scale, 1.49) * var(--side-scale, 1))); transform-origin: 50% 88%; filter: drop-shadow(0 3px 4px rgba(20,40,70,.34)); }
 .art.fused:not(.composite) .fa, .art.fused:not(.composite) .fb { visibility: hidden; }
 .art.fused:not(.composite)::after { opacity: 0; }              /* hide the seam when bespoke art is shown */
 .art.fused.composite .fused-solo { display: none; }
@@ -709,8 +717,8 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 .art.fused img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; animation: none; }
 /* fallback 1.24 so battle .bcard fused pets (which don't inherit --pet-scale) still scale to match neighbours */
 /* scale BOTH halves from the CENTRE seam so they stay aligned (edge-origins pulled them apart) */
-.art.fused .fa { clip-path: inset(0 50% 0 0); transform: scale(var(--pet-scale, 1.49)); transform-origin: 50% 88%; z-index: 1; }
-.art.fused .fb { clip-path: inset(0 0 0 50%); transform: scale(var(--pet-scale, 1.49)); transform-origin: 50% 88%; z-index: 1; }
+.art.fused .fa { clip-path: inset(0 50% 0 0); transform: scale(calc(var(--pet-scale, 1.49) * var(--side-scale, 1))); transform-origin: 50% 88%; z-index: 1; }
+.art.fused .fb { clip-path: inset(0 0 0 50%); transform: scale(calc(var(--pet-scale, 1.49) * var(--side-scale, 1))); transform-origin: 50% 88%; z-index: 1; }
 .art.fused::after { content: ""; position: absolute; top: 8%; bottom: 8%; left: 50%; width: 2px; transform: translateX(-50%); z-index: 2;
   background: linear-gradient(180deg, transparent, rgba(255,214,102,.9), transparent); filter: blur(.4px); }
 .art.fused .fuse-spark { position: absolute; top: 2px; right: 3px; font-size: .7rem; filter: drop-shadow(0 0 3px rgba(255,200,80,.9)); }
@@ -748,7 +756,7 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
   background: var(--glass-hi); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-brd); border-radius: var(--r-md); box-shadow: var(--frame), var(--sh-pop);
   padding: 8px 11px; animation: pop .16s var(--ease-bounce); }
-.hold-tip .ht-name { font-family: 'Cinzel', serif; font-weight: 900; font-size: .82rem; color: var(--gilt-deep); }
+.hold-tip .ht-name { font-family: 'Nunito', sans-serif; font-weight: 900; font-size: .82rem; color: var(--gilt-deep); }
 .hold-tip .ht-abil { margin-top: 3px; font-size: .74rem; font-weight: 600; line-height: 1.35; color: var(--ink); }
 
 /* ---- replay transport ---- */
@@ -772,7 +780,7 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 /* NB :not(.frozen) — a frozen card's ::after is the ice-cube overlay (rule above); this ID-specific shadow
    rule would otherwise win the cascade on the same pseudo-element and the ice cube would never render. */
 #squad .card:not(.empty):not(.frozen) .art-wrap::after, #shopPets .card:not(.empty):not(.frozen) .art-wrap::after, #shopSnacks .card:not(.empty):not(.frozen) .art-wrap::after {
-  content: ""; position: absolute; left: 16%; right: 16%; bottom: -2px; height: 9px; z-index: 0;
+  content: ""; position: absolute; left: 16%; right: 16%; bottom: 3px; height: 9px; z-index: 0;
   background: radial-gradient(ellipse at center, rgba(12,30,54,.42), transparent 72%); }
 /* names/pips legible directly on the scene */
 /* item names sit on the bare scene → white text + dark halo (text-on-frosted stays dark; text-on-scene is white) */
@@ -834,7 +842,7 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 
 /* white glassy title buttons (Offline / Online) */
 .btn.glass { background: rgba(255,255,255,.5); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
-  border: 1px solid var(--glass-brd); color: var(--ink); font-family: 'Cinzel', serif; text-transform: uppercase; letter-spacing: .05em;
+  border: 1px solid var(--glass-brd); color: var(--ink); font-family: 'Nunito', sans-serif; text-transform: uppercase; letter-spacing: .05em;
   box-shadow: var(--frame), var(--sh-soft), inset 0 1px 0 rgba(255,255,255,.7); text-shadow: 0 1px 2px rgba(255,255,255,.55); }
 .btn.glass:active { transform: translateY(2px); box-shadow: var(--frame), var(--sh-soft); }
 

@@ -17,7 +17,7 @@ const tint = (w) => WORLD_COLOR[w] || '#1b2044';
 // cohesive vinyl-toy UI icons (FB-R32)
 const icon = (n) => `<img class="ic" src="assets/ui/${n}.png" alt="">`;
 
-// story framing: the children of the Interim stands who play "the Little Standing" (FB-R33 light framing)
+// rival trainers you face across a run (names only — no venue framing/commentary, per feedback)
 const RIVALS = [
   { n: 'Pib', l: '“Bet you a marble I win!”' },
   { n: 'Odd Betty', l: '“My lot never lose. Mostly.”' },
@@ -118,6 +118,37 @@ function fadeAudio(el, to, ms = 550) {
   const from = el.volume, steps = 16; let i = 0;
   el._fade = setInterval(() => { i++; el.volume = Math.max(0, Math.min(1, from + (to - from) * i / steps)); if (i >= steps) { clearInterval(el._fade); if (to <= 0.001) el.pause(); } }, ms / steps);
 }
+// A looping track shouldn't hard-cut and restart — ease its volume DOWN over the last few seconds, then ease
+// it back IN on the restart (per feedback). We drive the loop ourselves (loop=false) so the seam gets a fade:
+// a tail-fade rides the GainNode to 0 WITHOUT pausing (so the element still fires 'ended'), then 'ended'
+// seeks to 0 and fades back up to the track's target volume. Falls back to el.volume where there's no gain graph.
+const FADE_TAIL = 3.2;   // seconds of fade-out at the end of the loop
+function tailFade(el, ms) {
+  const g = musicGain(el);
+  if (g) { const now = AC.currentTime; g.gain.cancelScheduledValues(now); g.gain.setValueAtTime(g.gain.value, now); g.gain.linearRampToValueAtTime(0, now + Math.max(0.05, ms / 1000)); return; }
+  clearInterval(el._fade); const from = el.volume, steps = 16; let i = 0;   // desktop fallback — ramp, never pause
+  el._fade = setInterval(() => { i++; el.volume = Math.max(0, from * (1 - i / steps)); if (i >= steps) clearInterval(el._fade); }, ms / steps);
+}
+function enableFadeLoop(el, targetVol) {
+  if (!el) return;
+  el.loop = false;                                  // we handle looping so the seam can fade
+  el._targetVol = targetVol;
+  el.addEventListener('timeupdate', () => {
+    if (!el.duration || el.paused) return;
+    const left = el.duration - el.currentTime;
+    if (left > FADE_TAIL) { el._tailing = false; return; }
+    if (el._tailing || muted) return;
+    el._tailing = true; tailFade(el, left * 1000);  // ease down over exactly the time remaining
+  });
+  el.addEventListener('ended', () => {
+    el._tailing = false; el.currentTime = 0;
+    if (muted) return;
+    el.play().catch(() => {});
+    fadeAudio(el, el._targetVol, 1500);             // ease back in on the restart
+  });
+}
+enableFadeLoop(bgm, AMBIENT_VOL);
+enableFadeLoop(bgmBattle, BATTLE_VOL);
 function startMusic() { if (muted) return; if (bgmBattle && !bgmBattle.paused) return; fadeAudio(bgm, AMBIENT_VOL, 850); }
 function startBattleMusic() { fadeAudio(bgm, 0, 400); if (muted) return; if (bgmBattle) bgmBattle.currentTime = 0; fadeAudio(bgmBattle, BATTLE_VOL, 550); }
 function stopBattleMusic() { fadeAudio(bgmBattle, 0, 450); if (!muted) fadeAudio(bgm, AMBIENT_VOL, 750); }
@@ -360,7 +391,11 @@ export function scaledAbilityText(defId, level) {
   const ab = CREATURE_BY_ID[defId]?.ability;
   if (!ab || !ab.text) return '';
   level = level || 1;
-  if (level <= 1) return ab.text;
+  // Mirror engine.js scaled(base, actor) EXACTLY: round(base * level * tierMult), tierMult=1+(tier-1)*0.25.
+  const tier = CREATURE_BY_ID[defId]?.tier || 1;
+  const tierMult = 1 + ((tier - 1) * 0.25);
+  const mag = (base) => Math.round(base * level * tierMult);
+  if (level <= 1 && tier <= 1) return ab.text;   // only truly unscaled at level 1, tier 1
   let text = ab.text, ok = true;
   // Try each [regex, replacement] in order; the first whose base literal is present wins. `global`
   // replaces every occurrence (for one effect the copy mentions twice, e.g. a steal's "loses X / gains X").
@@ -380,13 +415,13 @@ export function scaledAbilityText(defId, level) {
       case 'summon': case 'guard': case 'move': case 'skipAttack': case 'swapStats': return; // no scalable copy
       case 'gold': {
         if (e.amount == null) return;
-        const s = e.amount * level;
+        const s = mag(e.amount);
         sub([[new RegExp(`\\b${e.amount}\\b(?=\\s*gold)`), `${s}`]]);
         return;
       }
       case 'shield': {
         if (e.noScale || e.amount == null) return;
-        const b = e.amount, s = b * level;
+        const b = e.amount, s = mag(b);
         sub([
           [new RegExp(`\\b${b}-HP shield`), `${s}-HP shield`],
           [new RegExp(`shield up ${b}\\b`), `shield up ${s}`],
@@ -396,34 +431,39 @@ export function scaledAbilityText(defId, level) {
       }
       case 'damage': {
         if (e.amount === 'selfAtk' || e.noScale || e.amount == null) return;
-        const b = e.amount, s = b * level;
+        const b = e.amount, s = mag(b);
         sub([
           [new RegExp(`deal ${b} damage`), `deal ${s} damage`],
           [new RegExp(`deal ${b} to`), `deal ${s} to`],
+          [new RegExp(`dealing ${b}\\b`), `dealing ${s}`],
           [new RegExp(`for ${b}\\b`), `for ${s}`],
           [new RegExp(`take ${b} damage`), `take ${s} damage`],
           [new RegExp(`\\b${b} damage`), `${s} damage`],
+          [new RegExp(`\\bdeal ${b}\\b`), `deal ${s}`],
         ]);
         return;
       }
       case 'buff': case 'steal': {
         if (e.noScale) return;
         const A = Math.abs(e.atk || 0), H = Math.abs(e.hp || 0);
-        const sA = A * level, sH = H * level, global = e.type === 'steal';
+        const sA = mag(A), sH = mag(H), global = e.type === 'steal';
         if (A && H) {
           sub([
             [new RegExp(`\\+${A}\\/\\+${H}`), `+${sA}/+${sH}`],
+            [new RegExp(`-${A}\\/-${H}`), `-${sA}/-${sH}`],
             [new RegExp(`\\b${A}\\/${H}\\b`), `${sA}/${sH}`],
           ], global);
         } else if (A) {
           sub([
             [new RegExp(`\\+${A}\\/\\+0`), `+${sA}/+0`],
+            [new RegExp(`-${A}\\/\\+0`), `-${sA}/+0`],
             [new RegExp(`\\+${A}(?=\\s*(attack|atk))`), `+${sA}`],
             [new RegExp(`\\b${A}(?=\\s*attack)`), `${sA}`],
           ], global);
         } else if (H) {
           sub([
             [new RegExp(`\\+0\\/\\+${H}`), `+0/+${sH}`],
+            [new RegExp(`\\+0\\/-${H}`), `+0/-${sH}`],
             [new RegExp(`\\b${H}(?=\\s*(health|HP))`), `${sH}`],
           ], global);
         }
@@ -570,13 +610,16 @@ function renderCardDetail() {
     el.innerHTML = `<div class="cd-head"><b>${s.name}</b>${costChip(CONFIG.snackCost)}<div class="cd-meta">${metaItem('Tier', tierChip(s.tier))}</div></div>${s.text ? `<div class="cd-abil">${s.text}</div>` : ''}`;
   } else if (unit?.fused) {   // FUSED unit — read its carried def
     const fu = unit.fused, ab = fu.ability;
+    // Show the REAL inherited trigger label (the whole blended combo fires on this one trigger) so WHEN it
+    // fires is clear — not a static "Fusion" word. The ✦ FUSED chip still marks it as a fusion.
+    const ftrig = ab ? (TRIGGER_LABEL[ab.trigger] || 'Ability') : '';
     el.innerHTML = `<div class="cd-head"><b>${unit.name}</b><span class="fused-chip">✦ FUSED</span>${cdMeta(fu.tier, level, unit.atk, unit.hp)}</div>
-      ${ab ? `<div class="cd-abil"><span class="trig-badge">Fusion</span> ${effect(ab.text)}</div>` : ''}
+      ${ab ? `<div class="cd-abil"><span class="trig-badge">${ftrig}</span> ${effect(ab.text)}</div>` : ''}
       <div class="cd-flavor">${fu.desc || ('A fusion of ' + fu.parents.map((p) => (CREATURE_BY_ID[p]?.name || 'a Trinkling')).join(' + ') + '.')}</div>`;
   } else {
     const def = CREATURE_BY_ID[defId]; if (!def) { el.hidden = true; if (coach) coach.style.display = ''; return; }
     const ab = def.ability;
-    const abTxt = (level > 1 && scaledAbilityText(defId, level)) || ab?.text || '';
+    const abTxt = scaledAbilityText(defId, level) || ab?.text || '';
     const trig = ab ? (TRIGGER_LABEL[ab.trigger] || 'Ability') : '';
     const cost = sel?.kind === 'shopPet' ? costChip(CONFIG.buyCost) : '';
     el.innerHTML = `<div class="cd-head"><b>${def.name}</b>${cost}${cdMeta(def.tier, level, unit ? unit.atk : def.atk, unit ? unit.hp : def.hp)}</div>
@@ -687,9 +730,11 @@ function onSquadTap(i) {
   // instantly. OCCUPIED slot = an ambiguous/irreversible action (combine/fuse/swap/feed) → arm #actionBtn.
   if (sel && sel.kind === 'shopPet') {
     if (!tgt) { execBuy(sel.index, i); return; }                     // empty → buy instantly
-    const src = game.shop.pets[sel.index];                           // occupied → only a same-type COMBINE is valid
+    const src = game.shop.pets[sel.index];                           // occupied → combine (same type) or fuse (different type)
     if (src && !tgt.fused && tgt.defId === src.defId && (tgt.xp || 0) < CONFIG.xpToL3) { selTarget = { kind: 'squad', index: i }; SFX.tap(); hint(''); render(); return; }
-    hint(reason('occupied')); flashInvalid(i); return;              // can't drop a shop pet onto a different unit
+    // different base type → arm the buy+fuse confirm (pendingAction shows the "Fuse" label + cost; execBuyFuse handles gold)
+    if (src && !tgt.fused && tgt.defId !== src.defId) { selTarget = { kind: 'squad', index: i }; SFX.tap(); hint(''); render(); return; }
+    hint(reason('occupied')); flashInvalid(i); return;              // fused target, or a maxed same-type copy
   }
   if (sel && sel.kind === 'shopSnack') {
     if (!tgt) { hint(reason('no-target')); flashInvalid(i); return; }   // can't feed an empty slot
@@ -705,7 +750,8 @@ function onSquadTap(i) {
 }
 function reason(r) {
   return ({ 'cannot-afford': 'Not enough gold.', occupied: "That slot has a different Trinkling.", full: 'Squad is full.',
-    'max-level': 'Already max level.', 'no-target': 'Pick a Trinkling to feed.' })[r] || 'Can’t do that.';
+    'max-level': 'Already max level.', 'no-target': 'Pick a Trinkling to feed.',
+    'cannot-afford-fuse': 'Not enough gold to fuse.', 'invalid-fuse': "Those two can’t be fused." })[r] || 'Can’t do that.';
 }
 // Rejected action feedback: beep + a red shake on the hint, and (after render rebuilds the squad)
 // a red shake on the slot the player tried to act on — so a failed buy/placement is felt, not just heard.
@@ -876,7 +922,14 @@ function attachHold(el, u) {
 function showHoldTip(u, el) {
   hideHoldTip();
   const arena = document.querySelector('.arena'); if (!arena) return;
-  const txt = u.abilityText || CREATURE_BY_ID[u.defId]?.ability?.text || 'No ability.';
+  let txt = u.abilityText || CREATURE_BY_ID[u.defId]?.ability?.text || 'No ability.';
+  // Show the SAME level/tier-scaled magnitudes the engine uses (mirrors the shop detail card). Base creatures
+  // scale via scaledAbilityText; fused units/tokens (not in CREATURE_BY_ID) keep base text. (Feedback: battle showed L1.)
+  if (CREATURE_BY_ID[u.defId]?.ability?.text) {
+    const scaled = scaledAbilityText(u.defId, u.level || 1);
+    if (scaled) txt = scaled;
+    else if ((u.level || 1) > 1) txt = `${txt} (Lv${u.level})`;   // unmappable shape → at least mark the level
+  }
   holdTipEl = document.createElement('div'); holdTipEl.className = 'hold-tip';
   holdTipEl.innerHTML = `<div class="ht-name">${u.name || 'Trinkling'}</div><div class="ht-abil">${txt}</div>`;
   arena.appendChild(holdTipEl);
@@ -985,6 +1038,23 @@ function blowOut(m) {
   m.el.style.transform = `translate(${dir * 340}px, -30px) scale(1.05) rotate(${dir * 42}deg)`;
   m.el.style.opacity = '0';
 }
+// Inserting/removing a card in a centre-justified flex lane RE-CENTERS the row, shifting the layout box of any
+// pet currently STAGED in the pit — but its fixed pit transform stays put, so it teleports sideways mid-fight.
+// Snapshot staged pets' screen rects, run the DOM mutation, then correct each staged transform by the pure
+// layout delta (measured same-tick so an in-flight lunge hasn't advanced). Kills the summon/faint teleport.
+function compensateStagedForReflow(container, mutate) {
+  const snaps = [];
+  for (const uid in staged) { const s = staged[uid]; if (s && s.el && s.el.parentElement === container) snaps.push({ s, r: s.el.getBoundingClientRect() }); }
+  mutate();
+  for (const { s, r } of snaps) {
+    const nr = s.el.getBoundingClientRect(), dx = nr.left - r.left, dy = nr.top - r.top;
+    if (!dx && !dy) continue;
+    s.tx -= dx; s.ty -= dy;
+    const prev = s.el.style.transition;
+    s.el.style.transition = 'none'; s.el.style.transform = `translate(${s.tx}px, ${s.ty}px) scale(1.12)`;
+    void s.el.offsetWidth; s.el.style.transition = prev;
+  }
+}
 function clashMeet(A, B) { if (A && B) { stageMatchup(A, B); bumpFight(A, B); } }   // legacy name → new staging
 // A glowing projectile that streaks from one combatant across the pit to the other — the "ranged" spectacle
 // layered over the melee clash. Tinted per side; captured positions are the pre-charge spots.
@@ -1075,12 +1145,22 @@ function applyEvent(e) {
     case 'buff': setStat(e.uid, 'a', e.newAtk); setStat(e.uid, 'h', e.newHp); floatText(e.uid, `+${e.atk}/+${e.hp}`, 'buff'); if ((e.atk || 0) > 0 || (e.hp || 0) > 0) sparkleRise(e.uid); break;
     case 'shield': updateShield(e.uid, e.shield); floatText(e.uid, '🛡+' + e.amount, 'buff'); break;
     case 'ability': { abilityPop(e.uid); SFX.ability(); break; }
-    case 'faint': { const m = elMap[e.uid]; if (m) { deathBurst(m.el); blowOut(m); SFX.faint(); setTimeout(() => m.el.remove(), 700 / (replaySpeed || 1)); } break; }
+    case 'faint': { const m = elMap[e.uid]; if (m) { deathBurst(m.el); blowOut(m); SFX.faint(); setTimeout(() => { const line = m.el.parentElement; if (line) compensateStagedForReflow(line, () => m.el.remove()); else m.el.remove(); }, 700 / (replaySpeed || 1)); } break; }
     case 'summon': { addSummon(e); break; }
     // steal transfers atk/hp from the victim to the stealer: the stealer updates via its own 'buff' event,
     // so here we update the VICTIM (e.from) to its new absolute stats (tatk/thp) or its numbers would desync.
     case 'steal': { setStat(e.from, 'a', e.tatk); setStat(e.from, 'h', e.thp); const m = elMap[e.from]; if (m) { m.el.classList.add('hit'); setTimeout(() => m.el.classList.remove('hit'), 250); } floatText(e.from, `-${e.atk}/-${e.hp}`, 'dmg'); break; }
-    case 'move': { const m = elMap[e.uid]; if (m) { const line = m.el.parentElement; if (e.to === 'back') line.appendChild(m.el); else line.prepend(m.el); } break; }
+    case 'move': {
+      const m = elMap[e.uid];
+      if (m) {
+        const line = m.el.parentElement;
+        if (e.to === 'back') line.appendChild(m.el); else line.prepend(m.el);
+        // If the pet was STAGED in the pit (e.g. Skiff dashing to the back after attacking), glide it home to its
+        // NEW lane slot instead of leaving a stale pit transform that teleports it. (Sweep 2026-09-13.)
+        if (staged[m.uid]) { void m.el.offsetWidth; returnToLane(staged[m.uid]); delete staged[m.uid]; }
+      }
+      break;
+    }
     case 'skip': floatText(e.uid, 'HONK!', 'abil'); break;
     default: break;
   }
@@ -1146,9 +1226,11 @@ function addSummon(e) {
   // it was summoned just behind ("in its place" / "behind it"). .line is front→back in DOM order, so insert
   // right after that anchor's card; afterUid == null means the token is the new front unit.
   const anchor = e.afterUid != null ? elMap[e.afterUid]?.el : null;
-  if (anchor && anchor.parentElement === container) anchor.insertAdjacentElement('afterend', d);
-  else if (e.afterUid == null) container.prepend(d);
-  else container.appendChild(d);
+  compensateStagedForReflow(container, () => {   // don't let the insert re-center a currently-fighting pet
+    if (anchor && anchor.parentElement === container) anchor.insertAdjacentElement('afterend', d);
+    else if (e.afterUid == null) container.prepend(d);
+    else container.appendChild(d);
+  });
   elMap[e.uid] = { el: d, uid: e.uid, side: e.side, defId: e.token, level: e.level || 1, name: nm, abilityText: u?.ability?.text || '' };
   SFX.tap();
 }
@@ -1171,10 +1253,10 @@ $('#rewatchClose').onclick = () => { $('#rewatchModal').hidden = true; };
 $('#rewatchSelf').onclick = () => { $('#rewatchModal').hidden = true; if (game?.lastBattle) runPlayback(game.lastBattle.log, 0, backToShop, true); };
 $('#rewatchRival').onclick = () => { $('#rewatchModal').hidden = true; if (game?.lastBattle) runPlayback(game.lastBattle.log, 1, backToShop, true); };
 // Outcome-themed result screen: emblem + big banner + a soft subtitle, on a tinted card. No sad emoji —
-// a loss reads as "they'll drift back stronger", keeping the whimsical tone. Shared by solo + duel.
+// a loss stays upbeat ("come back stronger"), keeping the whimsical tone. Shared by solo + duel.
 const RESULT_UI = {
   win:  { txt: 'Victory!',    sub: 'Your squad holds the field.',            emblem: 'trophy',    snd: () => SFX.win() },
-  lose: { txt: 'Defeated',    sub: 'They drift off — and pop back stronger.', emblem: 'heart',     snd: () => SFX.lose() },
+  lose: { txt: 'Defeated',    sub: 'Shake it off — come back stronger.',      emblem: 'heart',     snd: () => SFX.lose() },
   draw: { txt: "It's a draw", sub: 'Evenly matched — not a scratch on either side.', emblem: 'sword', snd: () => {} },
 };
 function applyResultScreen(result) {
@@ -1215,7 +1297,7 @@ const RANKS = [
   { cups: 3,  name: 'Wardling' },
   { cups: 6,  name: 'Tidewarden' },
   { cups: 10, name: 'Moonvow Keeper' },
-  { cups: 15, name: 'Warden of the Standing' },
+  { cups: 15, name: 'Warden of the Arena' },
   { cups: 25, name: 'Tidelord' },
 ];
 function rankFor(cups) {
@@ -1313,8 +1395,8 @@ function gameOver(won) {
   $('#gameover').classList.toggle('defeat', !won);
   $('#goTitle').textContent = won ? 'You took the Cup!' : 'Defeat';
   $('#goText').innerHTML = won
-    ? `You topped <b>the Little Standing</b> — <b>${game.wins}</b> fights in <b>${game.turn}</b> turns, <b>${game.hearts}</b>❤️ to spare. The whole stand is chanting your Trinklings’ names!`
-    : `You climbed to <b>${game.trophies}</b> <img class="ic" src="assets/ui/trophy.png" alt="trophies"> on the Little Standing over <b>${game.turn}</b> turns. The Trinklings drift off for a nap — go again?`;
+    ? `<b>${game.wins}</b> fights won in <b>${game.turn}</b> turns, <b>${game.hearts}</b>❤️ to spare.`
+    : `You reached <b>${game.trophies}</b> <img class="ic" src="assets/ui/trophy.png" alt="trophies"> in the arena over <b>${game.turn}</b> turns. Go again?`;
   if (won && lastRankUp) {
     $('#goText').innerHTML += `<br><span class="rankup-line">✦ Rank up — you are now <b>${lastRankUp}</b>!</span>`;
     SFX.levelup();
@@ -1323,16 +1405,27 @@ function gameOver(won) {
 }
 
 // ---- start / menu / howto ----
+// Daily deck: seed derived from the local calendar day so every player gets the SAME never-seen-before deck
+// today. Truly random cards across ALL factions (run with coalition=null → src/game.js pool skips the faction
+// filter). Fully deterministic & offline. Same date → same number everywhere; only the rollover moment is local.
+function dailySeed(d = new Date()) {
+  const ymd = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  let h = 2166136261 >>> 0;                       // FNV-1a, same fold as src/rng.js hashString
+  for (let i = 0; i < ymd.length; i++) { h ^= ymd.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h >>> 0;                                 // 32-bit uint — runSeed must stay numeric
+}
 function startRun(mode, coalition) {
   easy = mode === 'easy' || (mode !== 'duel' && easyPref);   // Offline honours the Easy-mode setting
-  runCoalition = coalition || null;
+  runCoalition = mode === 'daily' ? null : (coalition || null);   // daily → null coalition = shop draws ALL factions
   duelMode = false; duelStopPoll(); duel = null;
   startMusic();   // ensure the loop is going once a run begins (belt-and-braces for the first-gesture start)
   $('#game').classList.remove('duel', 'waiting');
   $('#endBtn').textContent = 'End Turn ▶'; $('#endBtn').disabled = false;
   $('#continueBtn').textContent = 'Continue ▶'; $('#continueBtn').onclick = singleContinue;
   $('#duelScore').hidden = true;
-  runSeed = (Date.now() >>> 0) ^ (Math.floor(Math.random() * 1e9) >>> 0);
+  runSeed = mode === 'daily'
+    ? dailySeed()                                                 // date-seeded: identical run for everyone playing today's daily
+    : ((Date.now() >>> 0) ^ (Math.floor(Math.random() * 1e9) >>> 0));
   game = new GameState(runSeed, { easy, coalition: runCoalition });
   sel = null; selTarget = null; hasBought = false; pendingEvolve = null; pendingMerge = null; pendingFuse = null; suppressReward = false; runWinStreak = 0;
   lastCoachTier = unlockedTier(game.turn); tierMsgTurn = 0;
@@ -1375,6 +1468,7 @@ const closeSettings = () => ($('#settingsModal').hidden = true);
 $('#titleSettings').onclick = () => { updateMuteLabels(); updateEasyLabel(); $('#settingsModal').hidden = false; };
 $('#settingsClose').onclick = closeSettings;
 $('#onlineBtn').onclick = () => openDeckSelect('duel');
+$('#dailyBtn').onclick = () => startRun('daily');   // daily skips deck-select — the deck is fixed for the calendar day
 // simple connection indicator on the Online button (green dot when the device is online)
 function updateOnlineDot() { const d = $('#onlineDot'); if (d) d.classList.toggle('on', navigator.onLine); }
 window.addEventListener('online', updateOnlineDot);
@@ -1478,7 +1572,7 @@ $('#codexBack').onclick = () => { show('title'); showBest(); };
 
 // ===== LIVE DUEL (best-of-5 vs a friend on the LAN) =====
 let duelMode = false, duel = null, duelPoll = null, duelLocalPhase = null, duelGame = null;
-const DUEL_BASE_GOLD = 10, DUEL_GOLD_PER_ROUND = 3;   // was 12 + 8/round — too much gold late (per feedback)
+const DUEL_BASE_GOLD = 10, DUEL_GOLD_PER_ROUND = 1, DUEL_GOLD_CAP = 14;   // was 12+8/round, then 10+3 — still too much late (feedback). Now +1/round, hard-capped at 14 (still affords one buy-fuse: 3+10=13).
 
 // Duel/feedback API base: SAME-ORIGIN when running locally or on the LAN server (localhost / a bare IP);
 // the deployed Railway server when the static client is served from a real domain (e.g. GitHub Pages).
@@ -1548,7 +1642,7 @@ function duelBeginRound(s) {
   game = duelGame;
   const prevTurn = game.turn || 1;
   game.turn = s.round;                                            // tiers climb 2-per-round, exactly like single-player
-  game.gold = DUEL_BASE_GOLD + (s.round - 1) * DUEL_GOLD_PER_ROUND; // fresh gold, grows per round — the SQUAD carries over
+  game.gold = Math.min(DUEL_GOLD_CAP, DUEL_BASE_GOLD + (s.round - 1) * DUEL_GOLD_PER_ROUND); // grows +1/round then plateaus at the cap — the SQUAD carries over
   for (const c of game.livingSquad()) game.fireShop(c, 'onStartTurn'); // economy Trinklings (e.g. Nib gold) fire each round, matching single-player startTurn
   game.rollShop(true);
   sel = null; selTarget = null;
@@ -1628,7 +1722,8 @@ function duelEnd(iWon) {
   $('#continueBtn').textContent = 'Continue ▶'; $('#continueBtn').onclick = singleContinue;
   $('#goEmoji').innerHTML = iWon
     ? `<img src="assets/ui/trophy.png" alt="" style="width:104px;height:104px;object-fit:contain;filter:drop-shadow(0 6px 12px rgba(20,18,16,.28))">`
-    : `<img src="assets/ui/meantide/struck-seal.png" alt="" style="width:96px;height:96px;object-fit:contain;mix-blend-mode:multiply">`;
+    : `<img src="assets/ui/trinkling-sad.png" alt="" style="width:172px;height:172px;object-fit:contain;filter:drop-shadow(0 8px 16px rgba(20,18,16,.34))">`;
+  $('#gameover').classList.toggle('defeat', !iWon);   // adopt the warm 'defeat' card styling + clears a stale one on a win
   $('#goTitle').textContent = iWon ? 'You won the duel!' : 'Duel over';
   $('#goText').textContent = iWon ? 'Nicely played — you took the match! Fancy a rematch?' : 'Good game! Want a rematch?';
   $('#goTitleBtn').textContent = 'Main menu';

@@ -4,9 +4,17 @@
 // (the client composites the two parents). Works recursively for merges-of-merges (a parent may be fused).
 import { CREATURE_BY_ID, CONFIG } from './data/creatures.js';
 
-const BAND = { 1: 4, 2: 6, 3: 8, 4: 10, 5: 12, 6: 15 };
+const BAND = { 1: 4, 2: 6, 3: 8, 4: 10, 5: 16, 6: 22 };   // T5/T6 raised to match the steepened base-stat curve
 const BATTLE_TRIGS = ['onStartBattle','onKill','onHurt','onFaint','onFriendFaints','onBeforeAttack','onAfterAttack','onFriendSummoned','onFirstBlood','onLowHealth','everyOtherRound'];
 const clampN = (n) => Math.max(1, Math.round(n));
+
+// Does an effect tree contain a summon anywhere? A fused faint-trigger that summons must be limited.
+function hasSummon(e) {
+  if (!e || typeof e !== 'object') return false;
+  if (e.type === 'summon') return true;
+  if (Array.isArray(e.effects) && e.effects.some(hasSummon)) return true;
+  return hasSummon(e.then) || hasSummon(e.else);
+}
 
 // Read a unit's design meta whether it's a base creature or itself a fusion.
 function meta(u) {
@@ -91,10 +99,10 @@ export function fuseUnit(a, b) {
   const ma = meta(a), mb = meta(b);
   const [hi, lo] = ma.tier >= mb.tier ? [ma, mb] : [mb, ma];
   const tier = Math.min(6, hi.tier);
-  // Reband the FOOD-STRIPPED base stats to the tier band, then re-add the inherited food bonus on top — so a
-  // fused creature keeps the permanent food investment of BOTH parents (per feedback) instead of it being
-  // averaged away. (Battle-effect foods like Firepip/Honey already carry via the snacks array below.)
-  const foodAtk = (a.foodAtk || 0) + (b.foodAtk || 0), foodHp = (a.foodHp || 0) + (b.foodHp || 0);
+  // Reband the FOOD-STRIPPED base stats of BOTH parents to the tier band (a balanced COMBINATION of their
+  // stats), then re-add the food of the SECOND-CHOSEN pet only (`a` — the fuse target) on top, per feedback.
+  // (Battle-effect foods like Firepip/Honey still come from BOTH via the snacks array below.)
+  const foodAtk = a.foodAtk || 0, foodHp = a.foodHp || 0;   // second-chosen pet's food only
   let atk = (Math.max(1, a.atk - (a.foodAtk || 0)) + Math.max(1, b.atk - (b.foodAtk || 0))) / 2;
   let hp = (Math.max(1, a.hp - (a.foodHp || 0)) + Math.max(1, b.hp - (b.foodHp || 0))) / 2;
   const k = BAND[tier] / Math.max(1, atk + hp);
@@ -103,6 +111,12 @@ export function fuseUnit(a, b) {
   const flevel = Math.min(a.level || 1, b.level || 1);   // inherit the LOWER parent level (per spec)
   const sig = FUSE_SIGS[pairHash(a.defId, b.defId) % FUSE_SIGS.length];   // this fusion's signature bonus
   const effect = { type: 'multi', effects: [sig.effect(), scale(toBattle(hi.ability?.effect), 0.75), scale(toBattle(lo.ability?.effect), 0.75)].filter((e) => e && e.type !== 'none') };
+  // Never strip a parent's once-per-battle guard, and never create an unlimited "when a friend/it faints →
+  // summon another" loop (feedback: makes fights unwinnable). Force once when a parent was guarded, OR when a
+  // faint trigger drives a summon (even if neither parent was guarded — a mixed onFaint-summon combo).
+  const parentOnce = hi.ability?.once === 'battle' || lo.ability?.once === 'battle';
+  const faintSummonLoop = (trig === 'onFriendFaints' || trig === 'onFaint') && hasSummon(effect);
+  const once = (parentOnce || faintSummonLoop) ? 'battle' : undefined;
   const TRIGTXT = { onStartBattle: 'Start of the fight', onKill: 'On a knockout', onHurt: 'When hurt', onFaint: 'When it faints', onFriendFaints: 'When a friend faints', onBeforeAttack: 'Before it attacks', onAfterAttack: 'After it attacks', onFriendSummoned: 'When a friend is summoned', onFirstBlood: 'On first blood', onLowHealth: 'At half health', everyOtherRound: 'Every other round' };
   const artA = ma.art, artB = mb.art;
   const name = portmanteau(hi.name, lo.name);
@@ -116,7 +130,7 @@ export function fuseUnit(a, b) {
 
     fused: {
       parents: [a.defId, b.defId], artParents: [artA, artB], tier, faction: hi.faction, world: hi.world,
-      ability: { trigger: trig, effect, text: `${TRIGTXT[trig] || 'Start of the fight'}: ${describe(effect)}.` },
+      ability: { trigger: trig, effect, ...(once ? { once } : {}), text: `${TRIGTXT[trig] || 'Start of the fight'}: ${describe(effect)}${once ? ' (once per fight)' : ''}.` },
       desc: fuseDesc(hi.name, lo.name, hi.world, a.defId, b.defId),
     },
   };

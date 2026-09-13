@@ -74,10 +74,18 @@ export class GameState {
     // a set to L2/L3 is actually reachable. Stays inside the coalition-filtered pool; seeded for determinism.
     const ownedIds = new Set(this.squad.filter(Boolean).filter((c) => c.xp < CONFIG.xpToL3).map((c) => c.defId));
     const ownedPool = petPool.filter((c) => ownedIds.has(c.id));
+    // Sample WITHOUT replacement within a shop: no two identical Trinklings in one shop (kept/frozen ones
+    // included), so a roll never wastes slots on dupes. Still seeded and still ~35%-biased toward an owned,
+    // still-levelable Trinkling so building to L2/L3 stays reachable. (Feedback: dupes too frequent.)
+    const used = new Set(pets.filter(Boolean).map((p) => p.defId));
     for (let i = 0; i < petSlots; i++) {
       if (pets[i]) continue;
-      const useOwned = ownedPool.length && this.rng.chance(0.35);
-      pets[i] = { kind: 'pet', defId: (useOwned ? this.rng.pick(ownedPool) : this.rng.pick(petPool)).id, frozen: false };
+      const owned = ownedPool.filter((c) => !used.has(c.id));
+      const fresh = petPool.filter((c) => !used.has(c.id));
+      const useOwned = owned.length && this.rng.chance(0.35);
+      const pick = this.rng.pick(useOwned ? owned : (fresh.length ? fresh : petPool));
+      used.add(pick.id);
+      pets[i] = { kind: 'pet', defId: pick.id, frozen: false };
     }
     for (let i = 0; i < snackSlots; i++) if (!snacks[i]) snacks[i] = { kind: 'snack', defId: this.rng.pick(snackPool).id, frozen: false };
     this.shop.pets = pets;
@@ -195,9 +203,9 @@ export class GameState {
         t.foodAtk = (t.foodAtk || 0) + (e.atk || 0); t.foodHp = (t.foodHp || 0) + (e.hp || 0);
       }
     } else if (e.type === 'grantFaint') {
-      if (target) target.snacks.push('honey');
+      if (target) target.snacks.push(snack.id);      // store the ACTUAL snack (Royal Hive ≠ Honey), not a hardcoded id
     } else if (e.type === 'grantFirstStrike') {
-      if (target) target.snacks.push('chili');
+      if (target) target.snacks.push(snack.id);      // …so Emberkeg keeps its tier-5 bonus instead of Chili's
     }
   }
 
@@ -289,6 +297,12 @@ export class GameState {
     resetUid(1);
     const seed = battleSeed != null ? battleSeed : this.rng.int(1e9);
     const res = simulateBattle(myTeam, opponentTeam, seed, this.turn);
+    // Persist keep-mode permanent buffs onto the LIVE squad (survivors only). livingSquad() order == myTeam order,
+    // so the survivor index from the engine maps straight back onto the real creature.
+    if (res.keepDeltas && res.keepDeltas.length) {
+      const ls = this.livingSquad();
+      for (const d of res.keepDeltas) { const c = ls[d.i]; if (c) { c.atk = clamp(c.atk + d.atk); c.hp = clamp(c.hp + d.hp); } }
+    }
     if (res.result === 'win') { this.wins += 1; this.trophies += 1; }
     else if (res.result === 'lose') { this.losses += 1; this.lostAny = true; this.hearts -= CONFIG.heartsLostPerLoss; }
     // draw: nothing

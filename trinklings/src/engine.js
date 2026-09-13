@@ -114,8 +114,19 @@ class Battle {
     const idx = liveTeam.indexOf(actor);
     switch (target) {
       case 'self': return [actor];
-      case 'friendAhead': return idx > 0 ? [liveTeam[idx - 1]] : [];
-      case 'friendBehind': return idx >= 0 && idx < liveTeam.length - 1 ? [liveTeam[idx + 1]] : [];
+      // Resolve against the FULL team array (the just-fainted actor is still present pre-compaction) and pick
+      // the nearest LIVING neighbor — so onFaint abilities (gourdon/vesper) that target the friend behind/ahead
+      // actually fire. Behaviour-identical for a living actor. (Bug from mechanics sweep 2026-09-13.)
+      case 'friendAhead': {
+        const i = team.indexOf(actor); if (i < 0) return [];
+        for (let k = i - 1; k >= 0; k--) if (!team[k].dead && team[k].hp > 0) return [team[k]];
+        return [];
+      }
+      case 'friendBehind': {
+        const i = team.indexOf(actor); if (i < 0) return [];
+        for (let k = i + 1; k < team.length; k++) if (!team[k].dead && team[k].hp > 0) return [team[k]];
+        return [];
+      }
       case 'allFriends': return liveTeam.filter((u) => u !== actor);
       case 'randomFriend': {
         const pool = liveTeam.filter((u) => u !== actor);
@@ -207,6 +218,16 @@ class Battle {
         this.emit({ t: 'summonFail', token: tokenId, side });
         break;
       }
+      // Safety net: a hard per-unit per-battle summon cap so no ability (e.g. a fused faint→summon that slipped
+      // past its once-guard, or a self-referential onFriendSummoned→summon) can respawn tokens forever and make
+      // a fight unwinnable. Set well above any legitimate summoner's real output (measured ceiling ~3).
+      if (actor) {
+        if ((actor._summonsMade || 0) >= (CONFIG.maxSummonsPerUnit || 20)) {
+          this.emit({ t: 'summonFail', token: tokenId, side, capped: true });
+          break;
+        }
+        actor._summonsMade = (actor._summonsMade || 0) + 1;
+      }
       const tok = makeToken(tokenId, side, actor ? actor.level : 1, statOverride);
       // Insert at slotIndex within the array (dead units may still be present pre-compaction).
       const insertAt = Math.min(slotIndex + i, team.length);
@@ -214,8 +235,10 @@ class Battle {
       // Anchor: the nearest still-living unit IN FRONT of the token (lower array index). The client places
       // the new card just behind it so summons land in the right slot ("in its place" / "behind it") instead
       // of always at the back of the row. null => the token is the new front unit.
+      // Anchor on the nearest NOT-DEAD unit (even one sitting at 0 HP pre-compaction) — the client keeps a card
+      // for every not-yet-dead unit, so this matches DOM order and avoids lane divergence. (Sweep 2026-09-13.)
       let afterUid = null;
-      for (let k = insertAt - 1; k >= 0; k--) { if (!team[k].dead && team[k].hp > 0) { afterUid = team[k].uid; break; } }
+      for (let k = insertAt - 1; k >= 0; k--) { if (!team[k].dead) { afterUid = team[k].uid; break; } }
       this.emit({ t: 'summon', uid: tok.uid, token: tokenId, side, atk: tok.atk, hp: tok.hp, afterUid });
       // onFriendSummoned for that side's other living units
       for (const f of sortByAttackDesc(living(team).filter((u) => u !== tok), this.rng)) {
@@ -257,8 +280,8 @@ class Battle {
         const h = this.scaled(effect.hp || 0, actor, effect.noScale);
         for (const t of tgs) {
           this.buff(t, a, h); // negative a/h = a "pare" (shave); buff() clamps to 0 and never sets _hurtPending
-          if (effect.mode === 'keep' && t.srcRef && !t.isToken) { // permanent buff that survives the fight
-            t.srcRef.atk = clampStat(t.srcRef.atk + a); t.srcRef.hp = clampStat(t.srcRef.hp + h);
+          if (effect.mode === 'keep' && t.srcRef && !t.isToken) { // permanent buff — ACCUMULATE, persisted post-fight
+            t._keepAtk = (t._keepAtk || 0) + a; t._keepHp = (t._keepHp || 0) + h;  // for SURVIVORS only (see simulateBattle)
           }
         }
         return;
@@ -305,11 +328,19 @@ class Battle {
         return;
       }
       case 'summon': {
-        const cnt = effect.countScales ? this.scaled(effect.count || 1, actor) : (effect.count || 1);
+        // countScales means "summon COUNT equal to level" — scale by LEVEL ONLY (never the tier multiplier),
+        // else Morel (tier 3) summons round(level×1.5) = 2/3/5 instead of 1/2/3. (Sweep 2026-09-13.)
+        const cnt = effect.countScales ? (effect.count || 1) * (actor.level || 1) : (effect.count || 1);
         const team = this.teams[actor.side];
-        const slot = team.indexOf(actor); // fainted actor still in array during faint step
+        const idx = team.indexOf(actor);
+        // A LIVING summoner plants tokens BEHIND itself (higher index = further back); a FAINTING one (dead,
+        // still in the array during the faint step) summons "in its place" — its own slot. Without this, a
+        // living summoner (willow/podlet's "behind it") pushed the token to a LOWER index → it appeared in
+        // FRONT of the summoner. `pos` may override explicitly. (Bug from feedback 2026-09-13.)
+        const behind = effect.pos === 'behind' || (effect.pos !== 'front' && idx >= 0 && !actor.dead && actor.hp > 0);
+        const slot = idx < 0 ? 0 : (behind ? idx + 1 : idx);
         const so = effect.atk != null ? { atk: this.scaled(effect.atk, actor, true), hp: this.scaled(effect.hp, actor, true) } : null;
-        this.summon(effect.token, actor.side, slot < 0 ? 0 : slot, cnt, actor, so);
+        this.summon(effect.token, actor.side, slot, cnt, actor, so);
         return;
       }
       case 'move': {
@@ -402,13 +433,15 @@ class Battle {
     const b = living(this.teams[1])[0];
     if (!a || !b) return;
 
-    // before-attack (desc attack) — e.g. Sir Reginald honk
+    // before-attack (desc attack) — e.g. Sir Reginald honk. Gate on hp>0 so a unit sparked to 0 HP by an
+    // earlier onBeforeAttack can't fire its own (and can't self-heal back to cancel the kill). (Sweep 2026-09-13.)
     for (const u of sortByAttackDesc([a, b], this.rng)) {
-      if (u.ability && u.ability.trigger === 'onBeforeAttack' && !u.dead) this.fire(u);
+      if (u.ability && u.ability.trigger === 'onBeforeAttack' && !u.dead && u.hp > 0) this.fire(u);
     }
 
-    const dmgA = a.dead ? 0 : (a.skipNextAttack ? 0 : a.atk + this.firstStrike(a));
-    const dmgB = b.dead ? 0 : (b.skipNextAttack ? 0 : b.atk + this.firstStrike(b));
+    // A unit at 0 HP (from an onBeforeAttack spark) deals no swing — it's about to faint in settle().
+    const dmgA = (a.dead || a.hp <= 0) ? 0 : (a.skipNextAttack ? 0 : a.atk + this.firstStrike(a));
+    const dmgB = (b.dead || b.hp <= 0) ? 0 : (b.skipNextAttack ? 0 : b.atk + this.firstStrike(b));
     a.skipNextAttack = false; b.skipNextAttack = false;
 
     this.emit({ t: 'attack', a: a.uid, b: b.uid, dmgA, dmgB });
@@ -432,7 +465,8 @@ class Battle {
     // Start of battle (both teams, desc attack, random ties)
     this.emit({ t: 'startBattle', turnNo: this.turnNo, teams: this.snapshotTeams() });
     const starters = sortByAttackDesc([...this.teams[0], ...this.teams[1]].filter((u) => u.ability && u.ability.trigger === 'onStartBattle'), this.rng);
-    for (const u of starters) if (!u.dead) this.fire(u);
+    // Gate on hp>0: a unit zeroed by an earlier starter's damage must not still fire its own onStartBattle.
+    for (const u of starters) if (!u.dead && u.hp > 0) this.fire(u);
     this.settle();
 
     // Attack rounds
@@ -463,5 +497,16 @@ class Battle {
 // Returns { result: 'win'|'lose'|'draw' (from teamA's view), log, aliveA, aliveB }.
 export function simulateBattle(teamA, teamB, seed = 1, turnNo = 1) {
   const b = new Battle(teamA, teamB, seed, turnNo);
-  return b.run();
+  const res = b.run();
+  // Keep-mode (permanent) buffs — e.g. Candela/Grudge/Vesper "kept between fights" — persist ONLY for the
+  // units that SURVIVED, written back to the caller's squad afterwards (the srcRef write mid-battle used to
+  // hit a throwaway snapshot and vanish). Aligned by the survivor's index in teamA (srcRef === that element).
+  const keepDeltas = [];
+  for (const uu of b.teams[0]) {
+    if (uu.dead || uu.hp <= 0 || uu.isToken || !uu.srcRef || (!uu._keepAtk && !uu._keepHp)) continue;
+    const i = teamA.indexOf(uu.srcRef);
+    if (i >= 0) keepDeltas.push({ i, atk: uu._keepAtk || 0, hp: uu._keepHp || 0 });
+  }
+  res.keepDeltas = keepDeltas;
+  return res;
 }
