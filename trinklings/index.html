@@ -29,7 +29,7 @@
   <link rel="preload" as="font" type="font/woff2" href="assets/fonts/Nunito.woff2" crossorigin />
   <link rel="preload" as="font" type="font/woff2" href="assets/fonts/Cinzel.woff2" crossorigin />
   <link rel="preload" as="image" href="assets/ui/hero-scene.webp" fetchpriority="high" />
-  <link rel="stylesheet" href="public/style.css?v=969012c90a" />
+  <link rel="stylesheet" href="public/style.css?v=0bd5393a13" />
   <link rel="stylesheet" href="public/fx.css?v=969db94a22" />
 </head>
 <body>
@@ -207,9 +207,10 @@
       <h2 id="fuseModalTitle">Fuse into <span id="fuseModalName">a new Trinkling</span>?</h2>
       <div id="fuseModalReborn" class="fuse-reborn"></div>
       <ul class="fuse-rules">
-        <li><b>Reborn at 1/1</b> — both are used up; stats start again at 1 attack / 1 health.</li>
+        <li><b>Reborn at 1/1</b> — both pets are used up and its stats start over.</li>
         <li><b>Keeps both abilities</b> at their levels, each on its own trigger, plus a new Signature Move: <b id="fuseModalSig" class="sig-name">✦ Signature Move</b></li>
         <li>Held battle items come along; fed boosts don’t. It can’t combine or fuse again.</li>
+        <li><b>Fuse spare pets, not your carries</b>, then <b>feed or shield</b> the 1/1 — lines tagged <b>Needs HP</b> wait until it’s fed.</li>
       </ul>
       <div id="fuseModalAbils" class="fuse-abils"></div>
       <div class="btn-row">
@@ -294,8 +295,8 @@
         <li>Every Trinkling shows two chips: a <b>grey Attack</b> and a <b>red Health</b> (X / Y). So "+2/+2" means +2 attack and +2 health.</li>
         <li><b>Tap a shop Trinkling</b>, then <b>tap an empty squad slot</b> to buy it (<span id="howBuyCost">3</span> <img class="ic" src="assets/ui/coin.webp" alt="gold">).</li>
         <li>Tap a squad Trinkling, then another slot to <b>reorder</b> — the <b>rightmost one fights first ▶</b>.</li>
-        <li>Buy <b>copies of the same</b> Trinkling to <b>combine</b> them (bigger stats + it levels up), or drop <b>two different ones</b> together to <b>fuse</b> them (<span id="howFuseCost">12</span> <img class="ic" src="assets/ui/coin.webp" alt="gold">). The new Trinkling is <b>reborn at 1/1</b>, but keeps <b>both abilities</b> at their levels and gains a unique <b>✦ Signature Move</b>.</li>
-        <li>A fused Trinkling has <b>several abilities</b> — each fires on its <b>own trigger</b> (the tag beside it). Tap it to read them all.</li>
+        <li>Buy <b>copies of the same</b> Trinkling to <b>combine</b> them (bigger stats + it levels up), or drop <b>two different ones</b> together to <b>fuse</b> them (<span id="howFuseCost">12</span> <img class="ic" src="assets/ui/coin.webp" alt="gold">, or <span id="howBuyFuseCost">15</span> straight from the shop). The new Trinkling is <b>reborn at 1/1</b>, but keeps <b>both abilities</b> at their levels and gains a unique <b>✦ Signature Move</b>.</li>
+        <li>A fused Trinkling has <b>several abilities</b> — each fires on its <b>own trigger</b> (the tag beside it). Tap it to read them all. A 1/1 faints fast: <b>feed it</b>, and fuse spare pets rather than your strongest.</li>
         <li><b>Items</b> are bonuses you buy (<span id="howSnackCost">2</span> <img class="ic" src="assets/ui/coin.webp" alt="gold">) and feed to a Trinkling for a <b>permanent</b> boost.</li>
         <li>Tap a squad Trinkling and hit <b>Sell</b> to get some gold back.</li>
         <li><b>Reroll</b> the shop for new Trinklings, or select a shop item and hit <b>Freeze</b> to keep it next turn (free).</li>
@@ -310,6 +311,6 @@
 </div>
 <audio id="bgm" loop preload="none" src="assets/audio/music.m4a"></audio>
 <audio id="bgm-battle" loop preload="none" src="assets/audio/battle-music.m4a"></audio>
-<script type="module" src="public/app.js?v=290bc9a2bc"></script>
+<script type="module" src="public/app.js?v=44c2858d9a"></script>
 </body>
 </html>

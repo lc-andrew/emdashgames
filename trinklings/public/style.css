@@ -186,6 +186,8 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 /* round 3: a FUSED pet lists both parents' abilities + its ✦ Signature Move — only that panel may grow (capped), so the Signature line
    is on screen without an unmarked scroll; base cards keep the fixed slot. */
 .card-detail.multi { height: auto; min-height: 108px; max-height: 34vh; max-height: 34dvh; }
+/* short portrait phones (360x780…): the space above the squad takes more — a long L3+L3 pair's Signature line ended below the fold */
+@media (orientation: portrait) and (min-height: 700px) and (max-height: 820px) { .card-detail.multi { max-height: 42vh; max-height: 42dvh; } }
 .coach.show { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
 .card-detail .cd-flavor { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
 .coach.show { padding: 10px 13px; background: var(--glass-hi); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); border: 1px solid var(--glass-brd); border-radius: var(--r-md); font-size: .9rem; font-weight: 600; color: var(--ink); box-shadow: var(--frame), var(--sh-soft); animation: pop .3s var(--ease-bounce); }
@@ -1040,7 +1042,7 @@ html.gfx-lite {
    END TURN on-screen; narrow phones tighten the bar's gaps/padding (≤400px) so every action state fits a 390px screen. */
 #actionLbl .act-stack { display: inline-flex; flex-direction: column; align-items: center; line-height: 1; }
 #actionLbl .fuse-prev { display: block; font-size: .72em; opacity: .92; margin-top: 2px; }
-@media (max-width: 400px) { .actionbar { gap: 6px; } .actionbar .btn { padding-left: 8px; padding-right: 8px; } .actionbar .btn.end { padding-left: 11px; padding-right: 11px; } }
+@media (max-width: 420px) { .actionbar { gap: 6px; } .actionbar .btn { padding-left: 8px; padding-right: 8px; } .actionbar .btn.end { padding-left: 11px; padding-right: 11px; } }
 /* <=370px (360px phones): an armed squad Fuse (label + stat preview + cost pill + the swap button) pushed END TURN ~10px off-screen
    under the <=400px step — tighten the gaps and side padding once more; every action state measured <= innerWidth at 360. */
 @media (max-width: 370px) { .actionbar { gap: 4px; } .actionbar .btn { padding-left: 6px; padding-right: 6px; } .actionbar .btn.end { padding-left: 8px; padding-right: 8px; letter-spacing: 0; } }
@@ -1108,6 +1110,13 @@ html.gfx-lite {
 .hold-tip.multi { max-width: 250px; }
 .card-detail .abil-list { margin-top: 5px; gap: 3px; }
 .card-detail .abil-line.sig { padding: 3px 6px 4px; }
+/* fused-pet notes (app.js abilityLinesHTML): a parent line a reborn 1/1 can't use yet is dimmed + tagged; the Signature line's placement tip.
+   Static text (no animation, no filter). */
+.abil-line.needs-hp .abil-txt, .abil-line.needs-hp .trig-badge, .abil-line.needs-hp .abil-lv { opacity: .6; }
+.abil-warn, .abil-tip { display: inline-block; margin-left: 4px; padding: 0 6px; border-radius: 999px; font-family: 'Nunito', sans-serif; font-size: .78em; font-weight: 900;
+  line-height: 1.45; letter-spacing: .02em; white-space: nowrap; vertical-align: 1px; }
+.abil-warn { color: #fff; background: #c2413a; }
+.abil-tip { color: #5a3e00; background: rgba(255,255,255,.55); box-shadow: inset 0 0 0 1px rgba(217,158,30,.6); }
 
 /* ---- N2: first-fuse explainer (a custom .modal, never window.confirm) ---- */
 .modal-card.fuse-card { max-width: 380px; text-align: left; }
@@ -1120,10 +1129,14 @@ html.gfx-lite {
 .fuse-card li b { color: var(--gilt-deep); }
 .fuse-card .fuse-reborn .stat:last-child { background: linear-gradient(180deg, #ff6f84, #e0475f); box-shadow: 0 0 0 2px rgba(255,255,255,.8), 0 2px 8px rgba(224,71,95,.45); }
 .fuse-card .fuse-abils { margin: 8px 0 2px; padding: 8px 10px; border-radius: var(--r-md); background: rgba(120,140,180,.1); border: 1px solid rgba(120,140,180,.2);
-  font-size: .8rem; font-weight: 600; line-height: 1.4; color: var(--ink); max-height: 30dvh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  font-size: .8rem; font-weight: 600; line-height: 1.4; color: var(--ink); max-height: none; overflow-y: auto; -webkit-overflow-scrolling: touch; }   /* portrait: the card itself is the one scroller (88dvh) */
 .fuse-card .fuse-abils:empty { display: none; }
 .modal-card.fuse-card { max-height: 88dvh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 .fuse-card .btn-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+/* the card is the one scroller in portrait: pin "Not now" / "Fuse" to its bottom edge so a long pair's ability list never pushes the
+   confirm out of sight (static, no filter — an opaque fade under the buttons instead of the glass blur) */
+.fuse-card .btn-row { position: sticky; bottom: -22px; z-index: 1; margin: 10px -22px -22px; padding: 14px 22px 22px;
+  background: linear-gradient(180deg, rgba(238,246,251,0), rgba(238,246,251,.96) 12px); }
 .fuse-card .btn-row .btn { flex: 1 1 0; width: auto; min-width: 0; margin-top: 0; }
 .fuse-card .btn-row .btn.primary { flex: 2 1 0; display: inline-flex; align-items: center; justify-content: center; gap: 2px; white-space: nowrap;
   padding: 13px 10px; font-size: .95rem; letter-spacing: .04em; }   /* "FUSE 1/1 (coin)12" on ONE line (big + uppercase tracking wrapped the pill under it) */
@@ -1142,7 +1155,7 @@ html.gfx-lite {
   .fuse-card ul { grid-column: 1; grid-row: 3 / span 2; margin: 0; }
   .fuse-card li { font-size: .78rem; line-height: 1.36; margin: 3px 0 6px; }
   .fuse-card .fuse-abils { grid-column: 2; grid-row: 3; margin: 2px 0 0; padding: 6px 9px; font-size: .74rem; max-height: 40dvh; }
-  .fuse-card .btn-row { grid-column: 2; grid-row: 4; margin-top: 8px; }
+  .fuse-card .btn-row { grid-column: 2; grid-row: 4; margin-top: 8px; position: static; margin-left: 0; margin-right: 0; margin-bottom: 0; padding: 0; background: none; }
   .fuse-card .btn-row .btn.primary { padding: 10px 8px; font-size: .88rem; }
 }
 
