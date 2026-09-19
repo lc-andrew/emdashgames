@@ -29,7 +29,7 @@
   <link rel="preload" as="font" type="font/woff2" href="assets/fonts/Nunito.woff2" crossorigin />
   <link rel="preload" as="font" type="font/woff2" href="assets/fonts/Cinzel.woff2" crossorigin />
   <link rel="preload" as="image" href="assets/ui/hero-scene.webp" fetchpriority="high" />
-  <link rel="stylesheet" href="public/style.css?v=96b6206ac9" />
+  <link rel="stylesheet" href="public/style.css?v=bc613414ab" />
   <link rel="stylesheet" href="public/fx.css?v=969db94a22" />
 </head>
 <body>
@@ -51,10 +51,17 @@
       <button class="meta-chip" id="acctChip" type="button" hidden></button>
       <button class="meta-chip pts" id="ptsChip" type="button" aria-label="Fusion points">✦ <b id="ptsChipN">0</b><span id="ptsChipTail"></span></button>
     </div>
+    <!-- R5 (owner feedback 2): Offline stays the one dominant play action; Online + Local pair up, and the
+         Shop gets its own entry instead of being buried in Settings / ladder home. Same three rows as before,
+         so the title stays uncluttered at 360x640. #titleShop ships hidden — app.js un-hides it on exactly the
+         gate that un-hides #settingsStall (cosmetics.stallAvailable()), so the two entries never disagree. -->
     <div class="btn-col title-actions">
       <button class="btn big glass" data-start="offline">Offline</button>
-      <button class="btn big glass" id="onlineBtn">Online</button>
-      <button class="btn big glass" id="localBtn">Local</button>
+      <div class="title-pair">
+        <button class="btn glass" id="onlineBtn">Online</button>
+        <button class="btn glass" id="localBtn">Local</button>
+      </div>
+      <button class="btn glass title-shop" id="titleShop" type="button" hidden>Shop</button>
     </div>
     <div id="titleRecord" class="title-record" hidden></div>
   </section>
@@ -603,6 +610,6 @@
 </div>
 <audio id="bgm" loop preload="none" src="assets/audio/music.m4a"></audio>
 <audio id="bgm-battle" loop preload="none" src="assets/audio/battle-music.m4a"></audio>
-<script type="module" src="public/app.js?v=d595db8d05"></script>
+<script type="module" src="public/app.js?v=3d2ffcd917"></script>
 </body>
 </html>

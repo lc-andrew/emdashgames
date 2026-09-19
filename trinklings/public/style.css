@@ -1605,3 +1605,232 @@ html.gfx-lite {
 #prlNote { margin-top: 10px; }
 #prlBuy { border-color: #6fa8dc; color: #2a5f8a; }        /* the second currency reads as an alternative, not a rival CTA */
 .cos-bonus { width: 100%; font-size: .74rem; font-weight: 800; line-height: 18px; color: var(--ink-soft); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* =======================================================================================================
+   ROUND 5 — UI POLISH PASS (owner feedback: "strange shadows", "Google button size", "amateurish screens")
+   =======================================================================================================
+   Nothing below introduces a new look. It takes the round-4 surfaces that grew their own chrome and puts
+   them back on the house system that the title screen, deck select, shop HUD and result card already use:
+   the same plates, the same 12-18 px radii, the same Cinzel headings, the same warm glass panels.
+
+   WHY THE SHADOWS LOOKED STRANGE. The house buttons are painted for the PAINTED SCENE. `.btn` stamps a
+   solid 4 px ledge (`0 4px 0 #bcd6e8`) AND a wide soft drop (`--sh-soft`); `.btn.primary` adds a 24 px blue
+   bloom; `.btn.small` stamps a NEAR-BLACK 3 px ledge (`0 3px 0 #12162f`). Over grass and sky that reads as
+   depth. Dropped on a near-opaque white sheet the three stack into exactly what the owner saw: a pale bar
+   under "Sign out", a hard dark bar under the Stall's ◀ and under "Delete account…", and a blue smudge
+   around "Email me a sign-in code". So: ON A LIGHT SURFACE (a sheet, a ladder card, the Stall, the ladder
+   nav) a button keeps its plate, type, radius and press-travel and trades the stacked ledge+drop+bloom for
+   ONE shadow. Buttons over ART are untouched — .btn, .btn.primary, .btn.glass, the action bar, the shop
+   and battle plates all still paint exactly as they did.
+   All motion here is transform/opacity only; no filter or backdrop-filter is introduced anywhere, so the
+   whole block is gfx-lite safe. ------------------------------------------------------------------------ */
+
+/* ---- (a1) the light-surface button treatment -------------------------------------------------------- */
+/* `.lad-card.act` is EXCLUDED throughout: it is the bare action card (no plate), so its buttons are back on
+   the painted scene and keep deploy A's full-contrast treatment. */
+.sheet-card .btn, .lad-card:not(.act) .btn, .lad-nav .btn, #stall .btn {
+  min-height: 44px; border: 1.5px solid var(--panel-line);
+  box-shadow: 0 1px 0 rgba(255,255,255,.9) inset, 0 2px 6px rgba(20,50,80,.14);
+  text-shadow: none;
+}
+.sheet-card .btn:active, .lad-card:not(.act) .btn:active, .lad-nav .btn:active, #stall .btn:active {
+  transform: translateY(2px); box-shadow: 0 1px 0 rgba(255,255,255,.9) inset, 0 1px 3px rgba(20,50,80,.16);
+}
+/* the one EXCITING CTA per sheet keeps the navy plate and a short ledge — no bloom, no second drop */
+.sheet-card .btn.primary, .lad-card:not(.act) .btn.primary {
+  border: 2px solid rgba(255,255,255,.82);
+  box-shadow: 0 3px 0 #0b1230, 0 4px 10px rgba(10,20,50,.26), inset 0 1px 0 rgba(255,255,255,.26);
+  text-shadow: 0 1px 0 rgba(6,12,30,.55);
+}
+.sheet-card .btn.primary:active, .lad-card:not(.act) .btn.primary:active {
+  transform: translateY(3px); box-shadow: 0 0 0 #0b1230, 0 2px 6px rgba(10,20,50,.3), inset 0 1px 0 rgba(255,255,255,.26);
+}
+/* destructive: the ENTRY is a quiet outline (it is not the thing you came here to do); only the typed
+   confirmation gets the full maroon plate. Contrast on the pale sheet is 5.4:1. */
+.sheet-card .btn.danger.acct-danger {
+  background: none; color: #a32c47; border: 1.5px solid rgba(163,44,71,.42);
+  box-shadow: none; font-size: .92rem;
+}
+.sheet-card .btn.danger.acct-danger:active { transform: translateY(2px); box-shadow: none; background: rgba(163,44,71,.07); }
+.sheet-card .btn.danger:not(.acct-danger) { border-color: rgba(255,255,255,.55); box-shadow: 0 3px 0 #4a1c33, 0 4px 10px rgba(60,12,30,.24), inset 0 1px 0 rgba(255,255,255,.18); }
+.sheet-card .btn.danger:not(.acct-danger):active { transform: translateY(3px); box-shadow: 0 0 0 #4a1c33, 0 2px 6px rgba(60,12,30,.26), inset 0 1px 0 rgba(255,255,255,.18); }
+/* the sheet's closing line: underlined ink, never a plate — and a real 44 px target. `.title-card` is the
+   same pale glass panel, so Back on Online / Duel / Local joins it: white text with a dark blur over a near-
+   white panel is the low-contrast case the owner flagged. Backs that really are on the painted scene
+   (#codexBack, the .lad-top row, #deckBack on the plate-less deck card) keep deploy A's white ghost. */
+.sheet-card .btn.ghostbtn, .lad-card:not(.act) .btn.ghostbtn, #onlineHub .title-card .btn.ghostbtn,
+#duel .title-card .btn.ghostbtn, #local .title-card .btn.ghostbtn {
+  min-height: 44px; background: none; border: none; box-shadow: none;
+  color: var(--ink-soft); text-shadow: none; font-size: .9rem;
+}
+.sheet-card .btn.ghostbtn:active, .lad-card:not(.act) .btn.ghostbtn:active { transform: translateY(1px); box-shadow: none; opacity: .75; }
+/* A disabled button on a pale sheet was `filter: grayscale(.5) opacity(.45)` over a navy or maroon plate:
+   white text on mid-grey, with the plate's dark ledge still stamped underneath. On a sheet it becomes a quiet,
+   fully legible "done" plate. LAST in this block on purpose — it ties with the .primary / .danger rules above
+   on specificity, so source order is what makes it win. */
+.sheet-card .btn:disabled, .sheet-card .btn.primary:disabled, .sheet-card .btn.danger:disabled,
+.lad-card:not(.act) .btn:disabled, .lad-card:not(.act) .btn.primary:disabled {
+  filter: none; opacity: 1; background: rgba(18,38,54,.07); color: var(--ink-soft);
+  border: 1.5px solid var(--panel-line); box-shadow: none; text-shadow: none;
+}
+.sheet-card .btn.primary:disabled::after { display: none; }   /* no shine sweep on a dead button */
+/* the Stall's ◀ and its "How do I earn Motes?" foot are on white, so they follow the same rule */
+#stall .btn.small { box-shadow: 0 1px 0 rgba(255,255,255,.9) inset, 0 2px 6px rgba(20,50,80,.16); min-height: 40px; min-width: 40px; }
+#stall .btn.small:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(255,255,255,.9) inset, 0 1px 3px rgba(20,50,80,.18); }
+/* #stallEarn sits at the bottom of the Stall, over the painted floor — NOT on a sheet — so it keeps deploy A's
+   white ghost with its dark halo. Only its tap height is raised. */
+#stall .btn.ghostbtn { min-height: 44px; border: none; box-shadow: none; background: none; }
+
+/* ---- (a2) the account panel: aligned rows, a legible "Change" ---------------------------------------- */
+.acct-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; column-gap: 10px; padding: 7px 2px; }
+.acct-row > span:first-child { color: var(--ink-soft); font-weight: 800; font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; }
+.acct-row > span + span { text-align: right; }
+.acct-row > span:only-child { grid-column: 1 / -1; text-align: left; color: var(--ink); text-transform: none; letter-spacing: 0; font-size: .84rem; font-weight: 700; }
+.acct-row:last-of-type { border-bottom: none; }
+/* Delete: once the confirmation opens it IS the sheet's job, so it takes the top of the scrolling body (CSS
+   `order` only — the DOM, and therefore every handler and every test that walks it, is untouched) and wears a
+   danger-tinted frame. Before this, "Delete forever" sat below the fold on a 640 px screen and the player had
+   to scroll past their own account details to reach the button they had just asked for. */
+#acctDeleteBox:not([hidden]) {
+  order: -1; display: flex; flex-direction: column; gap: 8px; margin: 0 0 4px; padding: 12px;
+  border-radius: 14px; background: rgba(163,44,71,.06); border: 1.5px solid rgba(163,44,71,.28);
+}
+#acctDeleteBox .sheet-sub { text-align: left; margin: 0; font-size: .78rem; }
+#acctDeleteBox .btn { margin-top: 0; }
+/* `.chip-btn` is the battle row's dark-on-art pill; the account panel's "Change" needs sheet contrast and a
+   real tap pad. Scoped to `.acct-row`, NOT `.sheet-card` — `.rival-pager .chip-btn` is the same specificity
+   and would have been overridden by source order, resizing the rival sheet's ‹ › arrows. */
+.acct-row .chip-btn { height: 30px; padding: 0 13px; font-size: .76rem; background: var(--gilt-deep); border-color: rgba(255,255,255,.5); }
+.acct-row .chip-btn::before { left: -8px; right: -8px; top: -7px; bottom: -7px; }
+
+/* ---- (b) the sign-in sheet: Google and email are ONE control size ------------------------------------ */
+/* Google Identity Services renders its own iframe and its 'large' button is a fixed 40 px tall — a height we
+   are not allowed to restyle. So the EMAIL button comes down to Google's 40 px instead, the GIS width is
+   computed from the measured email button at render time (account.js renderGoogle/sizeGoogle) and both wear
+   the same pill radius. Same width, same height, same radius, same rhythm — and Google's own logo, type and
+   colours inside the iframe are left exactly as Google ships them. */
+.auth-card #authSend, .auth-card .auth-google > * { height: 40px; min-height: 40px; border-radius: 20px; }
+.auth-card #authSend { padding: 0 16px; font-size: .82rem; letter-spacing: .04em; line-height: 1; display: flex; align-items: center; justify-content: center; }
+.auth-card .auth-google { display: flex; justify-content: center; align-items: center; min-height: 40px; margin: 0; }
+.auth-card .auth-google > div { border-radius: 20px !important; overflow: hidden; }
+.auth-card .auth-or { margin: 9px 0; font-size: .74rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; opacity: 1; color: var(--ink-soft);
+  display: flex; align-items: center; gap: 10px; }
+.auth-card .auth-or::before, .auth-card .auth-or::after { content: ""; flex: 1; height: 1px; background: var(--rule); }
+/* GIS refuses a width above 400 px, so in short landscape (the sheet is 640 wide there) the whole sign-in
+   column is capped at Google's maximum and centred — otherwise the email button would be 498 px beside a
+   400 px Google button, which is the very mismatch this change exists to remove. */
+.auth-card #authEmailBlock, .auth-card .auth-google, .auth-card .auth-or, .auth-card .auth-privacy { width: 100%; max-width: 400px; margin-inline: auto; }
+.auth-card #authEmailBlock { display: flex; flex-direction: column; gap: 9px; }
+.auth-card #authEmailBlock .btn { margin-top: 0; }
+.auth-card .auth-input { height: 40px; border-radius: 20px; padding: 0 16px; font-size: .9rem; }
+.auth-card .auth-input.auth-code { height: 48px; border-radius: 16px; text-align: center; padding: 0; }
+.auth-card .auth-privacy { margin-top: 10px; }
+/* the inline Privacy / Terms links are 15 px of text inside a paragraph; the same invisible pad the battle
+   chips use (.chip-btn::before) lifts them to a 41 px target without changing a single line of layout */
+.sheet-card .auth-privacy a, .sheet-card .stall-sub a, .sheet-card .sheet-sub a { position: relative; color: var(--accent-deep); font-weight: 800; }
+.sheet-card .auth-privacy a::after, .sheet-card .stall-sub a::after, .sheet-card .sheet-sub a::after { content: ""; position: absolute; left: -6px; right: -6px; top: -13px; bottom: -13px; }
+
+/* ---- (c) the title screen: one dominant play action, a Shop entry, 44 px chips ----------------------- */
+/* 40 px of REAL height, not an invisible pad: `.meta-chip` carries `overflow: hidden` for the long-name
+   ellipsis, which clips an absolutely-positioned ::after, so a pseudo-element tap pad would not exist. The
+   probe shows ≥18 px of slack under the Shop button at 360x640, 320x568, 360x560 and 640x360, so the extra
+   10 px costs nothing. */
+.title-meta { min-height: 40px; }
+.meta-chip { height: 40px; }
+.title-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
+.title-pair .btn { margin: 0; padding: 12px 8px; }
+.btn.title-shop { padding: 10px 16px; font-size: .92rem; }
+.btn.title-shop .ic { width: 1.05em; height: 1.05em; vertical-align: -.18em; margin-right: 5px; }
+
+/* ---- (e) the ladder: the player header is a PANEL, not loose text on grass -------------------------- */
+/* `.lad-head` and `.lad-elo` had no rules at all, so the banner, name, rank pill and W/L line floated
+   straight on the painted valley — the single biggest "amateurish" tell on ladder home and the profile. */
+.lad-head { display: block; padding: 12px 14px 13px; border-radius: var(--r-lg); text-align: center;
+  background: linear-gradient(170deg, rgba(246,252,255,.985), rgba(230,246,240,.98));
+  border: 1px solid var(--glass-brd); box-shadow: var(--frame), var(--sh-soft); }
+.lad-head .cos-plate { border-radius: 10px; }
+.lad-head .lad-name { margin: 9px 0 0; text-align: center; }
+.lad-elo { display: flex; align-items: center; justify-content: center; gap: 7px; margin-top: 4px; font-size: 1rem; font-weight: 800; color: var(--ink); }
+.lad-head .lad-bar { max-width: 260px; margin: 8px auto 4px; }
+.lad-head .lad-sub, .lad-head .lad-stats { margin-top: 2px; }
+.lad-head .lad-stats { margin-top: 5px; padding-top: 6px; border-top: 1px solid var(--rule-soft); }
+.lad-runs { display: flex; flex-direction: column; gap: 7px; }
+.lad-runs h3 { margin: 4px 0 0; font-family: 'Cinzel', Georgia, serif; font-weight: 800; text-transform: uppercase; letter-spacing: .08em;
+  font-size: .8rem; color: var(--gilt-deep); text-shadow: 0 1px 0 rgba(255,255,255,.85), 0 0 12px rgba(255,255,255,.8); }
+/* the four nav links were underlined white words floating on the grass; they are plates now, in the grid
+   the stylesheet already had for them */
+.lad-nav .btn.ghostbtn { background: rgba(255,255,255,.62); border: 1px solid var(--glass-brd); color: var(--ink);
+  text-decoration: none; text-shadow: none; box-shadow: var(--frame), var(--sh-soft); font-weight: 800; font-size: .82rem; min-height: 44px; }
+.lad-nav .btn.ghostbtn:active { transform: translateY(2px); box-shadow: var(--frame), 0 2px 6px rgba(20,50,80,.18); }
+.gfx-lite .lad-nav .btn.ghostbtn { background: linear-gradient(180deg, rgba(255,255,255,.86), rgba(232,244,250,.78)); }
+/* `.lad-back` is absolutely positioned at left:0 and `.lad-h1` centres in the whole row, so at 320 px the
+   title ran under the ◀ Back — most visible on Leaderboard, and worst on a profile whose title is a 16-char
+   player name. Padding on `.lad-top` narrows the centring box without moving the button (an absolutely
+   positioned child is laid out against the PADDING edge, which padding does not move). */
+.lad-top { padding-inline: 84px; }
+.lad-top .lad-back { min-height: 40px; left: 0; }
+.lad-h1 { min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 360px) { .lad-h1 { font-size: 1.05rem; } .lad-top { padding-inline: 80px; } }
+@media (max-width: 340px) { .lad-h1 { font-size: .92rem; letter-spacing: .05em; } .lad-top { padding-inline: 72px; } }
+/* the run's action card carries no heading and no small print, so it needs no panel: the navy CTA sits on the
+   scene the way #deckBegin does, and its one line of recap becomes the dark pill this game already uses for a
+   line of text over art (.deck-points, .lock-tag, .meta-chip). */
+.lad-card.act { background: none; border: none; box-shadow: none; padding: 2px 0 0; }
+.lad-card.act > .lad-sub { display: inline-block; width: auto; margin: 0 0 10px; padding: 6px 14px; border-radius: 999px;
+  background: rgba(16,32,52,.72); color: #fff; font-size: .78rem; font-weight: 700; }
+.lad-card.act .btn { width: 100%; }
+.lad-card.act .btn.ghostbtn { margin-top: 12px; }
+
+/* ---- (h) the leaderboard header row --------------------------------------------------------------- */
+/* `.lad-row.head` carried no grid template of its own, so # / PLAYER / ELO / CUPS each took a row of the
+   single-column grid and stair-stepped down the screen. ladder.js now emits `lad-row board head`; this keeps
+   the head transparent and stops the column labels being read as a tappable row. */
+.lad-row.board.head { background: none; border-color: transparent; cursor: default; }
+
+/* ---- (g) Codex ▸ Fusions: the status lines get a panel to sit on --------------------------------------- */
+/* `.fz-new` is DELIBERATELY not in this list: it lives on #fuseModalNew inside the deploy-A fuse sheet, not
+   in the Codex, and that sheet is one of this pass's quality references. */
+.fz-status, .fz-note { display: block; width: 100%; max-width: 470px; margin-inline: auto;
+  padding: 7px 14px; border-radius: 14px; background: rgba(255,255,255,.72); border: 1px solid var(--glass-brd);
+  box-shadow: var(--frame); color: var(--ink); }
+.fz-note { margin-top: -4px; margin-bottom: 8px; }
+.fz-note u { color: var(--accent-deep); font-weight: 800; }
+.gfx-lite .fz-status, .gfx-lite .fz-note { background: rgba(255,255,255,.86); }
+.fz-seg, .fz-chips { flex-wrap: wrap; }
+.fz-seg button, .fz-chips button, .codex-tabs button { min-height: 34px; box-shadow: 0 1px 4px rgba(20,50,80,.16); }
+.fz-group { padding: 4px 10px; border-radius: 8px; background: rgba(255,255,255,.7); color: var(--gilt-deep); }
+.gfx-lite .fz-group { background: rgba(255,255,255,.86); }
+
+/* ---- (i) the toast: shrink-to-fit inside a 50 %-wide absolute box wrapped every message ---------------- */
+/* `position:absolute; left:50%` makes the available width 50 % of #app (180 px at 360), so "Progress synced —
+   121 fusions, 2 alliances." broke into three lines. `width: max-content` lets it use its real max-width. */
+.toast { width: -webkit-max-content; width: max-content; }
+
+/* ---- (f) the Mote Stall header: title, balances and Back on one baseline ----------------------------- */
+.stall-head h1 { font-size: 1.15rem; letter-spacing: .05em; color: var(--gilt-deep);
+  filter: drop-shadow(0 1px 0 #ffffff) drop-shadow(0 2px 4px rgba(40,90,130,.25)); }
+.mote-pill, .dsh-pill { min-height: 34px; border: 1px solid var(--glass-brd); box-shadow: var(--frame), 0 2px 6px rgba(20,50,80,.16); }
+.stall-tab { min-height: 44px; border: 1px solid transparent; }
+.stall-tab.on { border-color: var(--glass-brd); box-shadow: var(--frame), 0 2px 6px rgba(20,50,80,.16); }
+.stall-tile { border: 1px solid var(--glass-brd); box-shadow: var(--frame), 0 2px 8px rgba(20,50,80,.16); }
+.stall-note, .stall-bar { border: 1px solid var(--glass-brd); box-shadow: var(--frame); }
+/* the packs used to wrap raggedly — a short one kept its price beside the amount, a long one pushed its bonus
+   tag onto a second line — so the three rows never lined up. A 2-column grid gives every pack the same shape:
+   amount left, price right, bonus tag under the amount when there is one. DOM order (amt, price, tag) is
+   untouched; the tag is placed explicitly. */
+.dsh-pack { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 10px; row-gap: 5px;
+  border: 1px solid var(--glass-brd); box-shadow: var(--frame), 0 2px 8px rgba(20,50,80,.16); }
+.dsh-pack .dsh-amt { grid-column: 1; grid-row: 1; }
+.dsh-pack .dsh-price { grid-column: 2; grid-row: 1; margin-left: 0; text-align: right; }
+.dsh-pack .dsh-tag { grid-column: 1 / -1; grid-row: 2; justify-self: start; }
+
+/* ---- shared: the sheets' own inner rhythm ------------------------------------------------------------ */
+.sheet-card h2 { font-size: 1.12rem; margin-bottom: 4px; }
+.pts-step { padding: 7px 2px; }
+.unlock-cost { margin: 6px 0 0; }
+
+@media (orientation: landscape) and (max-height: 600px) {
+  .title-pair { gap: 8px; }
+  .sheet-card .btn, .lad-nav .btn, .lad-card .btn { min-height: 40px; }
+  .lad-head { padding: 8px 12px 9px; }
+}
