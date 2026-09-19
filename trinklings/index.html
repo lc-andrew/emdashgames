@@ -29,7 +29,7 @@
   <link rel="preload" as="font" type="font/woff2" href="assets/fonts/Nunito.woff2" crossorigin />
   <link rel="preload" as="font" type="font/woff2" href="assets/fonts/Cinzel.woff2" crossorigin />
   <link rel="preload" as="image" href="assets/ui/hero-scene.webp" fetchpriority="high" />
-  <link rel="stylesheet" href="public/style.css?v=bc613414ab" />
+  <link rel="stylesheet" href="public/style.css?v=8bdfb87f4c" />
   <link rel="stylesheet" href="public/fx.css?v=969db94a22" />
 </head>
 <body>
@@ -90,7 +90,8 @@
     </div>
 
     <div class="shop-wrap">
-      <div class="row-label"><span>Shop</span><button id="gearShelf" class="gear-shelf" type="button" hidden></button></div>
+      <!-- (R5 §2.2) the Gear Shelf chip is retired: all three item cells are ordinary loadout cells in #shopSnacks. -->
+      <div class="row-label"><span>Shop</span></div>
       <div class="shop-row combined">
         <div id="shopPets" class="cells"></div>
         <div id="shopSnacks" class="cells"></div>
@@ -171,6 +172,11 @@
       <button id="deckPoints" class="deck-points" type="button"></button>
       <div class="deck-cap">Alliances — unlock two to build a deck</div>
       <div id="factionGrid" class="faction-grid"></div>
+      <!-- R5 §2.5 — GEAR: two stacked lines between #factionGrid and #deckBegin. The label and `Change ▸`
+           sit on their OWN line so the six 44 px tiles get the full content width (6×44 + 5×6 = 294 px
+           inside 336 px at 360). Both lines carry an explicit `order:` in .deck-card.daily-first. -->
+      <div class="gear-cap" id="gearCap"><span id="gearCapLabel">Gear — what you bring</span><button class="chip-btn" id="gearChange" type="button">Change ▸</button></div>
+      <div class="gear-row" id="gearRow"></div>
       <button class="btn big primary" id="deckBegin" disabled>Pick 2 factions</button>
       <div class="deck-or">— or —</div>
       <button class="btn glass deck-daily" id="deckDaily">Today’s Daily Deck</button>
@@ -256,30 +262,34 @@
     <button class="btn ghostbtn" id="codexBack">◀ Back</button>
   </section>
 
-  <!-- MOTE STALL (cosmetics) -->
+  <!-- SHOP (R5 §1.8: the Mote Stall, renamed, priced in fusion points, and selling Gear as well as
+       looks). The SCREEN ids keep their round-4 spelling on purpose — `#shop*` would collide with the
+       in-run shop (#shopPets / #shopSnacks / .shop-row) — but every player-facing string is new. -->
   <section id="stall" class="screen">
     <header class="stall-head">
       <button class="btn small" id="stallBack" aria-label="Back">◀</button>
-      <h1>Mote Stall</h1>
+      <h1>Shop</h1>
       <!-- The wrapper is invisible to cosmetics.js (every element is addressed BY ID); it exists so that
            with TWO balances the pills wrap to their own row instead of squeezing the title to an
-           ellipsis at 320 px. With Motes alone the row renders exactly as it always has. -->
+           ellipsis at 320 px. With points alone the row renders exactly as it always has. -->
       <div class="stall-pills">
-        <div class="mote-pill" id="stallMotes"></div>
+        <div class="pts-pill" id="shopPoints"></div>
         <!-- (spec-dashes §4.2) the Dash Points balance. Ships hidden: cosmetics.js un-hides it only when
              /config.stripe.dashes is true, at least one pack is configured AND we are signed in. -->
         <button class="dsh-pill" id="prlChip" type="button" hidden aria-label="Dash Points"></button>
       </div>
     </header>
+    <!-- (R5 §1.8) GEAR FIRST — it is the tab that changes how you play — then the three cosmetic slots. -->
     <div class="stall-tabs" role="tablist">
-      <button class="stall-tab on" data-tab="banner" role="tab">Banners</button>
+      <button class="stall-tab on" data-tab="gear" role="tab">Gear</button>
+      <button class="stall-tab" data-tab="banner" role="tab">Banners</button>
       <button class="stall-tab" data-tab="emote" role="tab">Emotes</button>
       <button class="stall-tab" data-tab="skin" role="tab">Arena</button>
     </div>
     <div id="stallNote" class="stall-note" hidden></div>
     <div id="stallBar" class="stall-bar" hidden></div>
     <div id="stallList" class="stall-list"></div>
-    <button class="btn ghostbtn" id="stallEarn">How do I earn Motes?</button>
+    <button class="btn ghostbtn" id="stallEarn">How do I earn points?</button>
   </section>
 
   <!-- TIER-UNLOCK MODAL (fires every 2 turns as a new Trinkling tier opens) -->
@@ -332,7 +342,7 @@
       <h2>Settings</h2>
       <button class="btn" id="settingsAccount" hidden>Account: Sign in</button>
       <button class="btn" id="settingsEmotes">Emotes: On</button>
-      <button class="btn" id="settingsStall" hidden>Mote Stall</button>
+      <button class="btn" id="settingsStall" hidden>Shop</button>
       <button class="btn" id="settingsCodex">Codex</button>
       <button class="btn" id="settingsHowTo">How to play</button>
       <button class="btn" id="settingsTriggers">When abilities trigger</button>
@@ -492,6 +502,26 @@
     </div>
   </div>
 
+  <!-- R5 §2.5 — the Gear sheet: choose what you bring, and buy what you do not own, without leaving deck
+       select. All 14 are listed; locked rows are DIMMED, never hidden — seeing what you do not own is the
+       point. .sheet-body is mandatory on a .sheet-card (§7.2): the card has no overflow of its own. -->
+  <div id="gearModal" class="modal" hidden>
+    <div class="modal-card sheet-card" role="dialog" aria-modal="true" aria-labelledby="gearTitle">
+      <h2 id="gearTitle">Gear <span class="gear-points" id="gearPoints"></span></h2>
+      <div class="sheet-body">
+        <p class="sheet-sub" id="gearSub"></p>
+        <div id="gearList" class="gear-list"></div>
+      </div>
+      <!-- (R5 final verification) #gearWhy sits OUTSIDE .sheet-body, between the scroller and Done.
+           Inside it, the refusal line rendered after fourteen rows — i.e. off-screen at the top of the
+           list, which is exactly where the starter six are tapped. A player who tried to drop below the
+           4-item minimum saw the tap do nothing at all. It is the sheet's only live feedback, so it has
+           to live where Done lives: always visible, never scrolled away. -->
+      <p class="gear-why" id="gearWhy"></p>
+      <button class="btn ghostbtn" id="gearClose">Done</button>
+    </div>
+  </div>
+
   <!-- M8 — the fusion tracker's partner sheet (owner addendum B-ADD-1 §1) -->
   <div id="fzModal" class="modal" hidden>
     <div class="modal-card sheet-card" role="dialog" aria-modal="true" aria-labelledby="fzTitle">
@@ -515,7 +545,7 @@
     </div>
   </div>
 
-  <!-- Mote Stall sheets (spec-cosmetics §6.2) -->
+  <!-- Shop sheets (spec-cosmetics §6.2) -->
   <!-- (I3) The .sheet-body wrapper is the ONE addition to HOOKS-K K3-A4's markup: spec-client-meta §7.2 makes it
        mandatory on every .modal-card.sheet-card, which is max-height:88vh (94vh in short landscape) with NO
        overflow of its own — without a scrolling child, a long item description or a tall preview pushes the
@@ -551,7 +581,7 @@
   </div>
   <div id="earnModal" class="modal" hidden>
     <div class="modal-card sheet-card" role="dialog" aria-modal="true" aria-labelledby="earnTitle">
-      <h2 id="earnTitle">How do I earn Motes?</h2>
+      <h2 id="earnTitle">How do I earn points?</h2>
       <div id="earnBody" class="sheet-body"></div>
       <button class="btn big primary" id="earnClose">Got it!</button>
     </div>
@@ -583,8 +613,8 @@
         <li><b>Tap a shop Trinkling</b>, then <b>tap an empty squad slot</b> to buy it (<span id="howBuyCost">3</span> <img class="ic" src="assets/ui/coin.webp" alt="gold">).</li>
         <li>Tap a squad Trinkling, then another slot to <b>reorder</b> — the <b>rightmost one fights first ▶</b>.</li>
         <li>Buy <b>copies of the same</b> Trinkling to <b>combine</b> them (bigger stats + it levels up), or drop <b>two different ones</b> together to <b>fuse</b> them (<span id="howFuseCost">12</span> <img class="ic" src="assets/ui/coin.webp" alt="gold">, or <span id="howBuyFuseCost">15</span> straight from the shop). The new Trinkling is <b>reborn at 1/1</b>, but keeps <b>both abilities</b> at their levels and gains a unique <b>✦ Signature Move</b>.</li>
-        <li>A fused Trinkling has <b>several abilities</b> — each fires on its <b>own trigger</b> (the tag beside it). Tap it to read them all. A 1/1 faints fast: <b>feed it</b>, and fuse spare pets rather than your strongest.</li>
-        <li><b>Items</b> cost <span id="howSnackCost">3</span> <img class="ic" src="assets/ui/coin.webp" alt="gold">. <b>Food</b> is fed to a Trinkling for a <b>permanent</b> stat boost. <b>Gear</b> (the rotating shelf above the shop, from turn 3) is <b>held</b>: it blocks, lures, goes first, echoes. One of each kind per Trinkling; fusing keeps it.</li>
+        <li>A fused Trinkling has <b>several abilities</b> — each fires on its <b>own trigger</b> (the tag beside it). Tap it to read them all. A 1/1 faints fast: <b>give it gear</b>, and fuse spare pets rather than your strongest.</li>
+        <li><b>Gear</b> is what you bring. Pick up to six before a run; only those show up in the shop. Each costs <span id="howSnackCost">3</span> <img class="ic" src="assets/ui/coin.webp" alt="gold"> to give to a Trinkling. Some is a <b>permanent</b> stat boost; some is <b>held</b> and acts in the fight — it blocks, lures, goes first, echoes. One held piece of each kind per Trinkling; fusing keeps it.</li>
         <li>Tap a squad Trinkling and hit <b>Sell</b> to get some gold back.</li>
         <li><b>Reroll</b> the shop for new Trinklings, or select a shop item and hit <b>Freeze</b> to keep it next turn (free).</li>
         <li>Hit <b>End Turn</b> to start a <b>fight</b> — the auto-battle. Boosts "for the fight" last one battle; <b>(permanent)</b> ones stay forever.</li>
@@ -610,6 +640,6 @@
 </div>
 <audio id="bgm" loop preload="none" src="assets/audio/music.m4a"></audio>
 <audio id="bgm-battle" loop preload="none" src="assets/audio/battle-music.m4a"></audio>
-<script type="module" src="public/app.js?v=3d2ffcd917"></script>
+<script type="module" src="public/app.js?v=d086ed0145"></script>
 </body>
 </html>

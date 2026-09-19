@@ -216,20 +216,9 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 /* ---- rows ---- */
 .row-label { position: relative; top: -7px; display: flex; justify-content: space-between; align-items: baseline; font-family: 'Cinzel', serif; text-transform: uppercase; letter-spacing: .05em; font-weight: 800; color: #fff; text-shadow: 0 1px 2px rgba(20,45,75,.55), 0 1px 8px rgba(20,45,75,.4); margin: -4px 4px 6px; font-size: .84rem; }
 .row-label.sub { margin-top: 8px; font-size: .72rem; color: rgba(255,255,255,.9); }   /* keep "Items" readable on the stone (was dark ink) */
-/* (R4) Gear Shelf chip — in the Shop row label; transform / opacity only, static in gfx-lite */
-.gear-shelf { position:relative; display:flex; align-items:center; gap:4px; height:28px; padding:0 8px 0 3px; border:0; border-radius:14px; background:rgba(18,32,52,.55); color:#fff; font:800 .7rem/1 'Nunito',sans-serif; text-transform:none; letter-spacing:0; white-space:nowrap; touch-action:none; cursor:pointer; }
-.gear-shelf::before { content:''; position:absolute; left:0; right:0; top:-10px; bottom:-2px; }   /* 40 px tap / drag target, grown UPWARD into the gap — never over the shop cards */
-.gear-shelf img { width:24px; height:24px; object-fit:contain; pointer-events:none; }
-.gear-shelf .gs-tag { font:800 .58rem/1 'Cinzel',serif; text-transform:uppercase; letter-spacing:.05em; opacity:.75; }
-.gear-shelf .gs-next { font-style:normal; font-size:.6rem; opacity:.7; }
-.gear-shelf .cost .ic { width:12px; height:12px; vertical-align:-2px; }
-.gear-shelf.selected { box-shadow:0 0 0 2px var(--gilt-bloom); } .gear-shelf.frozen { box-shadow:0 0 0 2px #9fdcff; } .gear-shelf.sold { opacity:.6; } .gear-shelf.drag-source { opacity:.4; }
-@media (max-width:380px) { .gear-shelf .gs-tag { display:none; } .gear-shelf b { max-width:84px; overflow:hidden; text-overflow:ellipsis; } }
-/* (R4, C2) Same relief in SHORT LANDSCAPE. There the shop is a narrow COLUMN, not the full width: the Shop row label is
-   253 px, so the full 229 px chip left the label's own <span> 24 px of the 37 px it needs and "Shop" rendered as "S…"
-   (the global `.row-label > span { overflow:hidden; text-overflow:ellipsis }` guard at :734). Dropping the "Gear" tag —
-   H16's own lever for a tight row — takes the chip to ~195 px and the label reads in full again. Measured at 640x360. */
-@media (max-height:420px) and (orientation:landscape) { .gear-shelf .gs-tag { display:none; } .gear-shelf b { max-width:96px; overflow:hidden; text-overflow:ellipsis; } }
+/* (R5 §2.2) The round-4 Gear Shelf chip (`.gear-shelf`, its `.gs-tag` / `.gs-next` parts and their two media-query
+   reliefs) is DELETED with the shelf itself: all three item cells are ordinary loadout cells in #shopSnacks now. The
+   loadout's own components (`.gear-cap`, `.gear-row`, `.gear-tile`, `.gear-item`) live in the R5 block at the end. */
 .cd-rule { font-size:.66rem; line-height:1.3; opacity:.8; margin-top:3px; }
 .cd-held, .ht-held { font-size:.7rem; line-height:1.3; margin-top:3px; }
 .held-ic { width:16px; height:16px; vertical-align:-3px; margin-right:3px; }
@@ -629,7 +618,7 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
   animation: mergeFloat .72s var(--ease-soft) forwards; }
 .merge-label b { color: #baf7dc; }
 @keyframes mergeFloat { 0% { opacity: 0; transform: translate(-50%, 6px) scale(.8);} 22% { opacity: 1; transform: translate(-50%,-2px) scale(1.05);} 70% { opacity: 1;} 100% { opacity: 0; transform: translate(-50%,-15px) scale(1);} }
-/* sparkle particle burst (merge / fuse / level-up) — gold motes fly outward from the card centre */
+/* sparkle particle burst (merge / fuse / level-up) — gold specks fly outward from the card centre */
 .spark-burst { position: absolute; left: 50%; top: 46%; z-index: 6; pointer-events: none; }
 .spark-burst i { position: absolute; left: 0; top: 0; width: 6px; height: 6px; margin: -3px; border-radius: 50%;
   background: radial-gradient(circle, #fff, var(--gold) 60%, transparent 74%); box-shadow: 0 0 6px 1px rgba(245,197,66,.9);
@@ -1527,13 +1516,12 @@ html.gfx-lite {
 .gfx-lite .emote-pop::before, .gfx-lite #emoteBar { box-shadow: none; }
 @media (prefers-reduced-motion: reduce) { .emote-pop { animation-name: emoteFade; } @keyframes emoteFade { 0%, 100% { opacity: 0; } 10%, 85% { opacity: 1; } } }
 
-/* ---- Mote Stall (opaque whites — nothing blurs, same rule as the ladder screens) ---- */
+/* ---- the Shop (opaque whites — nothing blurs, same rule as the ladder screens) ---- */
 #stall { gap: 10px; }
 .stall-head { display: flex; align-items: center; gap: 10px; min-height: 44px; flex: none; }
 .stall-head h1 { flex: 1; margin: 0; font-size: 1.25rem; text-align: left; color: var(--ink); }
-.mote, .mote-pill { display: inline-flex; align-items: center; gap: 4px; font-weight: 900; color: var(--ink); }
-.mote .ic, .mote-pill .ic { width: 18px; height: 18px; }
-.mote-pill { padding: 6px 12px; border-radius: 999px; background: #fff; box-shadow: var(--sh-soft); }
+/* (R5) the Mote pill and its icon are gone; `.pts` / `.pts-pill` replace them in the R5-C2 block at the
+   end of this file, carrying the same geometry so the header does not move. */
 .stall-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; flex: none; }
 .stall-tab { height: 40px; border: 0; border-radius: 12px; font: 800 .9rem 'Nunito', sans-serif; color: var(--ink-soft); background: rgba(255,255,255,.6); }
 .stall-tab.on { background: #fff; color: var(--ink); box-shadow: var(--sh-soft); }
@@ -1577,14 +1565,13 @@ html.gfx-lite {
 .dsh-pill:active { transform: translateY(1px); }
 .dsh-pill .ic { width: 16px; height: 16px; }
 .dsh-pill .dsh-fb { width: 16px; height: 16px; font-size: .62rem; }
-/* TWO balances do not fit beside the title at 336 px (let alone 296), and an ellipsised "Mote Sta…" is
+/* TWO balances do not fit beside the title at 336 px (let alone 296), and an ellipsised title is
    worse than a second row. `flex: 1 1 130px` on the title makes the pill group overflow the first line,
    so flex-wrap drops it to its own right-aligned row — and at a tablet width it simply stays put. */
 .stall-pills { display: flex; align-items: center; gap: 6px; margin-left: auto; min-width: 0; }
 .stall-head.dual { flex-wrap: wrap; row-gap: 6px; align-items: center; }
 .stall-head.dual h1 { flex: 1 1 130px; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .stall-head.dual .stall-pills { flex: 0 0 auto; }
-.stall-head.dual .mote-pill { padding: 6px 10px; }
 
 .stall-chips { display: inline-flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; min-width: 0; }
 .stall-list.emotes .stall-chips { justify-content: center; }
@@ -1617,8 +1604,8 @@ html.gfx-lite {
    solid 4 px ledge (`0 4px 0 #bcd6e8`) AND a wide soft drop (`--sh-soft`); `.btn.primary` adds a 24 px blue
    bloom; `.btn.small` stamps a NEAR-BLACK 3 px ledge (`0 3px 0 #12162f`). Over grass and sky that reads as
    depth. Dropped on a near-opaque white sheet the three stack into exactly what the owner saw: a pale bar
-   under "Sign out", a hard dark bar under the Stall's ◀ and under "Delete account…", and a blue smudge
-   around "Email me a sign-in code". So: ON A LIGHT SURFACE (a sheet, a ladder card, the Stall, the ladder
+   under "Sign out", a hard dark bar under the Shop's ◀ and under "Delete account…", and a blue smudge
+   around "Email me a sign-in code". So: ON A LIGHT SURFACE (a sheet, a ladder card, the Shop, the ladder
    nav) a button keeps its plate, type, radius and press-travel and trades the stacked ledge+drop+bloom for
    ONE shadow. Buttons over ART are untouched — .btn, .btn.primary, .btn.glass, the action bar, the shop
    and battle plates all still paint exactly as they did.
@@ -1674,7 +1661,7 @@ html.gfx-lite {
   border: 1.5px solid var(--panel-line); box-shadow: none; text-shadow: none;
 }
 .sheet-card .btn.primary:disabled::after { display: none; }   /* no shine sweep on a dead button */
-/* the Stall's ◀ and its "How do I earn Motes?" foot are on white, so they follow the same rule */
+/* the Shop's ◀ and its "How do I earn points?" foot are on white, so they follow the same rule */
 #stall .btn.small { box-shadow: 0 1px 0 rgba(255,255,255,.9) inset, 0 2px 6px rgba(20,50,80,.16); min-height: 40px; min-width: 40px; }
 #stall .btn.small:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(255,255,255,.9) inset, 0 1px 3px rgba(20,50,80,.18); }
 /* #stallEarn sits at the bottom of the Stall, over the painted floor — NOT on a sheet — so it keeps deploy A's
@@ -1806,10 +1793,10 @@ html.gfx-lite {
    121 fusions, 2 alliances." broke into three lines. `width: max-content` lets it use its real max-width. */
 .toast { width: -webkit-max-content; width: max-content; }
 
-/* ---- (f) the Mote Stall header: title, balances and Back on one baseline ----------------------------- */
+/* ---- (f) the Shop header: title, balances and Back on one baseline ----------------------------------- */
 .stall-head h1 { font-size: 1.15rem; letter-spacing: .05em; color: var(--gilt-deep);
   filter: drop-shadow(0 1px 0 #ffffff) drop-shadow(0 2px 4px rgba(40,90,130,.25)); }
-.mote-pill, .dsh-pill { min-height: 34px; border: 1px solid var(--glass-brd); box-shadow: var(--frame), 0 2px 6px rgba(20,50,80,.16); }
+.dsh-pill { min-height: 34px; border: 1px solid var(--glass-brd); box-shadow: var(--frame), 0 2px 6px rgba(20,50,80,.16); }
 .stall-tab { min-height: 44px; border: 1px solid transparent; }
 .stall-tab.on { border-color: var(--glass-brd); box-shadow: var(--frame), 0 2px 6px rgba(20,50,80,.16); }
 .stall-tile { border: 1px solid var(--glass-brd); box-shadow: var(--frame), 0 2px 8px rgba(20,50,80,.16); }
@@ -1834,3 +1821,105 @@ html.gfx-lite {
   .sheet-card .btn, .lad-nav .btn, .lad-card .btn { min-height: 40px; }
   .lad-head { padding: 8px 12px 9px; }
 }
+
+/* ================================================================================================== */
+/* ROUND 5 (C1) — GEAR: the loadout row on deck select + the #gearModal sheet.                        */
+/* docs/round5/spec-economy-gear.md §2.5. Built on the polished components: .chip-btn for `Change ▸`, */
+/* .sheet-card / .sheet-body for the sheet, .tierbadge for the tier pip. No new animation (gfx-lite). */
+/* ================================================================================================== */
+
+/* ---- the row (two stacked lines between #factionGrid and #deckBegin) ------------------------------ */
+/* THE FLEX ORDER TRAP: .deck-card.daily-first gives every child an explicit `order:`, so a child
+   appended without one defaults to 0 and lands beside the <h1>. Both new lines get one, and
+   #deckBegin / #deckBack shift by two (6,7 → 8,9). */
+.deck-card.daily-first > .gear-cap { order: 6; } .deck-card.daily-first > .gear-row { order: 7; }
+.deck-card.daily-first > #deckBegin { order: 8; } .deck-card.daily-first > #deckBack { order: 9; }
+
+.gear-cap { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 12px 0 0;
+  font: 800 .74rem/1.2 'Nunito', sans-serif; color: var(--ink); }
+.gear-cap > span { opacity: .78; }
+#deckselect .gear-cap { text-shadow: 0 1px 0 rgba(255,255,255,.75); }
+/* `Change ▸` gets the .acct-row treatment: the base chip is a 22 px pill with a downward-only pad, which
+   is a 34 px target. Here there is room on all four sides, so it is a 30 px pill in a 44 px pad. */
+.gear-cap .chip-btn { height: 30px; padding: 0 13px; font-size: .74rem; }
+.gear-cap .chip-btn::before { left: -8px; right: -8px; top: -7px; bottom: -7px; }
+/* the tiles: six 44 px + five 6 px gaps = 294 px inside the 336 px content box at 360 (.screen has a
+   12 px side pad and #deckselect .deck-card no padding of its own). It wraps rather than overflows if a
+   future loadout is ever wider. */
+.gear-row { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 0; }
+.gear-tile { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px;
+  border-radius: 12px; background: rgba(255,255,255,.72); border: 1px solid var(--glass-brd); box-shadow: var(--frame); }
+.gear-tile img { width: 32px; height: 32px; object-fit: contain; pointer-events: none; }
+.gfx-lite .gear-tile { background: rgba(255,255,255,.88); }
+
+/* ---- the sheet ----------------------------------------------------------------------------------- */
+.gear-points { font: 800 .82rem/1 'Nunito', sans-serif; color: var(--gilt-deep); margin-left: 6px; white-space: nowrap; }
+.gear-list { display: flex; flex-direction: column; gap: 6px; }
+.gear-item { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; gap: 8px;
+  padding: 6px 8px; border-radius: 12px; border: 1px solid var(--panel-line); background: #fff; cursor: pointer; }
+.gear-item.on { border-color: var(--gilt-deep); box-shadow: 0 0 0 1px var(--gilt-deep) inset; }
+.gear-item.locked { opacity: .62; }                 /* dimmed, never hidden — seeing what you do not own is the point */
+.gear-item:active { transform: translateY(1px); }
+.gear-ic { width: 32px; height: 32px; object-fit: contain; }
+.gear-nm { display: flex; align-items: center; gap: 5px; font: 800 .82rem/1.2 'Nunito', sans-serif; color: var(--ink); }
+.gear-tx { font: 600 .7rem/1.3 'Nunito', sans-serif; color: var(--ink-soft); }
+.gear-pick { width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--panel-line);
+  display: inline-flex; align-items: center; justify-content: center; font: 900 .78rem/1 'Nunito', sans-serif; color: #fff; }
+.gear-item.on .gear-pick { background: var(--gilt-deep); border-color: var(--gilt-deep); }
+.gear-lock { font: 800 .74rem/1 'Nunito', sans-serif; color: var(--ink-soft); white-space: nowrap; }
+.gear-buy { min-height: 34px; padding: 0 10px; white-space: nowrap; }
+/* (R5 final verification) A pinned footer line, not a list row: it is OUTSIDE .sheet-body now (see
+   index.html), so `flex: 0 0 auto` keeps it off the scroller and `min-height` reserves its line so the
+   sheet does not jump by 1em the first time a tap is refused. */
+.gear-why { flex: 0 0 auto; min-height: 1em; margin: 8px 0 0; text-align: center; font: 700 .74rem/1.3 'Nunito', sans-serif; color: var(--ink-soft); }
+@media (max-width: 340px) { .gear-tx { display: none; } }
+
+/* ===================================================================================================
+   R5-C2 — the Shop (Mote Stall renamed), fusion-point prices, the Gear tab, and the 3-wide item row.
+   Appended, so every rule here wins on source order over the round-4 block it narrows.
+   =================================================================================================== */
+
+/* (§2.2) The combined shop row is now 3 pet cells + THREE item cells. The round-4 rule at the top of this
+   file is `.squad, .shop-row { repeat(5, 1fr) }` — the squad is still 5, so only the shop moves, and it is
+   narrowed by `.combined` (0,2,0 beats 0,1,0) rather than by editing the shared line. At 360 px the six
+   cells are (336 − 5×6) / 6 = 51 px each; the card art is object-fit:contain, so it just gets smaller. */
+.shop-row.combined { grid-template-columns: repeat(6, 1fr); }
+
+/* (§1.8) The ✦ pill and price chip. The mark is the GLYPH, not `assets/cos/mote` — the same ✦ the
+   deck-select chip, the unlock sheet and the result strip already print, so one currency looks like one
+   currency everywhere. `.mote` / `.mote-pill` are gone with the Motes; these are their replacements and
+   they inherit the round-4 geometry line-for-line so the header is unmoved. */
+.pts, .pts-pill { display: inline-flex; align-items: center; gap: 4px; font-weight: 900; color: var(--ink); }
+.pts .ic, .pts-pill .ic { width: 18px; display: inline-flex; align-items: center; justify-content: center;
+  font-size: 1rem; line-height: 1; color: var(--gilt-deep); }
+.pts-pill { padding: 6px 12px; border-radius: 999px; background: #fff; box-shadow: var(--sh-soft); }
+.pts-pill { min-height: 34px; border: 1px solid var(--glass-brd); box-shadow: var(--frame), 0 2px 6px rgba(20,50,80,.16); }
+.stall-head.dual .pts-pill { padding: 6px 10px; }
+.stall-chip .ic { width: 13px; font-size: .78rem; }
+
+/* FOUR tabs now (Gear · Banners · Emotes · Arena). At 360 px that is (336 − 3×6) / 4 = 79 px a tab, so
+   the labels still read at .9rem; at 320 the font steps down rather than the tab wrapping. */
+.stall-tabs { grid-template-columns: repeat(4, 1fr); }
+@media (max-width: 340px) { .stall-tab { font-size: .8rem; } }
+
+/* (§2.4) the Gear tab's rows — the sheet's `.gear-item` geometry, minus the pick circle and the tap
+   affordance: an owned row is a statement, not a control (you choose your loadout on deck select). */
+.stall-list.gearlist { grid-template-columns: 1fr; gap: 6px; }
+.stall-gear { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; gap: 8px;
+  padding: 6px 8px; border-radius: 12px; border: 1px solid var(--panel-line); background: #fff; }
+.stall-gear.own { opacity: .72; }
+.stall-gear .gear-buy { min-height: 34px; padding: 0 10px; white-space: nowrap; }
+.stall-list.gearlist .stall-sub { margin-top: 2px; }
+
+/* R5 owner-eye fix: on a 360×640 phone the Gear row sat BELOW six alliance tiles (off-screen). In the daily-first layout it now
+   sits directly under the Daily Deck button — what a new player with every alliance locked actually uses — and both lines ride
+   one soft plate so the caption is readable over the painted floor. Order only; no markup moved. */
+.deck-card.daily-first > .gear-cap { order: 3; margin: 12px 0 0; padding: 8px 10px 0; border-radius: 14px 14px 0 0; background: rgba(255,255,255,.72); text-shadow: none; }
+.deck-card.daily-first > .gear-row { order: 3; margin: 0; padding: 6px 10px 10px; border-radius: 0 0 14px 14px; background: rgba(255,255,255,.72); }
+.deck-card.daily-first > .deck-cap { order: 4; margin-top: 12px; }
+.deck-card:not(.daily-first) > .gear-cap { padding: 8px 10px 0; border-radius: 14px 14px 0 0; background: rgba(255,255,255,.72); text-shadow: none; }
+.deck-card:not(.daily-first) > .gear-row { margin: 0; padding: 6px 10px 10px; border-radius: 0 0 14px 14px; background: rgba(255,255,255,.72); }
+/* explicit, collision-free order for the daily-first deck screen: Daily Deck → Gear → Alliances → Begin → Back */
+.deck-card.daily-first > #deckDaily { order: 3; } .deck-card.daily-first > .gear-cap { order: 4; } .deck-card.daily-first > .gear-row { order: 5; }
+.deck-card.daily-first > .deck-cap { order: 6; } .deck-card.daily-first > .faction-grid { order: 7; }
+.deck-card.daily-first > #deckBegin { order: 8; } .deck-card.daily-first > #deckBack { order: 9; }
