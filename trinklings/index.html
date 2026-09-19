@@ -29,7 +29,7 @@
   <link rel="preload" as="font" type="font/woff2" href="assets/fonts/Nunito.woff2" crossorigin />
   <link rel="preload" as="font" type="font/woff2" href="assets/fonts/Cinzel.woff2" crossorigin />
   <link rel="preload" as="image" href="assets/ui/hero-scene.webp" fetchpriority="high" />
-  <link rel="stylesheet" href="public/style.css?v=0bd5393a13" />
+  <link rel="stylesheet" href="public/style.css?v=d09255e236" />
   <link rel="stylesheet" href="public/fx.css?v=969db94a22" />
 </head>
 <body>
@@ -51,6 +51,7 @@
       <button class="btn big glass" id="onlineBtn">Online</button>
       <button class="btn big glass" id="localBtn">Local</button>
     </div>
+    <div id="titleRecord" class="title-record" hidden></div>
   </section>
 
   <!-- SHOP / GAME -->
@@ -71,12 +72,13 @@
     <div id="cardDetail" class="card-detail" hidden></div>
 
     <div class="squad-wrap">
-      <div class="row-label"><span>Your squad</span></div>
+      <div class="row-label"><span>Your squad</span><span class="row-tools"><button class="chip-btn" id="tacticsChip" type="button"></button><button class="chip-btn" id="rivalBtn" type="button" hidden>Rival<span class="long"> squad</span></button></span></div>
       <div id="squad" class="squad"></div>
+      <div id="orderStrip" class="order-strip" aria-hidden="true"></div>
     </div>
 
     <div class="shop-wrap">
-      <div class="row-label"><span>Shop</span></div>
+      <div class="row-label"><span>Shop</span><button id="gearShelf" class="gear-shelf" type="button" hidden></button></div>
       <div class="shop-row combined">
         <div id="shopPets" class="cells"></div>
         <div id="shopSnacks" class="cells"></div>
@@ -118,6 +120,7 @@
         <div class="result-emblem"><img id="resultEmblem" src="assets/ui/trophy.webp" alt="" /></div>
         <div id="resultBanner" class="result-banner"></div>
         <div id="resultSub" class="result-sub"></div>
+        <div id="resultInsights" class="result-insights" hidden></div>
         <button class="btn big primary" id="continueBtn">Continue ▶</button>
       </div>
     </div>
@@ -127,9 +130,11 @@
   <section id="gameover" class="screen">
     <div class="title-card">
       <div id="goEmoji" class="logo">🏆</div>
+      <div id="goPerfect" class="perfect-fx" hidden><div class="perfect-ribbon">✦ PERFECT ✦</div><i class="pf-star"></i><i class="pf-star"></i><i class="pf-star"></i><i class="pf-star"></i><i class="pf-star"></i><i class="pf-star"></i></div>
       <h1 id="goTitle">You win!</h1>
       <p id="goText" class="tag"></p>
-      <button class="btn big primary" data-start="normal">Play again</button>
+      <button class="btn big primary" id="goAgainBtn">Play again</button>
+      <button class="btn" id="goChangeBtn">Change alliance</button>
       <button class="btn" id="goTitleBtn">Main menu</button>
     </div>
   </section>
@@ -201,18 +206,23 @@
     </div>
   </div>
 
-  <!-- FIRST-FUSE EXPLAINER (opens once, before the first fuse ever — tap or drag; cc_fuse_warned) -->
+  <!-- FUSE INFO SCREEN — opens before EVERY fuse (tap or drag); never skipped. cc_fuse_warned only collapses the rules list. -->
   <div id="fuseModal" class="modal" hidden>
     <div class="modal-card fuse-card" role="dialog" aria-modal="true" aria-labelledby="fuseModalTitle">
       <h2 id="fuseModalTitle">Fuse into <span id="fuseModalName">a new Trinkling</span>?</h2>
-      <div id="fuseModalReborn" class="fuse-reborn"></div>
-      <ul class="fuse-rules">
-        <li><b>Reborn at 1/1</b> — both pets are used up and its stats start over.</li>
-        <li><b>Keeps both abilities</b> at their levels, each on its own trigger, plus a new Signature Move: <b id="fuseModalSig" class="sig-name">✦ Signature Move</b></li>
-        <li>Held battle items come along; fed boosts don’t. It can’t combine or fuse again.</li>
-        <li><b>Fuse spare pets, not your carries</b>, then <b>feed or shield</b> the 1/1 — lines tagged <b>Needs HP</b> wait until it’s fed.</li>
-      </ul>
+      <div id="fuseModalPair" class="fuse-pair"></div>
       <div id="fuseModalAbils" class="fuse-abils"></div>
+      <div id="fuseModalCarry" class="fuse-carry"></div>
+      <div id="fuseModalGold" class="fuse-gold"></div>
+      <details id="fuseModalRules" class="fuse-rules-wrap">
+        <summary>How fusing works</summary>
+        <ul class="fuse-rules">
+          <li><b>Reborn at 1/1</b> — both pets are used up and its stats start over.</li>
+          <li><b>Keeps both abilities</b> at their levels, each on its own trigger, plus a new Signature Move: <b id="fuseModalSig" class="sig-name">✦ Signature Move</b></li>
+          <li>Held battle items come along; fed boosts don’t. It can’t combine or fuse again.</li>
+          <li><b>Fuse spare pets, not your carries</b>, then <b>feed or shield</b> the 1/1 — lines tagged <b>Needs HP</b> wait until it’s fed.</li>
+        </ul>
+      </details>
       <div class="btn-row">
         <button class="btn ghostbtn" id="fuseModalCancel">Not now</button>
         <button class="btn big primary" id="fuseModalOk">Fuse 1/1 <span class="cost" id="fuseModalCost"></span></button>
@@ -241,6 +251,7 @@
       <button class="btn" id="settingsEasy">Easy mode: Off</button>
       <button class="btn" id="settingsSound">Sound: On</button>
       <button class="btn" id="settingsGfx">Graphics: Auto (High)</button>
+      <button class="settings-foot" id="settingsWhatsNew" type="button">What’s new · v<span id="settingsVersion"></span></button>
       <button class="btn ghostbtn" id="settingsClose">Close</button>
     </div>
   </div>
@@ -259,7 +270,30 @@
       <h2>Replay</h2>
       <button class="btn big primary" id="rewatchSelf">Rewatch last battle</button>
       <button class="btn big" id="rewatchRival">Watch from rival's side</button>
+      <button class="btn big" id="rewatchLineup">Rival’s last squad</button>
       <button class="btn ghostbtn" id="rewatchClose">Close</button>
+    </div>
+  </div>
+
+  <!-- RIVAL LINE-UPS — every squad you have fought this run / match, newest first (spec-client 6a) -->
+  <div id="rivalModal" class="modal" hidden>
+    <div class="modal-card sheet-card rival-card" role="dialog" aria-modal="true" aria-labelledby="rivalTitle">
+      <h2 id="rivalTitle">Rival’s squad</h2>
+      <p class="sheet-sub" id="rivalSub"></p>
+      <div class="rival-pager" id="rivalPager" hidden><button class="chip-btn" id="rivalOlder" type="button" aria-label="Older fight">‹</button><span id="rivalPage"></span><button class="chip-btn" id="rivalNewer" type="button" aria-label="Newer fight">›</button></div>
+      <div class="sheet-body" id="rivalList"></div>
+      <button class="btn" id="rivalRewatch">Rewatch the fight from their side</button>
+      <button class="btn ghostbtn" id="rivalClose">Close</button>
+    </div>
+  </div>
+
+  <!-- TACTICS SHEET — the notes for the squad on the board + the 10 battle rules (spec-client 6c) -->
+  <div id="tacticsModal" class="modal" hidden>
+    <div class="modal-card sheet-card tactics-card" role="dialog" aria-modal="true" aria-labelledby="tacticsTitle">
+      <h2 id="tacticsTitle">Tactics</h2>
+      <div class="sheet-body" id="tacticsBody"></div>
+      <button class="btn" id="tacticsTriggers">When abilities trigger</button>
+      <button class="btn ghostbtn" id="tacticsClose">Close</button>
     </div>
   </div>
 
@@ -297,7 +331,7 @@
         <li>Tap a squad Trinkling, then another slot to <b>reorder</b> — the <b>rightmost one fights first ▶</b>.</li>
         <li>Buy <b>copies of the same</b> Trinkling to <b>combine</b> them (bigger stats + it levels up), or drop <b>two different ones</b> together to <b>fuse</b> them (<span id="howFuseCost">12</span> <img class="ic" src="assets/ui/coin.webp" alt="gold">, or <span id="howBuyFuseCost">15</span> straight from the shop). The new Trinkling is <b>reborn at 1/1</b>, but keeps <b>both abilities</b> at their levels and gains a unique <b>✦ Signature Move</b>.</li>
         <li>A fused Trinkling has <b>several abilities</b> — each fires on its <b>own trigger</b> (the tag beside it). Tap it to read them all. A 1/1 faints fast: <b>feed it</b>, and fuse spare pets rather than your strongest.</li>
-        <li><b>Items</b> are bonuses you buy (<span id="howSnackCost">2</span> <img class="ic" src="assets/ui/coin.webp" alt="gold">) and feed to a Trinkling for a <b>permanent</b> boost.</li>
+        <li><b>Items</b> cost <span id="howSnackCost">3</span> <img class="ic" src="assets/ui/coin.webp" alt="gold">. <b>Food</b> is fed to a Trinkling for a <b>permanent</b> stat boost. <b>Gear</b> (the rotating shelf above the shop, from turn 3) is <b>held</b>: it blocks, lures, goes first, echoes. One of each kind per Trinkling; fusing keeps it.</li>
         <li>Tap a squad Trinkling and hit <b>Sell</b> to get some gold back.</li>
         <li><b>Reroll</b> the shop for new Trinklings, or select a shop item and hit <b>Freeze</b> to keep it next turn (free).</li>
         <li>Hit <b>End Turn</b> to start a <b>fight</b> — the auto-battle. Boosts "for the fight" last one battle; <b>(permanent)</b> ones stay forever.</li>
@@ -308,9 +342,21 @@
     </div>
   </div>
 
+  <!-- WHAT'S NEW — opens once per VERSION on the title, and from Settings any time (spec-client 6b) -->
+  <div id="newsModal" class="modal" hidden>
+    <div class="modal-card sheet-card news-card" role="dialog" aria-modal="true" aria-labelledby="newsTitle">
+      <h2 id="newsTitle">What’s new</h2>
+      <div class="sheet-body" id="newsBody"></div>
+      <button class="btn big primary" id="newsClose">Got it!</button>
+    </div>
+  </div>
+
+  <!-- "A new version is ready" — keyed on the BUILD HASH; title / game-over only, never during a run -->
+  <div id="updateBanner" class="update-banner" hidden><span>A new version is ready.</span><button class="btn small" id="updateRefresh" type="button">Refresh</button></div>
+
 </div>
 <audio id="bgm" loop preload="none" src="assets/audio/music.m4a"></audio>
 <audio id="bgm-battle" loop preload="none" src="assets/audio/battle-music.m4a"></audio>
-<script type="module" src="public/app.js?v=44c2858d9a"></script>
+<script type="module" src="public/app.js?v=80e29d5491"></script>
 </body>
 </html>

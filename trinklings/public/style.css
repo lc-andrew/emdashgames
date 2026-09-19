@@ -182,10 +182,15 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 .coach { min-height: 0; flex-shrink: 0; margin: 10px 2px 0; }
 /* FIXED height (not just min): the description slot never grows, so tapping a card can't shove the board */
 .coach.show, .card-detail { height: 108px; box-sizing: border-box; overflow: hidden; contain: layout style; }
-.card-detail { overflow-y: auto; -webkit-overflow-scrolling: touch; }   /* long ability text scrolls instead of clipping */
-/* round 3: a FUSED pet lists both parents' abilities + its ✦ Signature Move — only that panel may grow (capped), so the Signature line
-   is on screen without an unmarked scroll; base cards keep the fixed slot. */
-.card-detail.multi { height: auto; min-height: 108px; max-height: 34vh; max-height: 34dvh; }
+/* (R4 final) the tap-detail GROWS to fit instead of clipping its last line. Measured at 360px wide: 45 of the 291
+   card/level texts (the rotation `Next: n/N` tags and the `(Lv2+: …)` asides) ran exactly one line past the fixed
+   108px slot, so the player could not read the end of the ability without an unmarked scroll. Tighter ability leading
+   (below) reclaims ~7px and the panel takes the remaining ~9px, capped like .multi — re-measured 0 clipped and
+   `#game` scrollHeight - clientHeight = 0 at 360x560 AND 360x640 with the Gear Shelf up and a card selected. */
+.card-detail { height: auto; min-height: 108px; max-height: 34vh; max-height: 34dvh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+/* round 3: a FUSED pet lists both parents' abilities + its ✦ Signature Move — that panel may grow further (capped), so the
+   Signature line is on screen without an unmarked scroll. */
+.card-detail.multi { min-height: 108px; max-height: 34vh; max-height: 34dvh; }
 /* short portrait phones (360x780…): the space above the squad takes more — a long L3+L3 pair's Signature line ended below the fold */
 @media (orientation: portrait) and (min-height: 700px) and (max-height: 820px) { .card-detail.multi { max-height: 42vh; max-height: 42dvh; } }
 .coach.show { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
@@ -193,24 +198,41 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 .coach.show { padding: 10px 13px; background: var(--glass-hi); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); border: 1px solid var(--glass-brd); border-radius: var(--r-md); font-size: .9rem; font-weight: 600; color: var(--ink); box-shadow: var(--frame), var(--sh-soft); animation: pop .3s var(--ease-bounce); }
 .coach.show b { color: var(--gilt-deep); }
 /* detail-on-tap panel — full info for the selected card (keeps the cards themselves clean) */
-.card-detail { flex-shrink: 0; margin: 10px 2px 0; padding: 9px 12px; background: var(--glass-hi); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); border: 1px solid var(--glass-brd); border-radius: var(--r-md); box-shadow: var(--frame), var(--sh-soft); animation: pop .22s var(--ease-bounce); }
+.card-detail { flex-shrink: 0; margin: 10px 2px 0; padding: 8px 12px; background: var(--glass-hi); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); border: 1px solid var(--glass-brd); border-radius: var(--r-md); box-shadow: var(--frame), var(--sh-soft); animation: pop .22s var(--ease-bounce); }
 .card-detail .cd-head { display: flex; align-items: flex-start; gap: 6px; font-size: .92rem; color: var(--ink); }
 .card-detail .cd-head b { font-weight: 900; }
 .card-detail .cd-head .lvl { position: static; }
 .card-detail .cd-stats { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-weight: 900; }
 .card-detail .cd-stats .ic { width: .95em; height: .95em; vertical-align: -.16em; }
-.card-detail .cd-abil { margin-top: 6px; font-size: .82rem; font-weight: 600; line-height: 1.4; color: var(--ink); }
+.card-detail .cd-abil { margin-top: 5px; font-size: .82rem; font-weight: 600; line-height: 1.32; color: var(--ink); }
 .card-detail .cd-flavor { margin-top: 5px; font-size: .74rem; font-style: italic; color: var(--ink-soft); line-height: 1.35; }
 .hint { text-align: center; font-size: .85rem; color: var(--ink-soft); font-weight: 700; min-height: 1.1em; margin-top: 7px; white-space: normal; line-height: 1.3; }
 /* when it has text (e.g. duel "waiting for opponent…"), show it as a legible pill on ANY background (per feedback) */
 .hint:not(:empty) { color: #fff; background: rgba(16,28,46,.8); border-radius: 999px; padding: 5px 14px; width: fit-content; max-width: 94%; margin: 7px auto 0; box-shadow: var(--sh-soft); text-shadow: 0 1px 2px rgba(0,0,0,.5); }
 /* Constant-height slot: the pill appears / grows / shrinks INSIDE it, so the bottom-anchored board
    (squad/shop margin-top:auto) never loses free space to a growing hint and the arena stops jumping. */
-.hint-slot { height: 54px; flex-shrink: 0; }
+.hint-slot { height: 54px; flex-shrink: 0; overflow: hidden; }   /* hard guarantee: however long a hint gets, the pill is clipped INSIDE the slot and #game never gains a scrollbar */
 
 /* ---- rows ---- */
 .row-label { position: relative; top: -7px; display: flex; justify-content: space-between; align-items: baseline; font-family: 'Cinzel', serif; text-transform: uppercase; letter-spacing: .05em; font-weight: 800; color: #fff; text-shadow: 0 1px 2px rgba(20,45,75,.55), 0 1px 8px rgba(20,45,75,.4); margin: -4px 4px 6px; font-size: .84rem; }
 .row-label.sub { margin-top: 8px; font-size: .72rem; color: rgba(255,255,255,.9); }   /* keep "Items" readable on the stone (was dark ink) */
+/* (R4) Gear Shelf chip — in the Shop row label; transform / opacity only, static in gfx-lite */
+.gear-shelf { position:relative; display:flex; align-items:center; gap:4px; height:28px; padding:0 8px 0 3px; border:0; border-radius:14px; background:rgba(18,32,52,.55); color:#fff; font:800 .7rem/1 'Nunito',sans-serif; text-transform:none; letter-spacing:0; white-space:nowrap; touch-action:none; cursor:pointer; }
+.gear-shelf::before { content:''; position:absolute; left:0; right:0; top:-10px; bottom:-2px; }   /* 40 px tap / drag target, grown UPWARD into the gap — never over the shop cards */
+.gear-shelf img { width:24px; height:24px; object-fit:contain; pointer-events:none; }
+.gear-shelf .gs-tag { font:800 .58rem/1 'Cinzel',serif; text-transform:uppercase; letter-spacing:.05em; opacity:.75; }
+.gear-shelf .gs-next { font-style:normal; font-size:.6rem; opacity:.7; }
+.gear-shelf .cost .ic { width:12px; height:12px; vertical-align:-2px; }
+.gear-shelf.selected { box-shadow:0 0 0 2px var(--gilt-bloom); } .gear-shelf.frozen { box-shadow:0 0 0 2px #9fdcff; } .gear-shelf.sold { opacity:.6; } .gear-shelf.drag-source { opacity:.4; }
+@media (max-width:380px) { .gear-shelf .gs-tag { display:none; } .gear-shelf b { max-width:84px; overflow:hidden; text-overflow:ellipsis; } }
+/* (R4, C2) Same relief in SHORT LANDSCAPE. There the shop is a narrow COLUMN, not the full width: the Shop row label is
+   253 px, so the full 229 px chip left the label's own <span> 24 px of the 37 px it needs and "Shop" rendered as "S…"
+   (the global `.row-label > span { overflow:hidden; text-overflow:ellipsis }` guard at :734). Dropping the "Gear" tag —
+   H16's own lever for a tight row — takes the chip to ~195 px and the label reads in full again. Measured at 640x360. */
+@media (max-height:420px) and (orientation:landscape) { .gear-shelf .gs-tag { display:none; } .gear-shelf b { max-width:96px; overflow:hidden; text-overflow:ellipsis; } }
+.cd-rule { font-size:.66rem; line-height:1.3; opacity:.8; margin-top:3px; }
+.cd-held, .ht-held { font-size:.7rem; line-height:1.3; margin-top:3px; }
+.held-ic { width:16px; height:16px; vertical-align:-3px; margin-right:3px; }
 .front-tag { font-size: .68rem; font-weight: 800; color: #1f7d49; font-family: 'Nunito'; letter-spacing: 0; text-transform: none; }
 .tier-tag { font-family: 'Nunito', sans-serif; font-size: .72rem; font-weight: 800; background: linear-gradient(180deg,var(--gilt),var(--accent-deep)); color: var(--silver-hi); padding: 3px 10px; border-radius: 4px; box-shadow: inset 0 1px 0 rgba(255,255,255,.25); }
 .squad-wrap, .shop-wrap { flex-shrink: 0; }
@@ -279,7 +301,7 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 /* SAP-style stat chips: attack = slate chip, health = red chip, number INSIDE, no separate icon */
 .card .stats { display: flex; justify-content: center; margin-top: 2px; }
 /* card stat = ONE flat pill "atk / hp", no emboss (the two-chip look stays only in the tap-detail: .cd-stats) */
-.card .stat { display: inline-flex; align-items: center; justify-content: center; padding: 1px 10px; border-radius: 999px; font-size: .74rem; font-weight: 900; color: #fff; line-height: 1.45; letter-spacing: .01em; background: rgba(18,32,52,.74); }
+.card .stat { display: inline-flex; align-items: center; justify-content: center; white-space: nowrap; padding: 1px 10px; border-radius: 999px; font-size: .74rem; font-weight: 900; color: #fff; line-height: 1.45; letter-spacing: .01em; background: rgba(18,32,52,.74); }
 .cd-stats .atk, .cd-stats .hp { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; padding: 1px 6px; border-radius: 999px; font-size: .68rem; font-weight: 900; color: #fff; line-height: 1.35; box-shadow: inset 0 1px 0 rgba(255,255,255,.28), 0 1px 2px rgba(20,40,70,.45); }
 .stats .atk, .cd-stats .atk { background: linear-gradient(180deg,#5c6675,#39424f); }
 .stats .hp, .cd-stats .hp { background: linear-gradient(180deg,#ff6f84,#e0475f); }
@@ -321,6 +343,7 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 .held-more { color: #fff; font: 900 .66rem/1 'Nunito', sans-serif; letter-spacing: -.02em; }
 /* spent (a Firepip's first strike landed / a Honeypot's faint fired): dims + one pop — opacity + transform only */
 .held-it.used { opacity: .38; animation: heldSpend .42s var(--ease-bounce); }
+.held-it.fire { animation: heldSpend .42s var(--ease-bounce); }   /* (R4) a gear badge pulses when it acts — reuses the transform keyframes */
 @keyframes heldSpend { 40% { transform: scale(1.4); } }
 .snacks .card { min-height: 74px; }
 
@@ -437,6 +460,11 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
   filter: drop-shadow(0 1px 2px rgba(20,40,70,.55)); }
 .float { position: absolute; left: 50%; top: -2px; transform: translateX(-50%); font-weight: 900; font-size: .92rem; pointer-events: none; animation: floatUp 1s var(--ease-soft) forwards; z-index: 5; white-space: nowrap; }
 .float.dmg { color: var(--coral-deep); } .float.buff { color: var(--glow); } .float.abil { color: var(--gilt-bloom); font-size: .78rem; font-family: 'Cinzel', serif; }
+.float.item { color:#bfe9ff; }   /* (R4) "Bell Jar!", "Shiny Lure!", "Herald's Horn!", "Echo Shell!" */
+/* (R4 final) these two float OVER the pit's bright dust cloud, and deploy A put its most important battle message
+   there ("Last gasp · kept +3/+0"). Pale ink on pale dust was unreadable in a 360px screenshot — the same dark
+   outline .float.sig and .float.dmg already carry. Colour only: no layout, and the rise stays transform/opacity. */
+.float.abil, .float.item { text-shadow: 0 1px 2px rgba(8,26,42,.9), 0 0 7px rgba(8,26,42,.75), 0 0 2px rgba(8,26,42,.9); }
 @keyframes floatUp { 0% { opacity: 0; transform: translate(-50%, 8px);} 20% { opacity: 1;} 100% { opacity: 0; transform: translate(-50%, -28px);} }
 @keyframes shake { 0%,100% { transform: translateX(0);} 25% { transform: translateX(-5px);} 75% { transform: translateX(5px);} }
 
@@ -455,7 +483,7 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 
 /* result overlay — a dim scrim so the outcome card pops, not a bright wash over the field */
 .battle-result { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(10,16,34,.5); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); padding: 22px; text-align: center; z-index: 12; }
-.result-card { position: relative; width: 100%; max-width: 336px; display: flex; flex-direction: column; align-items: center; gap: 11px; padding: 24px 22px 22px; border-radius: var(--r-lg); overflow: hidden;
+.result-card { position: relative; width: 100%; max-width: 336px; display: flex; flex-direction: column; align-items: center; gap: 11px; padding: 24px 22px 22px; border-radius: var(--r-lg); overflow-x: hidden; overflow-y: auto;
   background: var(--glass-hi); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); border: 1px solid var(--glass-brd); box-shadow: var(--frame), var(--sh-pop); animation: pop .34s var(--ease-bounce); }
 /* soft outcome-coloured wash blooming from the top of the card */
 .result-card::before { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 0; background: radial-gradient(120% 72% at 50% -8%, var(--rc-glow, rgba(120,150,255,.4)), transparent 62%); }
@@ -619,6 +647,7 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 .fb-text { width: 100%; min-height: 122px; resize: vertical; padding: 12px 14px; border-radius: var(--r-md); border: 1.5px solid var(--rule); background: #eaf5ff; color: var(--ink); font: inherit; font-weight: 600; line-height: 1.45; }
 .fb-text:focus { outline: none; border-color: var(--gilt); box-shadow: 0 0 0 2px rgba(154,108,242,.35); }
 .btn.fb-mic { width: auto; margin: 10px auto 0; display: inline-flex; }
+.btn.fb-mic.on { background: linear-gradient(180deg,#ffd9de,#ffb3bf); border-color: var(--coral-deep); color: #7a1626; }
 
 /* ---- tier badge (inline in the name; reused in the codex) ---- */
 /* simplified tier symbol: a flat solid tier-colour rounded chip with the number (no gradient/bevel) */
@@ -742,6 +771,9 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
   .card .stats { font-size: .64rem; }
   /* short landscape: shave the fixed-height coach/detail slot (74px→44px) so the board + End Turn fit without scrolling */
   .coach.show, .card-detail { height: 44px; -webkit-line-clamp: 2; padding: 5px 10px; font-size: .8rem; margin-top: 3px; }
+  /* the portrait panel grows to fit (min-height 108px); short landscape keeps the compact 44px slot, or End Turn
+     leaves the screen — min-height must be reset here too, since min-height beats height. */
+  .card-detail { min-height: 44px; }
   .card-detail .cd-flavor { display: none; }   /* keep the landscape detail compact */
   .card-detail.multi { min-height: 44px; max-height: 42vh; max-height: 42dvh; }   /* fused: three short ability lines */
   #game .card { min-height: 52px; }
@@ -1022,10 +1054,13 @@ html.gfx-lite {
 .bcard .held-it img { width: 24px; height: 24px; }
 /* battle hold-tip names them ("Holding: Firepip ×2, Honeypot") */
 .hold-tip .ht-held { margin-top: 3px; font-size: .7rem; font-weight: 800; opacity: .85; }
-/* "Levels: stats only" — a quiet slate tag after an ability whose numbers never change with level (tap-detail, battle
-   hold-tip, reward tip, codex). Static, no filter; sized in em so it follows whichever ability line it sits in. */
-.lvflat, .lvodds { display: inline-block; margin-left: 4px; padding: 0 6px; border-radius: 999px; font-family: 'Nunito', sans-serif; font-size: .8em; font-weight: 800; font-style: normal;
+/* "Next: 1/2" — a quiet slate tag after a TURN-TAKING ability (tap-detail, battle hold-tip, reward tip, codex). Static, no filter; sized in em
+   so it follows whichever ability line it sits in. (Round 4: the "Levels: stats only" and "Odds N%" chips are gone — every ability grows, nothing rolls.) */
+.lvrot { display: inline-block; margin-left: 4px; padding: 0 6px; border-radius: 999px; font-family: 'Nunito', sans-serif; font-size: .8em; font-weight: 800; font-style: normal;
   line-height: 1.45; letter-spacing: .02em; color: var(--ink-soft); background: rgba(57,80,95,.1); box-shadow: inset 0 0 0 1px rgba(57,80,95,.32); white-space: nowrap; vertical-align: 1px; }
+/* (R4) the "Next: 2/2 ⟳" tag on its "instead" turn, and the ⟳ pip on a squad card whose next fire is that turn. Static — no animation, no filter. */
+.lvrot.alt { color: #7a4a00; background: rgba(255,176,32,.2); box-shadow: inset 0 0 0 1px rgba(200,130,20,.5); }
+.rot-pip { position: absolute; top: 1px; left: 3px; z-index: 3; pointer-events: none; font: 900 .8rem/1 'Nunito', sans-serif; color: #7a4a00; text-shadow: 0 1px 0 rgba(255,255,255,.7); }
 /* "Fed +A/+H" — the tracked stat-food total in the tap-detail header (stat foods are baked into atk/hp, so they leave no badge) */
 .cd-fed { flex: none; display: inline-flex; align-items: center; margin-top: 1px; padding: 1px 7px; border-radius: 999px; font-size: .66rem; font-weight: 900; line-height: 1.35;
   white-space: nowrap; color: #1d6b55; background: rgba(79,194,160,.2); box-shadow: inset 0 0 0 1px rgba(47,157,143,.45); }
@@ -1121,17 +1156,14 @@ html.gfx-lite {
 /* ---- N2: first-fuse explainer (a custom .modal, never window.confirm) ---- */
 .modal-card.fuse-card { max-width: 380px; text-align: left; }
 .fuse-card h2 { text-align: center; }
-.fuse-card .fuse-reborn { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 2px 0 8px; font-weight: 900; color: var(--ink); }
-.fuse-card .fuse-reborn .stat { display: inline-flex; align-items: center; padding: 2px 12px; border-radius: 999px; font-size: .95rem; font-weight: 900; color: #fff; background: rgba(18,32,52,.78); }
 .fuse-card ul { list-style: none; padding: 0; margin: 6px 0 2px; }
 .fuse-card li { position: relative; padding-left: 20px; margin: 8px 0; font-size: .9rem; font-weight: 600; line-height: 1.42; color: var(--ink); }
 .fuse-card li::before { content: "\2726"; position: absolute; left: 2px; top: 0; color: var(--gold-deep); font-weight: 900; }
 .fuse-card li b { color: var(--gilt-deep); }
-.fuse-card .fuse-reborn .stat:last-child { background: linear-gradient(180deg, #ff6f84, #e0475f); box-shadow: 0 0 0 2px rgba(255,255,255,.8), 0 2px 8px rgba(224,71,95,.45); }
 .fuse-card .fuse-abils { margin: 8px 0 2px; padding: 8px 10px; border-radius: var(--r-md); background: rgba(120,140,180,.1); border: 1px solid rgba(120,140,180,.2);
   font-size: .8rem; font-weight: 600; line-height: 1.4; color: var(--ink); max-height: none; overflow-y: auto; -webkit-overflow-scrolling: touch; }   /* portrait: the card itself is the one scroller (88dvh) */
 .fuse-card .fuse-abils:empty { display: none; }
-.modal-card.fuse-card { max-height: 88dvh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.modal-card.fuse-card { max-height: 88vh; max-height: 88dvh; overflow-y: auto; -webkit-overflow-scrolling: touch; }   /* vh first: Safari < 15.4 drops a bare dvh line and the card would lose its scroller */
 .fuse-card .btn-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
 /* the card is the one scroller in portrait: pin "Not now" / "Fuse" to its bottom edge so a long pair's ability list never pushes the
    confirm out of sight (static, no filter — an opaque fade under the buttons instead of the glass blur) */
@@ -1146,16 +1178,32 @@ html.gfx-lite {
 .fuse-card .btn.primary .cost { background: rgba(255,255,255,.16); color: #ffe9a8; }
 /* short landscape (e.g. 800x380): two columns so "Fuse 1/1" + "Not now" are on-screen without scrolling — rules left,
    the ability preview + buttons right */
+/* the fuse INFO screen (round 4): parents → result, what carries, the gold line, and the rules list as a <details> */
+.fuse-pair { display: flex; align-items: flex-start; justify-content: center; gap: 4px; margin: 2px 0 8px; }
+.fuse-pair .fp { width: 78px; text-align: center; }
+.fuse-pair .fp-art { position: relative; width: 52px; height: 52px; margin: 0 auto; --pet-scale: 1; }
+.fuse-pair .fp-art .art { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+.fuse-pair .fp-art .art img { width: 100%; height: 100%; object-fit: contain; }
+.fuse-pair .fp-nm { font-size: .72rem; font-weight: 900; color: var(--ink); line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fuse-pair .fp-sub { font-size: .68rem; font-weight: 800; color: var(--ink-soft); margin-top: 1px; }
+.fuse-pair .fp-op { align-self: center; font-weight: 900; font-size: 1.05rem; color: var(--ink-soft); margin-top: -18px; }
+.fuse-pair .stat.reborn { display: inline-flex; padding: 1px 10px; border-radius: 999px; color: #fff; font-weight: 900; background: linear-gradient(180deg, #ff6f84, #e0475f); box-shadow: 0 0 0 2px rgba(255,255,255,.8); }
+.fuse-carry, .fuse-gold { margin: 6px 0 0; font-size: .8rem; font-weight: 700; line-height: 1.4; color: var(--ink); }
+.fuse-carry .lost, .fuse-gold .short { color: #c2413a; font-weight: 900; }
+.fuse-gold .ic { width: 1em; height: 1em; vertical-align: -.14em; margin-right: 1px; }
+.fuse-rules-wrap { margin-top: 8px; }
+.fuse-rules-wrap > summary { cursor: pointer; font-size: .78rem; font-weight: 900; color: var(--gilt-deep); padding: 4px 0; }
+.actionbar .btn.action.cant-afford { opacity: .6; }
 @media (orientation: landscape) and (max-height: 600px) {
   .modal-card.fuse-card { max-width: 720px; display: grid; grid-template-columns: 1fr 1fr; column-gap: 18px; align-items: start; padding: 12px 18px 14px; }
-  .fuse-card h2, .fuse-card .fuse-reborn { grid-column: 1 / -1; }
-  .fuse-card h2 { font-size: 1.1rem; margin-bottom: 2px; }
-  .fuse-card .fuse-reborn { margin: 0 0 4px; }
-  .fuse-card .fuse-reborn .stat { font-size: .82rem; padding: 1px 10px; }
-  .fuse-card ul { grid-column: 1; grid-row: 3 / span 2; margin: 0; }
+  .fuse-card h2 { grid-column: 1 / -1; font-size: 1.1rem; margin-bottom: 2px; }
+  .fuse-card .fuse-pair { grid-column: 1; grid-row: 2; margin: 0 0 4px; }
+  .fuse-card .fuse-carry { grid-column: 1; grid-row: 3; }
+  .fuse-card .fuse-gold { grid-column: 1; grid-row: 4; }
+  .fuse-card .fuse-rules-wrap { grid-column: 1; grid-row: 5; }
   .fuse-card li { font-size: .78rem; line-height: 1.36; margin: 3px 0 6px; }
-  .fuse-card .fuse-abils { grid-column: 2; grid-row: 3; margin: 2px 0 0; padding: 6px 9px; font-size: .74rem; max-height: 40dvh; }
-  .fuse-card .btn-row { grid-column: 2; grid-row: 4; margin-top: 8px; position: static; margin-left: 0; margin-right: 0; margin-bottom: 0; padding: 0; background: none; }
+  .fuse-card .fuse-abils { grid-column: 2; grid-row: 2 / span 3; margin: 2px 0 0; padding: 6px 9px; font-size: .74rem; max-height: 46vh; max-height: 46dvh; }
+  .fuse-card .btn-row { grid-column: 2; grid-row: 5; margin: 8px 0 0; position: static; padding: 0; background: none; }
   .fuse-card .btn-row .btn.primary { padding: 10px 8px; font-size: .88rem; }
 }
 
@@ -1164,3 +1212,121 @@ html.gfx-lite {
 .float.wait { font-family: 'Nunito', sans-serif; font-size: .66rem; font-weight: 900; letter-spacing: .01em; color: #fff; background: rgba(18,32,52,.8); border-radius: 999px; padding: 1px 8px; text-shadow: none; }
 .float.sig { font-family: 'Cinzel', Georgia, serif; font-size: .84rem; font-weight: 900; letter-spacing: .03em; color: #ffe08a; z-index: 24;
   text-shadow: 0 1px 2px #5a3e00, 0 0 8px rgba(245,197,66,.9), 0 0 2px #5a3e00; }
+
+/* ================= ROUND 4 — tactical-information UX (spec-client 6) ================= */
+
+/* Shared card for every new sheet. Opaque in BOTH gfx tiers — a modal that animates never blurs (perf rule). */
+.modal-card.sheet-card { text-align: left; max-width: 430px; width: 100%; max-height: 88vh; max-height: 88dvh; display: flex; flex-direction: column; padding: 16px 14px 14px;
+  background: linear-gradient(170deg, rgba(246,252,255,.985) 0%, rgba(233,245,252,.98) 55%, rgba(230,246,240,.98) 100%); -webkit-backdrop-filter: none; backdrop-filter: none; }
+.sheet-card h2 { text-align: center; font-size: 1.05rem; margin: 0 0 2px; }
+.sheet-sub { text-align: center; font-size: .74rem; font-weight: 700; color: var(--ink-soft); line-height: 1.35; margin: 0 0 8px; }
+.sheet-body { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; gap: 6px; }
+.sheet-sec { font-family: 'Cinzel', serif; text-transform: uppercase; letter-spacing: .06em; font-weight: 800; font-size: .74rem; color: var(--gilt-deep); margin: 8px 0 0; }
+.sheet-card .btn { margin-top: 8px; }
+.sheet-card .btn.ghostbtn { color: var(--ink-soft); text-shadow: none; }
+@media (orientation: landscape) and (max-height: 600px) { .modal-card.sheet-card { max-width: 640px; max-height: 94vh; max-height: 94dvh; padding: 10px 14px; } }
+
+/* ---- 6a: the chips in the squad row label + the rival line-up sheet ---- */
+/* z-index 3: `.card .art::before` is an invisible `transform: scale(1.61)` tap pad on every squad card, and with
+   transform-origin 50% 88% it reaches ~21px ABOVE the card — in short landscape (row-label 111-133, squad top 138) that
+   pad covers the chips' centre and swallowed the tap (measured: elementsFromPoint returned .art over #rivalBtn at 640x360).
+   The chips sit in #app's stacking context, well under .modal (20) and .drag-ghost (60). */
+.row-tools { display: inline-flex; align-items: center; gap: 6px; position: relative; z-index: 3; }
+.row-label > .row-tools { overflow: visible; flex: none; }   /* the global `.row-label > span { overflow: hidden }` word-spill guard would clip the chips' enlarged ::before tap targets */
+.chip-btn { position: relative; display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 9px; border-radius: 999px; white-space: nowrap; cursor: pointer;
+  border: 1px solid rgba(255,255,255,.32); background: rgba(16,32,52,.66); color: #fff; font: 800 .68rem/1 'Nunito', sans-serif; letter-spacing: .02em; text-transform: none; text-shadow: none; }
+/* Enlarged tap target, grown ONLY downward and sideways: measured at 360x560 the chip's top edge sits exactly on #coach's
+   bottom edge (coach 66-174, chip 174-196), so any upward extension steals taps and scroll starts from #coach / #cardDetail
+   (verify-r4 step 1 asserts the coach's bottom-right corner is not a chip). 13px of free gap lies BELOW the chips, above the
+   squad cards (squad top 209) — take 12 of it: a 34px target that touches neither neighbour. */
+.chip-btn::before { content: ""; position: absolute; left: -6px; right: -6px; top: 0; bottom: -12px; }
+.chip-btn:active { transform: translateY(1px); }
+.chip-btn.warn { background: rgba(194,65,58,.94); border-color: rgba(255,255,255,.55); }
+.chip-btn .n { display: inline-flex; align-items: center; justify-content: center; min-width: 14px; height: 14px; padding: 0 3px; border-radius: 7px; background: rgba(255,255,255,.22); font-weight: 900; font-size: .62rem; }
+#game.waiting .row-tools { pointer-events: auto; }            /* the sheets stay readable while a duel board is locked */
+.rival-row { display: grid; grid-template-columns: 50px 1fr; column-gap: 9px; align-items: start; padding: 6px 8px; border-radius: 12px; background: rgba(255,255,255,.72); border: 1.5px solid var(--panel-line); contain: layout style; }
+.rival-row .rr-art { position: relative; width: 50px; height: 50px; --pet-scale: 1; }
+.rival-row .rr-art .art { position: relative; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; }
+.rival-row .rr-art .art img { width: 100%; height: 100%; object-fit: contain; }
+.rival-row .rr-slot { position: absolute; left: -4px; top: -4px; z-index: 4; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px; background: rgba(18,32,52,.82); color: #fff; font: 900 .56rem/16px 'Nunito', sans-serif; text-align: center; }
+.rival-row.front .rr-slot { background: #1f7d49; }
+.rival-row .rr-head { display: flex; align-items: center; gap: 5px; font-size: .84rem; font-weight: 900; color: var(--ink); min-width: 0; }
+.rival-row .rr-nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rival-row .rr-head .stat { margin-left: auto; flex: none; padding: 1px 9px; border-radius: 999px; background: rgba(18,32,52,.78); color: #fff; font-size: .72rem; font-weight: 900; }
+.rival-row .abil-list { margin-top: 3px; } .rival-row .abil-line { font-size: .72rem; font-weight: 600; color: var(--ink); }
+.rival-row .rr-held, .rr-none { margin-top: 2px; font-size: .68rem; font-weight: 800; color: var(--ink-soft); }
+.rival-pager { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 0 0 6px; font-size: .74rem; font-weight: 800; color: var(--ink-soft); }
+.rival-pager .chip-btn { width: 30px; height: 26px; padding: 0; justify-content: center; font-size: 1rem; } .rival-pager .chip-btn:disabled { opacity: .35; }
+@media (orientation: landscape) and (max-height: 600px) { .chip-btn .long { display: none; } }
+
+/* ---- 6b: What's new + the update banner ---- */
+.news-list { list-style: none; margin: 2px 0 4px; padding: 0; }
+.news-list li { position: relative; padding-left: 18px; margin: 7px 0; font-size: .88rem; font-weight: 600; line-height: 1.4; color: var(--ink); }
+.news-list li::before { content: "\2726"; position: absolute; left: 1px; top: 0; color: var(--gold-deep); font-weight: 900; }
+.settings-foot { display: block; width: 100%; margin-top: 10px; padding: 6px 0 0; border: none; background: none; cursor: pointer; font: 800 .78rem/1.3 'Nunito', sans-serif; color: var(--ink-soft); text-decoration: underline; }
+#settingsModal .modal-card { max-height: 92vh; max-height: 92dvh; overflow-y: auto; -webkit-overflow-scrolling: touch; }   /* 8 buttons already brush 560px; never clip */
+.update-banner { position: absolute; left: 50%; top: calc(env(safe-area-inset-top) + 8px); transform: translateX(-50%); z-index: 19; display: flex; align-items: center; gap: 8px; max-width: calc(100% - 76px);
+  padding: 5px 6px 5px 14px; border-radius: 999px; background: rgba(16,28,46,.9); color: #fff; font-size: .8rem; font-weight: 800; box-shadow: var(--sh-soft); }
+.update-banner .btn.small { padding: 5px 12px; font-size: .78rem; box-shadow: none; }
+
+/* ---- 6c: the order strip, the coach's tactic line, the Tactics sheet ---- */
+.order-strip { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; direction: rtl; height: 14px; margin-top: 3px; pointer-events: none; contain: layout style; }
+.os-cell { direction: ltr; display: flex; align-items: center; justify-content: center; gap: 3px; min-width: 0; overflow: hidden; white-space: nowrap;
+  font: 900 .62rem/14px 'Nunito', sans-serif; letter-spacing: .02em; color: #fff; }
+.os-front { padding: 0 4px; border-radius: 999px; background: #1f7d49; }
+.os-act { padding: 0 3px; border-radius: 999px; background: #6a4bc0; letter-spacing: 0; }
+.os-act.tie { box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.85); }
+/* FRONT + an ordinal in ONE cell: "FRONT 1st" needs 65px at .62rem but a cell is 62px at 360 (measured), and shrinking the
+   pill would bring back 8.6px text. So whenever the cell is shared the pill reads "F" — ONE rule for every width. */
+.os-cell.has-act { gap: 2px; } .os-cell.has-act .os-front { font-size: 0; } .os-cell.has-act .os-front::before { content: "F"; font-size: .62rem; }
+@media (orientation: landscape) and (max-height: 600px) {
+  #game .squad-wrap { position: relative; }
+  .order-strip { position: absolute; left: 0; right: 0; bottom: -15px; margin: 0; }          /* rides in the action bar's 12px top padding: zero layout cost */
+}
+.tac-line { display: inline; font-size: .84rem; line-height: 1.3; }                           /* inline, or the coach's 3-line clamp stops working */
+.tac-line .tac-tag { color: var(--gilt-deep); } .tac-line.warn .tac-tag { color: #c2413a; }   /* NOT `.tag`: there is a global `.tag` rule (margin, line-height 1.5, weight 600) */
+.tn { padding: 7px 10px 7px 30px; position: relative; border-radius: 10px; font-size: .82rem; font-weight: 600; line-height: 1.38; color: var(--ink); background: rgba(120,140,180,.10); box-shadow: inset 0 0 0 1px rgba(120,140,180,.2); }
+.tn::before { content: "i"; position: absolute; left: 8px; top: 8px; width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: .64rem; font-weight: 900; color: #fff; background: #4f7fa8; }
+.tn.warn { background: rgba(194,65,58,.10); box-shadow: inset 0 0 0 1px rgba(194,65,58,.35); } .tn.warn::before { content: "!"; background: #c2413a; }
+.tn.rule, .tn.none { padding-left: 10px; } .tn.rule::before, .tn.none::before { content: none; }
+
+/* ---- 6d: the result card's insight lines (transform/opacity only) ---- */
+.result-insights { width: 100%; display: flex; flex-direction: column; gap: 5px; margin: 2px 0 0; text-align: left; }
+.ri { display: flex; gap: 7px; align-items: flex-start; padding: 6px 9px; border-radius: 10px; font-size: .78rem; font-weight: 700; line-height: 1.3; color: var(--ink);
+  background: rgba(120,140,180,.12); box-shadow: inset 0 0 0 1px rgba(120,140,180,.22); animation: riIn .3s var(--ease-soft) backwards; }
+.ri::before { flex: none; width: 16px; height: 16px; margin-top: 1px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: .66rem; font-weight: 900; color: #fff; }
+.ri.bad::before { content: "!"; background: #c2413a; } .ri.good::before { content: "\2713"; background: #2a9c5e; }
+@keyframes riIn { from { opacity: 0; transform: translateY(5px); } }
+.result-card { max-height: calc(100vh - 28px); max-height: calc(100dvh - 28px); overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.result-card.has-insights { gap: 8px; padding-top: 16px; }
+.result-card.has-insights .result-emblem { width: 104px; height: 92px; } .result-card.has-insights .result-emblem img { width: 92px; height: 92px; }
+@media (orientation: landscape) and (max-height: 600px) {
+  .result-card.has-insights { max-width: 560px; display: grid; grid-template-columns: 150px 1fr; column-gap: 14px; align-items: center; padding: 12px 16px; }
+  .result-card.has-insights #duelScore { grid-column: 1 / -1; }
+  .result-card.has-insights .result-emblem { grid-column: 1; grid-row: 2 / span 2; width: 96px; height: 84px; margin: 0 auto; } .result-card.has-insights .result-emblem img { width: 84px; height: 84px; }
+  .result-card.has-insights .result-banner { grid-column: 1; grid-row: 4; font-size: 1.3rem; text-align: center; }
+  .result-card.has-insights .result-sub { grid-column: 1; grid-row: 5; text-align: center; margin: 0 auto; }
+  .result-card.has-insights .result-insights { grid-column: 2; grid-row: 2 / span 3; }
+  .result-card.has-insights .btn { grid-column: 2; grid-row: 5; margin-top: 4px; padding: 10px 14px; }
+}
+@media (prefers-reduced-motion: reduce) { .ri { animation: none; } }
+
+/* ---- item 4: the Perfect Cup title line + game-over treatment ---- */
+.title-record { width: fit-content; max-width: 92%; margin: 2px auto 10px; padding: 6px 14px; border-radius: 16px; text-align: center; background: rgba(249,253,255,.88); border: 1px solid var(--glass-brd); box-shadow: var(--sh-soft); }
+.title-record .tr-main { font-weight: 900; font-size: .88rem; color: var(--gilt-deep); display: flex; align-items: center; justify-content: center; gap: 5px; flex-wrap: wrap; }
+.title-record .tr-sub { font-size: .68rem; font-weight: 700; color: var(--ink-soft); margin-top: 1px; }
+.perfect-badge { display: inline-flex; align-items: center; padding: 1px 8px; border-radius: 999px; font-size: .68rem; font-weight: 900; letter-spacing: .02em; white-space: nowrap; color: #5a3e00; background: linear-gradient(180deg, #ffe08a, #f5c542); box-shadow: 0 1px 2px rgba(90,70,10,.35); }
+.perfect-ribbon { width: fit-content; margin: 0 auto; padding: 2px 14px; border-radius: 999px; font: 900 .8rem/1.5 'Cinzel', Georgia, serif; letter-spacing: .08em; color: #5a3e00; background: linear-gradient(180deg, #ffe08a, #f5c542); box-shadow: 0 2px 6px rgba(90,70,10,.35); animation: pop .4s var(--ease-bounce) .25s backwards; }
+#gameover #goEmoji { filter: none; }   /* .logo bobs for ever: an animating element carries no filter. The paintings have their own ground shadow */
+.perfect-fx { position: relative; margin: 6px 0 0; pointer-events: none; }
+#gameover.perfect #goTitle { color: #a8740a; -webkit-text-fill-color: #a8740a; }
+.pf-star { position: absolute; left: 50%; top: -60px; width: 9px; height: 9px; margin: -4px; border-radius: 50%; background: radial-gradient(circle, #fff, #f5c542 60%, transparent 72%); opacity: 0; animation: pfStar 1.5s var(--ease-soft) .3s 2 backwards; }   /* -60px = the middle of the 104px trophy above */
+.pf-star:nth-of-type(1) { --dx: -78px; --dy: -34px; } .pf-star:nth-of-type(2) { --dx: 78px; --dy: -30px; animation-delay: .42s; }
+.pf-star:nth-of-type(3) { --dx: -58px; --dy: 28px; animation-delay: .54s; } .pf-star:nth-of-type(4) { --dx: 60px; --dy: 32px; animation-delay: .66s; }
+.pf-star:nth-of-type(5) { --dx: -12px; --dy: -62px; animation-delay: .78s; } .pf-star:nth-of-type(6) { --dx: 16px; --dy: 56px; animation-delay: .9s; }
+@keyframes pfStar { 0% { opacity: 0; transform: translate(0, 0) scale(.4); } 25% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(1); } }
+.perfect-line { color: #a8740a; font-weight: 900; }
+@media (prefers-reduced-motion: reduce) { .pf-star, .perfect-ribbon { animation: none; } }
+
+/* a two-digit pill ("10 / 7") used to wrap onto two lines on a 360px phone — keep it on one line, a little tighter */
+@media (max-width: 420px) { .card .stat { padding: 1px 7px; letter-spacing: 0; } }
