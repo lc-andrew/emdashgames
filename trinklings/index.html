@@ -29,7 +29,7 @@
   <link rel="preload" as="font" type="font/woff2" href="assets/fonts/Nunito.woff2" crossorigin />
   <link rel="preload" as="font" type="font/woff2" href="assets/fonts/Cinzel.woff2" crossorigin />
   <link rel="preload" as="image" href="assets/ui/hero-scene.webp" fetchpriority="high" />
-  <link rel="stylesheet" href="public/style.css?v=d09255e236" />
+  <link rel="stylesheet" href="public/style.css?v=96b6206ac9" />
   <link rel="stylesheet" href="public/fx.css?v=969db94a22" />
 </head>
 <body>
@@ -45,6 +45,11 @@
         <img class="tc tc2" src="assets/creatures/gnash.webp" alt="" />
         <img class="tc tc3" src="assets/creatures/foxfire.webp" alt="" />
       </div>
+    </div>
+    <!-- M1 — title chips (spec-client-meta §6.1). In flow above the three buttons: #updateBanner owns the top centre. -->
+    <div class="title-meta" id="titleMeta">
+      <button class="meta-chip" id="acctChip" type="button" hidden></button>
+      <button class="meta-chip pts" id="ptsChip" type="button" aria-label="Fusion points">✦ <b id="ptsChipN">0</b><span id="ptsChipTail"></span></button>
     </div>
     <div class="btn-col title-actions">
       <button class="btn big glass" data-start="offline">Offline</button>
@@ -98,6 +103,8 @@
 
   <!-- BATTLE -->
   <section id="battle" class="screen">
+    <img id="skinEnemy" class="skin-layer enemy" alt="" hidden>
+    <img id="skinMine"  class="skin-layer mine"  alt="" hidden>
     <div class="battle-top">
       <div class="vs-label">Fight!</div>
       <div class="battle-actions">
@@ -114,6 +121,8 @@
       <div class="side mine"><div class="side-label">You</div><div id="myLine" class="line"></div></div>
       <div id="abilityCallout" class="ability-callout" hidden></div>
     </div>
+    <div id="emoteLayer"></div>
+    <div id="emoteBar" hidden></div>
     <div id="battleResult" class="battle-result" hidden>
       <div id="resultCard" class="result-card">
         <div id="duelScore" class="duel-score" hidden></div>
@@ -121,6 +130,11 @@
         <div id="resultBanner" class="result-banner"></div>
         <div id="resultSub" class="result-sub"></div>
         <div id="resultInsights" class="result-insights" hidden></div>
+        <div id="ladStrip" class="lad-strip" hidden><!-- THREE tokens, one line (§5.5) -->
+          <span class="lad-delta" id="ladDelta"></span><span class="lad-rew" id="ladRew"></span><button class="chip-btn" id="ladRival" type="button">Rival</button>
+        </div>
+        <div id="cosBonus" class="cos-bonus" hidden></div>
+        <div class="lad-rankup" id="ladRankUp" hidden></div><!-- absolutely positioned: takes no layout height -->
         <button class="btn big primary" id="continueBtn">Continue ▶</button>
       </div>
     </div>
@@ -133,8 +147,10 @@
       <div id="goPerfect" class="perfect-fx" hidden><div class="perfect-ribbon">✦ PERFECT ✦</div><i class="pf-star"></i><i class="pf-star"></i><i class="pf-star"></i><i class="pf-star"></i><i class="pf-star"></i><i class="pf-star"></i></div>
       <h1 id="goTitle">You win!</h1>
       <p id="goText" class="tag"></p>
+      <p id="goPoints" class="go-points" hidden></p>
       <button class="btn big primary" id="goAgainBtn">Play again</button>
       <button class="btn" id="goChangeBtn">Change alliance</button>
+      <button class="btn" id="goLadderBtn" hidden>Ladder</button>
       <button class="btn" id="goTitleBtn">Main menu</button>
     </div>
   </section>
@@ -143,6 +159,10 @@
   <section id="deckselect" class="screen">
     <div class="deck-card">
       <h1>Your Alliance</h1>
+      <!-- M2 — deck select header (§4.6). #deckModeTag is painted by the ladder and stays hidden outside a ranked run. -->
+      <div id="deckModeTag" class="deck-mode" hidden></div>
+      <button id="deckPoints" class="deck-points" type="button"></button>
+      <div class="deck-cap">Alliances — unlock two to build a deck</div>
       <div id="factionGrid" class="faction-grid"></div>
       <button class="btn big primary" id="deckBegin" disabled>Pick 2 factions</button>
       <div class="deck-or">— or —</div>
@@ -163,6 +183,32 @@
       <div id="duelStatus" class="tag" style="margin-top:12px"></div>
       <button class="btn ghostbtn" id="duelBack">Back</button>
     </div>
+  </section>
+
+  <!-- ONLINE HUB + RANKED LADDER (round 4 deploy B, spec-client-meta §6.2, §7.2) -->
+  <section id="onlineHub" class="screen">
+    <div class="title-card">
+      <h1>Online</h1>
+      <button class="btn big primary" id="hubRanked">Ranked Ladder</button>
+      <p class="tag hub-tag" id="hubRankedTag"></p>
+      <button class="btn big glass" id="hubDuel">Duel a friend</button>
+      <p class="tag hub-tag">Share a room code and play live.</p>
+      <button class="btn ghostbtn" id="hubBack">Back</button>
+    </div>
+  </section>
+  <section id="ladder" class="screen">
+    <div class="lad-top"><button class="btn ghostbtn lad-back" id="ladBack">◀ Back</button><h1 class="lad-h1">Ranked</h1></div>
+    <div id="ladBody" class="lad-body"></div>
+  </section>
+  <section id="ladderList" class="screen">
+    <div class="lad-top"><button class="btn ghostbtn lad-back" id="ladListBack">◀ Back</button><h1 class="lad-h1" id="ladListTitle">Leaderboard</h1></div>
+    <div id="ladListSub" class="lad-sub"></div>
+    <div id="ladList" class="lad-list"></div>
+    <div id="ladListMe" class="lad-me" hidden></div>
+  </section>
+  <section id="ladderProfile" class="screen">
+    <div class="lad-top"><button class="btn ghostbtn lad-back" id="ladProfBack">◀ Back</button><h1 class="lad-h1" id="ladProfName">Profile</h1></div>
+    <div id="ladProfBody" class="lad-body"></div>
   </section>
 
   <section id="local" class="screen">
@@ -192,9 +238,41 @@
     <div class="codex-head">
       <h1>Trinkling Codex</h1>
       <div class="codex-progress" id="codexProgress"></div>
+      <!-- M3 — Codex tabs (§4.8) -->
+      <div class="codex-tabs" id="codexTabs">
+        <button data-tab="trinklings" class="on">Trinklings</button>
+        <button data-tab="fusions">Fusions · <b id="codexFusN">0</b></button>
+      </div>
     </div>
     <div id="codexList" class="codex-list"></div>
+    <div id="codexFusions" class="codex-list" hidden></div>
     <button class="btn ghostbtn" id="codexBack">◀ Back</button>
+  </section>
+
+  <!-- MOTE STALL (cosmetics) -->
+  <section id="stall" class="screen">
+    <header class="stall-head">
+      <button class="btn small" id="stallBack" aria-label="Back">◀</button>
+      <h1>Mote Stall</h1>
+      <!-- The wrapper is invisible to cosmetics.js (every element is addressed BY ID); it exists so that
+           with TWO balances the pills wrap to their own row instead of squeezing the title to an
+           ellipsis at 320 px. With Motes alone the row renders exactly as it always has. -->
+      <div class="stall-pills">
+        <div class="mote-pill" id="stallMotes"></div>
+        <!-- (spec-dashes §4.2) the Dash Points balance. Ships hidden: cosmetics.js un-hides it only when
+             /config.stripe.dashes is true, at least one pack is configured AND we are signed in. -->
+        <button class="dsh-pill" id="prlChip" type="button" hidden aria-label="Dash Points"></button>
+      </div>
+    </header>
+    <div class="stall-tabs" role="tablist">
+      <button class="stall-tab on" data-tab="banner" role="tab">Banners</button>
+      <button class="stall-tab" data-tab="emote" role="tab">Emotes</button>
+      <button class="stall-tab" data-tab="skin" role="tab">Arena</button>
+    </div>
+    <div id="stallNote" class="stall-note" hidden></div>
+    <div id="stallBar" class="stall-bar" hidden></div>
+    <div id="stallList" class="stall-list"></div>
+    <button class="btn ghostbtn" id="stallEarn">How do I earn Motes?</button>
   </section>
 
   <!-- TIER-UNLOCK MODAL (fires every 2 turns as a new Trinkling tier opens) -->
@@ -210,6 +288,7 @@
   <div id="fuseModal" class="modal" hidden>
     <div class="modal-card fuse-card" role="dialog" aria-modal="true" aria-labelledby="fuseModalTitle">
       <h2 id="fuseModalTitle">Fuse into <span id="fuseModalName">a new Trinkling</span>?</h2>
+      <p id="fuseModalNew" class="fz-new" hidden></p>
       <div id="fuseModalPair" class="fuse-pair"></div>
       <div id="fuseModalAbils" class="fuse-abils"></div>
       <div id="fuseModalCarry" class="fuse-carry"></div>
@@ -244,6 +323,9 @@
   <div id="settingsModal" class="modal" hidden>
     <div class="modal-card">
       <h2>Settings</h2>
+      <button class="btn" id="settingsAccount" hidden>Account: Sign in</button>
+      <button class="btn" id="settingsEmotes">Emotes: On</button>
+      <button class="btn" id="settingsStall" hidden>Mote Stall</button>
       <button class="btn" id="settingsCodex">Codex</button>
       <button class="btn" id="settingsHowTo">How to play</button>
       <button class="btn" id="settingsTriggers">When abilities trigger</button>
@@ -283,6 +365,7 @@
       <div class="rival-pager" id="rivalPager" hidden><button class="chip-btn" id="rivalOlder" type="button" aria-label="Older fight">‹</button><span id="rivalPage"></span><button class="chip-btn" id="rivalNewer" type="button" aria-label="Newer fight">›</button></div>
       <div class="sheet-body" id="rivalList"></div>
       <button class="btn" id="rivalRewatch">Rewatch the fight from their side</button>
+      <button class="btn ghostbtn" id="rivalProfile" hidden>View profile</button>
       <button class="btn ghostbtn" id="rivalClose">Close</button>
     </div>
   </div>
@@ -301,11 +384,174 @@
     <div class="modal-card">
       <h2>Menu</h2>
       <button class="btn" id="menuMute">Sound: On</button>
+      <button class="btn" id="menuEmotes">Emotes: On</button>
       <button class="btn" id="fbOpenMenu">Give feedback</button>
       <button class="btn" id="menuResume">Resume</button>
+      <button class="btn danger" id="menuAbandon" hidden>Abandon run</button>
       <button class="btn danger" id="menuQuit">Quit to menu</button>
     </div>
   </div>
+
+  <!-- ===== ROUND 4 DEPLOY B — meta modals (spec-client-meta §7.2, spec-cosmetics §6.2) ===== -->
+  <!-- M4 — sign-in sheet: ONE modal, five states (§3.3 / §7.2). .sheet-body is MANDATORY:
+       .modal-card.sheet-card has no overflow of its own, so at 640×360 both ends would be unreachable without it. -->
+  <div id="authModal" class="modal" hidden>
+    <div class="modal-card sheet-card auth-card" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+      <h2 id="authTitle">Sign in</h2>
+      <div class="sheet-body">
+      <div class="auth-state" data-state="choose">
+        <p class="sheet-sub" id="authSub">Keep your fusions and alliances on every device, and play Ranked.</p>
+        <div id="authGoogle" class="auth-google"></div>
+        <div class="auth-or" id="authOr">or</div>
+        <div id="authEmailBlock"><input id="authEmail" class="duel-input auth-input" type="email" inputmode="email" autocomplete="email" maxlength="254" placeholder="you@example.com" />
+          <button class="btn big primary" id="authSend">Email me a sign-in code</button></div>
+        <p class="auth-privacy" id="authPrivacy">We keep your email only to sign you in. Other players never see it. <a href="public/privacy.html" target="_blank" rel="noopener">Privacy</a></p>
+      </div>
+      <div class="auth-state" data-state="code" hidden>
+        <p class="sheet-sub" id="authCodeSub"></p>
+        <input id="authCode" class="duel-input auth-input auth-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]*" placeholder="------" />
+        <div id="authDev" class="auth-dev" hidden></div>
+        <button class="btn" id="authResend">Resend</button>
+        <button class="btn ghostbtn" id="authChange">Use a different email</button>
+      </div>
+      <div class="auth-state" data-state="confirm" hidden>
+        <p class="sheet-sub" id="authConfirmSub">This signs in THIS browser.<br>Started somewhere else? Go back there and type the code instead.</p>
+        <button class="btn big primary" id="authConfirmGo">Sign in</button>
+        <button class="btn ghostbtn" id="authConfirmAlt">Use the code instead</button>
+      </div>
+      <div class="auth-state" data-state="name" hidden>
+        <p class="sheet-sub" id="authNameSub">This is what other players see. 3–16 letters, numbers, spaces, _ or -.</p>
+        <input id="authName" class="duel-input auth-input" maxlength="16" autocomplete="nickname" autocapitalize="words" placeholder="Display name" />
+        <button class="btn big primary" id="authNameGo" disabled>Save name</button>
+        <button class="btn ghostbtn" id="authNameLater">Later</button>
+      </div>
+      <div id="authErr" class="auth-err" role="alert"></div>
+      </div>
+      <button class="btn ghostbtn" id="authClose">Close</button>
+    </div>
+  </div>
+
+  <!-- M5 — account panel (§3.5) -->
+  <div id="acctModal" class="modal" hidden>
+    <div class="modal-card sheet-card" role="dialog" aria-modal="true" aria-labelledby="acctTitle">
+      <h2 id="acctTitle">Your account</h2>
+      <div class="sheet-body">
+        <div class="acct-row"><span>Name</span><span id="acctName"></span><button class="chip-btn" id="acctChange" type="button">Change</button></div>
+        <div class="acct-row"><span>Email</span><span id="acctEmail"></span></div>
+        <div class="acct-row"><span id="acctProviders"></span></div>
+        <div class="acct-row" id="acctRank" hidden></div>
+        <div class="acct-row"><span id="acctProgress"></span></div>
+        <button class="btn" id="acctSignOut">Sign out</button>
+        <button class="btn danger acct-danger" id="acctDelete">Delete account…</button>
+        <div id="acctDeleteBox" hidden>
+          <p class="sheet-sub" id="acctDeleteText"></p>
+          <input id="acctDeleteInput" class="duel-input auth-input" maxlength="10" placeholder="Type DELETE" />
+          <button class="btn danger" id="acctDeleteGo" disabled>Delete forever</button>
+          <button class="btn ghostbtn" id="acctDeleteBack">Back</button>
+        </div>
+        <div id="acctErr" class="auth-err" role="alert"></div>
+        <p class="auth-privacy" id="acctPrivacy"><a href="public/privacy.html" target="_blank" rel="noopener">Privacy</a></p>
+      </div>
+      <button class="btn ghostbtn" id="acctClose">Close</button>
+    </div>
+  </div>
+
+  <!-- M6 — the explainer / first-run onboarding (§4.9) -->
+  <div id="ptsModal" class="modal" hidden>
+    <div class="modal-card sheet-card" role="dialog" aria-modal="true" aria-labelledby="ptsTitle">
+      <h2 id="ptsTitle">Alliances are earned</h2>
+      <div class="sheet-body">
+        <div id="ptsBody"></div>
+        <p class="pts-foot" id="ptsFoot"></p>
+        <button class="btn big primary" id="ptsGo"></button>
+      </div>
+      <button class="btn ghostbtn" id="ptsClose">Got it</button>
+    </div>
+  </div>
+
+  <!-- M7 — unlock sheet + its celebration state (§4.6) -->
+  <div id="unlockModal" class="modal" hidden>
+    <div class="modal-card sheet-card" role="dialog" aria-modal="true" aria-labelledby="unlockTitle">
+      <h2 id="unlockTitle">Unlock?</h2>
+      <div class="sheet-body">
+        <p class="sheet-sub" id="unlockTag"></p>
+        <div class="unlock-art" id="unlockArt"></div>
+        <p class="unlock-cost" id="unlockCost"></p>
+        <p class="unlock-help" id="unlockHelp"></p>
+        <button class="btn big primary" id="unlockGo"></button>
+        <button class="btn big primary" id="unlockDone" hidden>Choose my alliances ▶</button>
+      </div>
+      <button class="btn ghostbtn" id="unlockCancel">Not now</button>
+    </div>
+  </div>
+
+  <!-- M8 — the fusion tracker's partner sheet (owner addendum B-ADD-1 §1) -->
+  <div id="fzModal" class="modal" hidden>
+    <div class="modal-card sheet-card" role="dialog" aria-modal="true" aria-labelledby="fzTitle">
+      <h2 id="fzTitle">Fusions</h2>
+      <div class="sheet-body">
+        <p class="sheet-sub" id="fzTip"></p>
+        <div class="fz-chips" id="fzChips"></div>
+        <div id="fzBody"></div>
+      </div>
+      <button class="btn ghostbtn" id="fzClose">Close</button>
+    </div>
+  </div>
+
+  <!-- M4 (ladder) — the one ranked notice sheet (§7.2) -->
+  <div id="ladNotice" class="modal" hidden>
+    <div class="modal-card sheet-card" role="dialog" aria-modal="true" aria-labelledby="ladNoticeTitle">
+      <h2 id="ladNoticeTitle"></h2>
+      <div class="sheet-body"><p class="sheet-sub" id="ladNoticeText"></p></div>
+      <button class="btn big primary" id="ladNoticeOk"></button>
+      <button class="btn ghostbtn" id="ladNoticeAlt" hidden></button>
+    </div>
+  </div>
+
+  <!-- Mote Stall sheets (spec-cosmetics §6.2) -->
+  <!-- (I3) The .sheet-body wrapper is the ONE addition to HOOKS-K K3-A4's markup: spec-client-meta §7.2 makes it
+       mandatory on every .modal-card.sheet-card, which is max-height:88vh (94vh in short landscape) with NO
+       overflow of its own — without a scrolling child, a long item description or a tall preview pushes the
+       Close button off the card. Every element cosmetics.js addresses is addressed BY ID, so the wrapper is
+       invisible to it, and the Close button stays outside the body exactly as in #ptsModal / #unlockModal. -->
+  <div id="stallSheet" class="modal" hidden>
+    <div class="modal-card sheet-card" role="dialog" aria-modal="true" aria-labelledby="stallSheetName">
+      <div class="sheet-body">
+        <div id="stallSheetArt" class="stall-art"></div>
+        <h2 id="stallSheetName"></h2>
+        <p id="stallSheetDesc" class="sheet-sub"></p>
+        <p id="stallSheetSub" class="stall-sub" hidden></p>
+        <button class="btn big primary" id="stallSheetGo"></button>
+        <!-- (spec-dashes §4.4) the SECOND buy button. Shown only for a "Both" item that is still
+             unowned; with too few Dash Points it reads "Get more Dash Points" and opens #prlSheet. -->
+        <button class="btn big" id="prlBuy" hidden></button>
+      </div>
+      <button class="btn ghostbtn" id="stallSheetClose">Close</button>
+    </div>
+  </div>
+  <!-- (spec-dashes §4.2) Get Dash Points. Every string is written with textContent / esc(); the pack
+       rows come from /config.dashPacks, the money label is Stripe's own and is never computed here. -->
+  <div id="prlSheet" class="modal" hidden>
+    <div class="modal-card sheet-card" role="dialog" aria-modal="true" aria-labelledby="prlTitle">
+      <h2 id="prlTitle">Get Dash Points</h2>
+      <div class="sheet-body">
+        <div id="prlList" class="dsh-list"></div>
+        <p id="prlNote" class="stall-sub">Dash Points are for cosmetics only, and are tied to this account. Play-only and rank rewards can’t be bought.
+          <a href="public/terms.html" target="_blank" rel="noopener">Terms of sale</a></p>
+      </div>
+      <button class="btn ghostbtn" id="prlClose">Close</button>
+    </div>
+  </div>
+  <div id="earnModal" class="modal" hidden>
+    <div class="modal-card sheet-card" role="dialog" aria-modal="true" aria-labelledby="earnTitle">
+      <h2 id="earnTitle">How do I earn Motes?</h2>
+      <div id="earnBody" class="sheet-body"></div>
+      <button class="btn big primary" id="earnClose">Got it!</button>
+    </div>
+  </div>
+
+  <!-- M9 — the one toast element (§7.2) -->
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
   <!-- FEEDBACK MODAL -->
   <div id="feedbackModal" class="modal" hidden>
@@ -357,6 +603,6 @@
 </div>
 <audio id="bgm" loop preload="none" src="assets/audio/music.m4a"></audio>
 <audio id="bgm-battle" loop preload="none" src="assets/audio/battle-music.m4a"></audio>
-<script type="module" src="public/app.js?v=80e29d5491"></script>
+<script type="module" src="public/app.js?v=d595db8d05"></script>
 </body>
 </html>

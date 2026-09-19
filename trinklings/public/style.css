@@ -131,7 +131,7 @@ h1, h2 { font-family: 'Cinzel', Georgia, serif; font-weight: 800; text-transform
 .title-card, .modal-card { position: relative; background: rgba(255,255,255,.56);
   -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); border: 1px solid var(--glass-brd);
   border-radius: var(--r-xl); box-shadow: var(--frame), var(--sh-pop); padding: 30px 24px 26px; }
-#title, #gameover, #duel, #deckselect { align-items: center; }
+#title, #gameover, #duel, #deckselect, #onlineHub { align-items: center; }
 /* margin:auto centers vertically when there's room but lets tall content scroll from the top
    (justify-content:center would clip the top of anything taller than the viewport). */
 .title-card { width: 100%; max-width: 400px; text-align: center; margin-block: auto; }
@@ -1330,3 +1330,278 @@ html.gfx-lite {
 
 /* a two-digit pill ("10 / 7") used to wrap onto two lines on a 360px phone — keep it on one line, a little tighter */
 @media (max-width: 420px) { .card .stat { padding: 1px 7px; letter-spacing: 0; } }
+
+/* ================= round 4 meta (agent C, step C2): chips · toast · locks · sheets · fusion tracker ================= */
+.title-meta { display: flex; justify-content: center; gap: 8px; width: 100%; max-width: 340px; margin: 0 auto 8px; min-height: 30px; flex-shrink: 0; }
+.meta-chip { display: inline-flex; align-items: center; gap: 5px; height: 30px; max-width: 190px; padding: 0 13px; border-radius: 999px; border: 1px solid rgba(255,255,255,.55);
+  background: rgba(16,32,52,.72); color: #fff; font: 800 .8rem/1 'Nunito', sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+.meta-chip:active { transform: translateY(1px); }
+.meta-chip.pts b { color: #ffe9a8; }
+.meta-chip.pts.ready { animation: ptsPulse 2.4s var(--ease-soft) infinite; background: rgba(150,110,20,.9); }
+@keyframes ptsPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+.toast { position: absolute; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 18px); z-index: 30; max-width: calc(100% - 32px); padding: 9px 16px; border-radius: 999px;
+  background: rgba(16,28,46,.94); color: #fff; font-size: .84rem; font-weight: 800; text-align: center; box-shadow: var(--sh-soft); pointer-events: none;
+  opacity: 0; transform: translate(-50%, 8px); transition: opacity .2s var(--ease-soft), transform .2s var(--ease-soft); }
+.toast.on { opacity: 1; transform: translate(-50%, 0); }
+/* ---- deck select: counter + locked tiles ---- */
+.deck-mode { text-align: center; font: 800 .72rem/1 'Cinzel', serif; letter-spacing: .08em; text-transform: uppercase; color: var(--gilt-deep); margin-top: 2px; }
+.deck-points { display: block; margin: 6px auto 0; padding: 5px 12px; border: none; border-radius: 999px; background: rgba(16,32,52,.72); color: #fff; font: 700 .76rem/1.2 'Nunito', sans-serif; cursor: pointer; }
+.deck-points b { color: #ffe9a8; }
+.faction-card.locked:not(.sel) { background: linear-gradient(180deg, rgba(226,234,242,.94), rgba(208,219,230,.92)); -webkit-backdrop-filter: none; backdrop-filter: none; }
+/* REQUIRED: `.gfx-lite .faction-card:not(.sel)` is (0,3,0) and would repaint a locked tile with the bright Lite fill */
+.gfx-lite .faction-card.locked:not(.sel) { background: linear-gradient(180deg, rgba(226,234,242,.94), rgba(208,219,230,.92)); }
+.faction-card.locked .fname, .faction-card.locked .ftag { opacity: .62; }
+.faction-card.locked .fpick { display: none; }
+.lock-row { display: flex; align-items: center; gap: 6px; margin-top: 5px; font: 900 .62rem/1 'Nunito', sans-serif; color: var(--ink-soft); }
+.lock-tag { padding: 2px 6px; border-radius: 999px; background: rgba(18,32,52,.78); color: #fff; letter-spacing: .05em; }
+.lock-bar { flex: 1; height: 5px; border-radius: 3px; background: rgba(18,32,52,.16); overflow: hidden; }
+.lock-bar b { display: block; height: 100%; background: var(--gold-deep); transform-origin: 0 50%; }
+.faction-card.can-unlock { box-shadow: 0 0 0 2px var(--gold), var(--sh-soft); }
+.lock-cta { padding: 3px 9px; border-radius: 999px; background: linear-gradient(180deg, #ffe08a, #f5c542); color: #5a3e00; }
+.deck-card.daily-first { display: flex; flex-direction: column; }
+.deck-card.daily-first > h1 { order: 0; } .deck-card.daily-first > .deck-mode { order: 1; } .deck-card.daily-first > .deck-points { order: 2; }
+.deck-card.daily-first > #deckDaily { order: 3; margin-top: 10px; } .deck-card.daily-first > .deck-cap { order: 4; } .deck-card.daily-first > .faction-grid { order: 5; }
+.deck-card.daily-first > #deckBegin { order: 6; } .deck-card.daily-first > #deckBack { order: 7; } .deck-card.daily-first > .deck-or { display: none; }
+.deck-cap { display: none; text-align: center; margin: 12px 0 0; font: 800 .74rem/1.2 'Nunito', sans-serif; color: var(--ink); opacity: .7; }
+.deck-card.daily-first > .deck-cap { display: block; }
+.go-points { margin: 2px 0 10px; font-weight: 800; font-size: .86rem; color: #8a6410; }
+/* ---- unlock + points sheets ---- */
+.unlock-art { position: relative; display: flex; justify-content: center; gap: 6px; margin: 8px 0; min-height: 64px; }
+.unlock-art img { width: 64px; height: 64px; object-fit: cover; border-radius: 12px; background: #e6f1f9; }
+#unlockModal.done .unlock-art img { animation: pop .3s var(--ease-bounce) backwards; }
+#unlockModal.done .unlock-art img:nth-child(2) { animation-delay: .06s; } #unlockModal.done .unlock-art img:nth-child(3) { animation-delay: .12s; } #unlockModal.done .unlock-art img:nth-child(4) { animation-delay: .18s; }
+.unlock-cost { text-align: center; font-weight: 800; font-size: .86rem; color: var(--ink); }
+.unlock-help { text-align: center; font-size: .74rem; font-weight: 700; color: var(--ink-soft); min-height: 1em; }
+.pts-step { display: grid; grid-template-columns: 24px 1fr; gap: 8px; align-items: start; font-size: .88rem; font-weight: 600; line-height: 1.4; color: var(--ink); }
+.pts-step i { width: 22px; height: 22px; border-radius: 50%; background: var(--gilt-deep); color: #fff; font: 900 .74rem/22px 'Nunito', sans-serif; text-align: center; font-style: normal; }
+.pts-foot { margin-top: 8px; font-size: .74rem; font-weight: 700; color: var(--ink-soft); text-align: center; }
+/* ---- codex fusions + the tracker (B-ADD-1) ---- */
+.codex-tabs { display: flex; justify-content: center; gap: 6px; margin: 0 0 8px; }
+.codex-tabs button { padding: 6px 14px; border-radius: 999px; border: 1px solid var(--panel-line); background: #fff; color: var(--ink-soft); font: 800 .78rem/1 'Nunito', sans-serif; cursor: pointer; }
+.codex-tabs button.on { background: var(--gilt-deep); color: #fff; border-color: var(--gilt-deep); }
+.fz-status, .fz-note { text-align: center; font-size: .76rem; font-weight: 700; color: var(--ink-soft); margin: 0 0 8px; }
+.fz-note u { cursor: pointer; }
+.fz-seg, .fz-chips { display: flex; justify-content: center; gap: 6px; margin: 0 0 10px; }
+.fz-seg button, .fz-chips button { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--panel-line); background: #fff; color: var(--ink-soft); font: 800 .74rem/1 'Nunito', sans-serif; cursor: pointer; }
+.fz-seg button.on, .fz-chips button.on { background: var(--gilt-deep); color: #fff; border-color: var(--gilt-deep); }
+.fz-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 7px; }
+.fz-group { grid-column: 1 / -1; margin: 6px 0 0; font: 900 .68rem/1.2 'Nunito', sans-serif; letter-spacing: .05em; text-transform: uppercase; color: var(--gilt-deep); }
+.fz-tile { contain: layout style; background: var(--panel); border: 1.5px solid var(--panel-line); border-radius: var(--r-md); padding: 6px; text-align: center; }
+.fz-art { position: relative; width: 64px; height: 64px; margin: 0 auto 3px; border-radius: var(--r-sm); overflow: hidden; background: radial-gradient(circle at 50% 34%, #fff, #dceeff); }
+.fz-art img { width: 100%; height: 100%; object-fit: contain; }
+.fz-tile.todo .fz-art img { opacity: .55; }
+.fz-q { position: absolute; right: 2px; bottom: 2px; width: 16px; height: 16px; border-radius: 50%; background: rgba(18,32,52,.78); color: #fff; font: 900 .64rem/16px 'Nunito', sans-serif; }
+.fz-nm { font-weight: 800; font-size: .74rem; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fz-par { font-size: .6rem; font-weight: 700; color: var(--ink-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fz-more { display: block; margin: 10px auto; }
+.fz-row { contain: layout style; display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 7px 9px; margin-bottom: 6px; border-radius: 12px;
+  background: rgba(255,255,255,.9); border: 1.5px solid var(--panel-line); cursor: pointer; }
+.fz-thumb { width: 40px; height: 40px; object-fit: contain; }
+.fz-rowmain { min-width: 0; }
+.fz-bar { display: block; height: 5px; margin-top: 4px; border-radius: 3px; background: rgba(18,32,52,.16); overflow: hidden; }
+.fz-bar b { display: block; height: 100%; background: var(--gilt); transform-origin: 0 50%; }
+.fz-count { font: 900 .7rem/1 'Nunito', sans-serif; color: var(--ink-soft); white-space: nowrap; }
+.fz-new { margin: 2px 0 6px; text-align: center; font-weight: 900; font-size: .82rem; color: #8a6410; }
+.fz-new.muted { color: var(--ink-soft); font-weight: 700; }
+.fz-pip { position: absolute; top: 2px; left: 2px; z-index: 3; width: 16px; height: 16px; border-radius: 50%; background: rgba(150,110,20,.92); color: #ffe9a8;
+  font: 900 .66rem/16px 'Nunito', sans-serif; font-style: normal; text-align: center; pointer-events: none; }
+/* ---- auth / account ---- */
+.auth-input { max-width: 100%; letter-spacing: 0; text-align: left; font-weight: 700; }
+.auth-code { text-align: center; letter-spacing: .5em; font-size: 1.3rem; font-weight: 900; }
+.auth-or { text-align: center; margin: 10px 0 6px; font-weight: 800; font-size: .78rem; opacity: .6; }
+.auth-google { display: flex; justify-content: center; min-height: 44px; }
+.auth-privacy { margin: 10px 0 0; font-size: .7rem; font-weight: 600; color: var(--ink-soft); text-align: center; line-height: 1.35; }
+.auth-dev { text-align: center; font: 700 .78rem/1.3 ui-monospace, monospace; color: #8a6410; cursor: pointer; }
+.auth-err { min-height: 1.2em; margin-top: 6px; text-align: center; font-size: .78rem; font-weight: 800; color: var(--coral-deep); }
+#authModal.busy .sheet-body { opacity: .7; pointer-events: none; }
+.acct-row { display: flex; justify-content: space-between; gap: 10px; padding: 7px 2px; border-bottom: 1px solid var(--rule-soft); font-size: .84rem; font-weight: 700; color: var(--ink); }
+.acct-row span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-soft); }
+@media (prefers-reduced-motion: reduce) { .meta-chip.pts.ready, #unlockModal.done .unlock-art img { animation: none; } .toast { transition: none; } }
+@media (orientation: landscape) and (max-height: 600px) { .title-meta { margin-bottom: 4px; } }
+
+/* ================= round 4 meta (agent C, step C3): the ranked ladder ================= */
+.hub-tag { margin: 4px 0 14px; font-size: .8rem; }
+/* ---- ladder ---- */
+.lad-top { position: relative; display: flex; align-items: center; justify-content: center; flex-shrink: 0; min-height: 44px; }
+.lad-back { position: absolute; left: 0; top: 0; width: auto; }
+.lad-h1 { margin: 0; font-size: 1.25rem; }
+.lad-body, .lad-list { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 470px; margin: 0 auto; }
+.lad-card { background: linear-gradient(170deg, rgba(246,252,255,.985), rgba(230,246,240,.98)); border: 1px solid var(--glass-brd); border-radius: var(--r-lg); box-shadow: var(--frame), var(--sh-soft); padding: 14px; text-align: center; }
+.lad-card.skel { min-height: 120px; opacity: .6; }
+.lad-body.busy { pointer-events: none; opacity: .7; }     /* a resume / abandon / play-again request is out (5.2); #ladBack is outside #ladBody and stays live */
+.lad-card h2 { margin: 0 0 4px; font-size: 1.02rem; color: var(--gilt-deep); }
+.lad-card p { margin: 0 0 8px; font-size: .84rem; font-weight: 600; color: var(--ink-soft); line-height: 1.4; }
+.lad-card .btn { width: 100%; margin-top: 8px; }
+.lad-name { font-weight: 900; font-size: 1.05rem; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lad-tier { display: inline-flex; align-items: center; padding: 2px 9px; border-radius: 999px; font: 900 .7rem/1.4 'Nunito', sans-serif; color: #fff; background: #7d8a96; }
+.lad-tier.t1 { background: #b0703c; } .lad-tier.t2 { background: #8d9aa8; } .lad-tier.t3 { background: #c9971b; color: #3b2a00; }
+.lad-tier.t4 { background: #4b9fd0; } .lad-tier.t5 { background: linear-gradient(90deg, #2f9d8f, #2ba3d8); }
+.lad-bar { height: 7px; border-radius: 4px; background: rgba(18,32,52,.14); overflow: hidden; margin: 6px 0 3px; }
+.lad-bar b { display: block; height: 100%; background: var(--gilt); transform-origin: 0 50%; }
+.lad-stats, .lad-sub { font-size: .74rem; font-weight: 700; color: var(--ink-soft); text-align: center; }
+/* (R4 deploy B, I4) deploy A's primary button paints a 5 px SOLID 3D ledge below its border box
+   (`box-shadow: 0 5px 0 rgb(11,18,48)`), which takes no layout height. A `.lad-sub` that follows one starts at the
+   box bottom with margin 0, so the ledge covered the first line of the banned card's "Paid securely through
+   Stripe…" small print. 9 px = the ledge + breathing room; scoped to the ladder body so nothing else moves. */
+#ladBody .btn + .lad-sub, #ladBody .btn + .lad-stats { margin-top: 9px; }
+.lad-nav { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.lad-nav .btn { margin: 0; padding: 11px 8px; font-size: .86rem; }
+.lad-row { contain: layout style; display: grid; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 12px; background: rgba(255,255,255,.9); border: 1.5px solid var(--panel-line); font-size: .84rem; font-weight: 800; color: var(--ink); cursor: pointer; }
+/* each list has its OWN template — the cell count must equal the track count or cells wrap to a second grid row */
+.lad-row.board { grid-template-columns: 28px minmax(0, 1fr) auto 44px 40px; }     /* pos | dot + name | banner chip | elo | cups  (5 cells) */
+.lad-row.hist  { grid-template-columns: 22px minmax(0, 1fr) auto; }               /* W/L/D | vs name + sub-line | elo delta     (3 cells) */
+.lad-row.head  { background: none; border-color: transparent; padding-block: 0 2px; font-size: .66rem; letter-spacing: .05em; text-transform: uppercase; color: var(--ink-soft); cursor: default; }
+.lad-row .pos { text-align: center; color: var(--ink-soft); } .lad-row .elo, .lad-row .cups { text-align: right; }
+.lad-row .nmc { min-width: 0; display: flex; align-items: center; gap: 6px; } .lad-row.hist .nmc { display: block; }
+.lad-row .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lad-row .nmc .lad-tier { flex: none; width: 10px; height: 10px; padding: 0; }     /* the tier DOT */
+.lad-sub2 { display: block; font-size: .68rem; font-weight: 700; color: var(--ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 340px) { .lad-row.board .cos-plate { display: none; } }        /* 320 px: the banner chip yields its 72 px to the name */
+.lad-row.mine, .lad-me { background: rgba(255,240,190,.95); border: 1.5px solid var(--gold-deep); }
+.lad-me { flex-shrink: 0; margin-top: 8px; padding: 9px 12px; border-radius: 12px; font-size: .84rem; font-weight: 800; color: var(--ink); text-align: center; }
+.lad-res { display: inline-flex; width: 22px; height: 22px; align-items: center; justify-content: center; border-radius: 50%; color: #fff; font-size: .7rem; font-weight: 900; background: #5f7d95; }
+.lad-res.w { background: #2f9d5f; } .lad-res.l { background: var(--coral-deep); }
+.lad-strip { width: 100%; height: 22px; display: flex; flex-wrap: nowrap; align-items: center; justify-content: center; gap: 8px; padding: 0 8px; border-radius: 10px; background: rgba(18,32,52,.08); font-size: .8rem; font-weight: 800; line-height: 1; color: var(--ink); white-space: nowrap; }
+.lad-strip > * { flex: none; } .lad-strip .chip-btn { margin: 0; }
+.lad-delta.up { color: #1f7d49; } .lad-delta.down { color: var(--coral-deep); } .lad-delta.flat { color: var(--ink-soft); }
+.lad-strip .lad-rew { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; color: #8a6410; }   /* the ONLY token allowed to shrink — the line can never wrap */
+@media (max-width: 340px) { .lad-strip { padding: 0; gap: 6px; font-size: .74rem; } }
+.result-card > .lad-rankup { position: absolute; top: 8px; left: 50%; z-index: 2; padding: 3px 12px; border-radius: 999px; background: #1f7d49; color: #fff; font: 900 .74rem/1.3 'Nunito', sans-serif; white-space: nowrap;
+  transform: translateX(-50%); animation: ladRankPop .35s var(--ease-bounce) backwards; }   /* out of flow: zero layout height */
+@keyframes ladRankPop { from { opacity: 0; transform: translateX(-50%) scale(.6); } to { opacity: 1; transform: translateX(-50%) scale(1); } }
+/* never-clip safety net for the result card (5.5): the overlay scrolls, and the card centres with auto margins, which — unlike align-items:center — fall back to top-aligned + scrollable when the card is taller than the screen */
+.battle-result { align-items: flex-start; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.result-card { margin: auto; }
+.lad-run { padding: 8px 10px; border-radius: 12px; background: rgba(255,255,255,.9); border: 1.5px solid var(--panel-line); font-size: .78rem; font-weight: 700; color: var(--ink); }
+.lad-mini { display: flex; gap: 4px; margin-top: 5px; } .lad-mini .art { position: relative; width: 44px; height: 44px; --pet-scale: 1; } .lad-mini .art img { width: 100%; height: 100%; object-fit: contain; animation: none; }
+@media (prefers-reduced-motion: reduce) { .meta-chip.pts.ready, .result-card > .lad-rankup, #unlockModal.done .unlock-art img { animation: none; } .toast { transition: none; } }
+@media (orientation: landscape) and (max-height: 600px) { .title-meta { margin-bottom: 4px; } .lad-nav { grid-template-columns: repeat(4, 1fr); } }
+
+/* ===== COSMETICS — arena skin layers (spec-cosmetics §4.2) ===== */
+/* skin art is 2:1 (source 1024x512, shipped 768x384): the lower 75% is the slab, the upper 25% is a "rise zone" for the two low rear-corner props */
+.skin-layer { position: absolute; z-index: 0; display: block; object-fit: fill; pointer-events: none; user-select: none; -webkit-user-drag: none; }
+.skin-layer.enemy { left: 6%; width: 88%; top: 16.2%; height: 17.3%; }   /* slab part covers y 20.5%..33.5% */
+.skin-layer.mine  { left: 3%; width: 94%; top: 65.8%; height: 24.7%; }   /* slab part covers y 72.0%..90.5% */
+
+/* ===== COSMETICS (round 4) ===== */
+/* .skin-layer rules: §4.2 */
+.cos-plate { position: relative; display: flex; align-items: center; gap: 8px; width: 100%; aspect-ratio: 4 / 1; padding: 0 12px; border-radius: 12px; overflow: hidden;
+  background: linear-gradient(90deg, var(--c1, #3f6b3a), var(--c2, #79b356)); box-shadow: inset 0 0 0 1px rgba(255,255,255,.35), 0 2px 6px rgba(20,40,70,.25); }
+.cos-plate > .cos-banner { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.cos-plate::after { content: ""; position: absolute; inset: 0; pointer-events: none;      /* static name scrim — a gradient, not a filter */
+  background: linear-gradient(90deg, rgba(8,14,28,.55), rgba(8,14,28,.18) 55%, transparent 75%); }
+.cos-plate .cos-pip { position: relative; z-index: 1; flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--pip, #9aa3ad); box-shadow: 0 0 0 2px rgba(255,255,255,.8); }
+.cos-plate .cos-name { position: relative; z-index: 1; min-width: 0; font: 800 1rem 'Nunito', sans-serif; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cos-plate .cos-sub { position: relative; z-index: 1; margin-left: auto; flex: none; font: 700 .72rem 'Nunito', sans-serif; color: rgba(255,255,255,.9); text-shadow: 0 1px 2px rgba(0,0,0,.6); }
+.lad-row .cos-plate { flex: none; width: 72px; padding: 0; border-radius: 5px; box-shadow: inset 0 0 0 1px rgba(255,255,255,.35); }   /* leaderboard chip: host.bannerHTML(id) inside a .lad-row */
+.lad-row .cos-plate::after { display: none; }                                                                                          /* no name on it → no scrim */
+.cos-plate.mini { aspect-ratio: auto; height: 32px; padding: 0 8px; border-radius: 9px; } .cos-plate.mini .cos-name { font-size: .78rem; }
+
+/* arena nameplates: the side labels become mini plates in ladder / duel fights (static) */
+.side-label .cos-plate { display: inline-flex; width: auto; min-width: 96px; max-width: 156px; height: 22px; aspect-ratio: auto; padding: 0 8px; border-radius: 7px; vertical-align: middle; text-transform: none; letter-spacing: 0; }
+.side-label .cos-plate .cos-name { font-size: .72rem; }  .side-label .cos-plate .cos-pip { width: 8px; height: 8px; }
+
+#emoteLayer { position: absolute; inset: 0; z-index: 13; pointer-events: none; }
+.emote-pop { position: absolute; width: 72px; height: 72px; opacity: 0; animation: emotePop 2.3s var(--ease-soft) forwards; }
+.emote-pop::before { content: ""; position: absolute; inset: -6px; border-radius: 50%; background: rgba(255,255,255,.9); box-shadow: 0 2px 8px rgba(20,40,70,.3); }
+.emote-pop > img, .emote-pop > .emote-fb { position: relative; width: 100%; height: 100%; object-fit: contain; }
+.emote-fb { display: flex; align-items: center; justify-content: center; font-size: 2.4rem; }
+.emote-pop.mine { left: 4%; top: 58%; }  .emote-pop.enemy { right: 4%; top: 34%; }
+/* result card up: both bubbles go to the top corners (mine sits just under the relocated bar); they may overlap the card's corners, never its taps */
+#battle.cos-result .emote-pop.enemy { top: calc(env(safe-area-inset-top) + 12px); }
+#battle.cos-result .emote-pop.mine  { top: calc(env(safe-area-inset-top) + 66px); }
+@keyframes emotePop { 0% { opacity: 0; transform: scale(.4); } 8% { opacity: 1; transform: scale(1.12); } 14% { transform: scale(1); } 86% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(.9); } }
+#emoteBar { position: absolute; left: 10px; bottom: calc(env(safe-area-inset-bottom) + 10px); z-index: 13; display: flex; gap: 6px; padding: 4px; border-radius: 999px; background: rgba(255,255,255,.72); box-shadow: var(--sh-soft); }
+#emoteBar button { width: 40px; height: 40px; padding: 3px; border: 0; border-radius: 50%; background: none; }
+#emoteBar button img { width: 100%; height: 100%; object-fit: contain; }
+#emoteBar.cooling button { opacity: .45; pointer-events: none; }
+#battle.rewatch #emoteBar { display: none; }
+@media (orientation: landscape) and (max-height: 600px) { #emoteBar { flex-direction: column; left: 6px; bottom: auto; top: 50%; transform: translateY(-50%); } #emoteBar button { width: 36px; height: 36px; } }
+/* RESULT CARD UP (class set by onBattleResult). Everywhere EXCEPT short landscape the bar leaves the bottom-left — where it would sit on top of the
+   full-width #continueBtn (360x560: bar y 502-550 vs button y 469-517) — for the top-left corner; the transport buttons up there are under the scrim
+   and inert. `not all and …` is the exact complement of the landscape rule above, so the two never fight over `top` / `transform`. */
+@media not all and (orientation: landscape) and (max-height: 600px) {
+  #battle.cos-result #emoteBar { bottom: auto; top: calc(env(safe-area-inset-top) + 6px); left: 10px; }
+}
+@media (max-height: 699px) { #battle.cos-result #emoteBar button { width: 32px; height: 32px; } }   /* 40 px tall pill: ends at y≈46, above the emblem of a 515 px card whose top is y≈22 */
+.gfx-lite .emote-pop::before, .gfx-lite #emoteBar { box-shadow: none; }
+@media (prefers-reduced-motion: reduce) { .emote-pop { animation-name: emoteFade; } @keyframes emoteFade { 0%, 100% { opacity: 0; } 10%, 85% { opacity: 1; } } }
+
+/* ---- Mote Stall (opaque whites — nothing blurs, same rule as the ladder screens) ---- */
+#stall { gap: 10px; }
+.stall-head { display: flex; align-items: center; gap: 10px; min-height: 44px; flex: none; }
+.stall-head h1 { flex: 1; margin: 0; font-size: 1.25rem; text-align: left; color: var(--ink); }
+.mote, .mote-pill { display: inline-flex; align-items: center; gap: 4px; font-weight: 900; color: var(--ink); }
+.mote .ic, .mote-pill .ic { width: 18px; height: 18px; }
+.mote-pill { padding: 6px 12px; border-radius: 999px; background: #fff; box-shadow: var(--sh-soft); }
+.stall-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; flex: none; }
+.stall-tab { height: 40px; border: 0; border-radius: 12px; font: 800 .9rem 'Nunito', sans-serif; color: var(--ink-soft); background: rgba(255,255,255,.6); }
+.stall-tab.on { background: #fff; color: var(--ink); box-shadow: var(--sh-soft); }
+.stall-note, .stall-bar { flex: none; padding: 8px 12px; border-radius: 12px; background: rgba(255,255,255,.88); font: 700 .82rem 'Nunito', sans-serif; color: var(--ink); }
+.stall-bar { display: flex; align-items: center; gap: 8px; }
+.stall-slot { position: relative; width: 56px; height: 56px; padding: 4px; border-radius: 14px; border: 2px dashed rgba(18,38,54,.25); background: rgba(255,255,255,.6); }
+.stall-slot img { width: 100%; height: 100%; object-fit: contain; }
+.stall-slot.sig::after { content: "\2726"; position: absolute; top: -8px; right: -5px; font-size: .9rem; color: #c9a23c; }
+.stall-list { display: grid; grid-template-columns: 1fr; gap: 10px; }
+.stall-list.emotes { grid-template-columns: repeat(3, 1fr); gap: 8px; }                     /* 3 x 106 px at 336 */
+.stall-tile { display: flex; flex-direction: column; gap: 6px; padding: 8px; border: 0; border-radius: 16px; background: rgba(255,255,255,.9); box-shadow: var(--sh-soft); text-align: left; font-family: inherit; color: var(--ink); }
+.stall-tile:active { transform: translateY(1px); }
+.stall-prev { display: block; width: 100%; border-radius: 10px; overflow: hidden; }
+.stall-prev img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.stall-tile[data-slot="skin"] .stall-prev { aspect-ratio: 2 / 1; background: linear-gradient(#8fc95f, #5f9a45) center / cover no-repeat; }
+.stall-tile[data-slot="emote"] { align-items: center; text-align: center; padding: 8px 4px; }
+.stall-tile[data-slot="emote"] .stall-prev { width: 72px; height: 72px; }
+.stall-meta { display: flex; align-items: center; justify-content: space-between; gap: 6px; width: 100%; }
+.stall-list.emotes .stall-meta { flex-direction: column; gap: 3px; }
+.stall-nm { min-width: 0; max-width: 100%; font-size: .86rem; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stall-chip { flex: none; max-width: 100%; display: inline-flex; align-items: center; gap: 3px; padding: 2px 8px; border-radius: 999px; font-size: .72rem; font-weight: 900; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: rgba(18,38,54,.08); }   /* never a two-line pill: emote tiles show the bare rank name (§6.2) */
+.stall-chip .ic { width: 13px; height: 13px; }
+.stall-chip.on { background: #2a9c5e; color: #fff; }  .stall-chip.short { opacity: .55; }
+/* (R4 deploy B, I4) CLASS COLLISION with deploy A: `.price` (line 319) is the shop card's absolutely-positioned
+   corner pill and its containing block is a `position:relative` card. A Stall price chip is `stall-chip price`
+   and its tile is `position:static`, so without this reset every price pill escaped its tile and stacked in the
+   top-left corner of the screen (and no tile showed a price at all). Keep the gold pill look, drop the escape. */
+.stall-chip.price { position: static; top: auto; left: auto; box-shadow: none; font-size: .72rem; padding: 2px 8px; }
+.stall-chip.rank { background: none; box-shadow: inset 0 0 0 1.5px #c9a23c; color: #8a6a14; }
+.stall-art { width: 100%; margin-bottom: 8px; }  .stall-art img { display: block; max-width: 100%; max-height: 180px; margin: 0 auto; object-fit: contain; }
+.stall-sub { margin: 0; font-size: .78rem; font-weight: 700; color: var(--ink-soft); }
+
+/* ---- Dash Points (spec-dashes §4.3). gfx-lite safe: no blur, no filter; transform/opacity only.
+       The mark is a COIN and the unit is the two letters "DP" — a leading dash beside an amount reads
+       as a minus sign, so there is never one (orchestrator amendment 5). ---- */
+.dsh { display: inline-flex; align-items: center; gap: 4px; font-weight: 900; color: inherit; }
+.dsh .ic { width: 18px; height: 18px; flex: none; }
+.dsh-fb { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 999px; background: #e0a92a; color: #fff; font-size: .68rem; font-weight: 900; }
+.dsh-pill { flex: none; min-width: 56px; padding: 6px 10px; border: 0; border-radius: 999px; background: #fff; box-shadow: var(--sh-soft);
+  font-family: inherit; font-size: .9rem; font-weight: 900; color: #2a5f8a; }
+.dsh-pill:active { transform: translateY(1px); }
+.dsh-pill .ic { width: 16px; height: 16px; }
+.dsh-pill .dsh-fb { width: 16px; height: 16px; font-size: .62rem; }
+/* TWO balances do not fit beside the title at 336 px (let alone 296), and an ellipsised "Mote Sta…" is
+   worse than a second row. `flex: 1 1 130px` on the title makes the pill group overflow the first line,
+   so flex-wrap drops it to its own right-aligned row — and at a tablet width it simply stays put. */
+.stall-pills { display: flex; align-items: center; gap: 6px; margin-left: auto; min-width: 0; }
+.stall-head.dual { flex-wrap: wrap; row-gap: 6px; align-items: center; }
+.stall-head.dual h1 { flex: 1 1 130px; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stall-head.dual .stall-pills { flex: 0 0 auto; }
+.stall-head.dual .mote-pill { padding: 6px 10px; }
+
+.stall-chips { display: inline-flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; min-width: 0; }
+.stall-list.emotes .stall-chips { justify-content: center; }
+.stall-list.emotes .stall-chip { font-size: .68rem; padding: 1px 6px; }
+.stall-list.emotes .stall-chip .ic { width: 11px; height: 11px; }
+.stall-chip.prl { background: none; box-shadow: inset 0 0 0 1.5px #6fa8dc; color: #2a5f8a; }
+.stall-chip.prl .dsh-fb { width: 13px; height: 13px; font-size: .5rem; }
+.stall-chip.play { background: none; box-shadow: inset 0 0 0 1.5px rgba(18,38,54,.22); color: var(--ink-soft); }
+
+.dsh-list { display: grid; gap: 8px; }
+.dsh-pack { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; min-height: 56px; padding: 10px 12px; border: 0; border-radius: 14px;
+  background: rgba(255,255,255,.9); box-shadow: var(--sh-soft); font-family: inherit; color: var(--ink); text-align: left; }
+.dsh-pack:active { transform: translateY(1px); }
+.dsh-pack:disabled { opacity: .55; }
+.dsh-pack .dsh-amt { min-width: 0; font-size: .95rem; font-weight: 900; }
+.dsh-pack .dsh-price { margin-left: auto; flex: none; font-weight: 800; }
+.dsh-tag { flex: none; padding: 2px 8px; border-radius: 999px; font-size: .7rem; font-weight: 900; background: #2a9c5e; color: #fff; }
+#prlNote { margin-top: 10px; }
+#prlBuy { border-color: #6fa8dc; color: #2a5f8a; }        /* the second currency reads as an alternative, not a rival CTA */
+.cos-bonus { width: 100%; font-size: .74rem; font-weight: 800; line-height: 18px; color: var(--ink-soft); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
