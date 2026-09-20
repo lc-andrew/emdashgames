@@ -1913,7 +1913,13 @@ html.gfx-lite {
 
 /* R5 owner-eye fix: on a 360×640 phone the Gear row sat BELOW six alliance tiles (off-screen). In the daily-first layout it now
    sits directly under the Daily Deck button — what a new player with every alliance locked actually uses — and both lines ride
-   one soft plate so the caption is readable over the painted floor. Order only; no markup moved. */
+   one soft plate so the caption is readable over the painted floor. Order only; no markup moved.
+   (R7) RE-MEASURED AT SEVEN TILES and DELIBERATELY UNCHANGED — the seventh alliance adds one 83 px row, nothing else.
+   Measured with all three unlock states (0 / 2 / 7 open) at BOTH 360×640 and 320×568: `.faction-grid` is already one
+   column below 420 px (the rule ~line 553), so no tile clips and there is no horizontal scroll (scrollWidth === clientWidth);
+   #deckselect scrolls 1013 px / 1133 px against a 640 / 568 viewport — it scrolled with six too — and #deckBegin is fully
+   on screen after that scroll in every cell. The point of this block still holds: Daily Deck and the Gear row are both above
+   the fold for a locked-out player, and the alliance list is what scrolls. */
 .deck-card.daily-first > .gear-cap { order: 3; margin: 12px 0 0; padding: 8px 10px 0; border-radius: 14px 14px 0 0; background: rgba(255,255,255,.72); text-shadow: none; }
 .deck-card.daily-first > .gear-row { order: 3; margin: 0; padding: 6px 10px 10px; border-radius: 0 0 14px 14px; background: rgba(255,255,255,.72); }
 .deck-card.daily-first > .deck-cap { order: 4; margin-top: 12px; }
