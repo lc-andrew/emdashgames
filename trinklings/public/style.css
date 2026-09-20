@@ -1531,7 +1531,7 @@ html.gfx-lite {
 .stall-slot img { width: 100%; height: 100%; object-fit: contain; }
 .stall-slot.sig::after { content: "\2726"; position: absolute; top: -8px; right: -5px; font-size: .9rem; color: #c9a23c; }
 .stall-list { display: grid; grid-template-columns: 1fr; gap: 10px; }
-.stall-list.emotes { grid-template-columns: repeat(3, 1fr); gap: 8px; }                     /* 3 x 106 px at 336 */
+.stall-list.emotes { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }          /* 3 x 106 px at 336 */
 .stall-tile { display: flex; flex-direction: column; gap: 6px; padding: 8px; border: 0; border-radius: 16px; background: rgba(255,255,255,.9); box-shadow: var(--sh-soft); text-align: left; font-family: inherit; color: var(--ink); }
 .stall-tile:active { transform: translateY(1px); }
 .stall-prev { display: block; width: 100%; border-radius: 10px; overflow: hidden; }
@@ -1923,3 +1923,162 @@ html.gfx-lite {
 .deck-card.daily-first > #deckDaily { order: 3; } .deck-card.daily-first > .gear-cap { order: 4; } .deck-card.daily-first > .gear-row { order: 5; }
 .deck-card.daily-first > .deck-cap { order: 6; } .deck-card.daily-first > .faction-grid { order: 7; }
 .deck-card.daily-first > #deckBegin { order: 8; } .deck-card.daily-first > #deckBack { order: 9; }
+
+/* ===================================================================================================
+   ROUND 6 — LANE B (UI pass). Owner feedback, verbatim:
+     1. "The fusion points icon should be light coloured on the main menu. And, Online should be the big
+         primary button rather than offline"
+     2. "The win screen has overlapping buttons and should have its own more interesting picture"
+     3. "some of the screens take a while to load … speed them up or interesting animations"
+   Everything here is APPENDED so it wins the cascade against the rules it corrects, each of which is
+   named at the point of correction. Transform/opacity only; no filter/backdrop-filter on anything that
+   animates; every animation is off under `prefers-reduced-motion` and shortened/dropped in `gfx-lite`.
+   =================================================================================================== */
+
+/* ---- 1a. the ✦ fusion-point mark over DARK surfaces ------------------------------------------------
+   MEASURED BUG, not a preference: `.pts, .pts-pill { color: var(--ink) }` (this file, in the R5 §1.8
+   block above) is a ONE-CLASS selector that lands AFTER `.meta-chip { color: #fff }`, so it won on
+   source order and #ptsChip drew its ✦ in #122636 ink on its own rgba(16,32,52,.72) navy pill —
+   contrast 1.06:1, i.e. the glyph was invisible and only the gold <b> number showed. That is exactly
+   "the fusion points icon should be light coloured on the main menu".
+   `.pts` keeps `--ink` on the LIGHT Shop sheets (`.pts-pill` on #fff), where dark is right. Only the
+   dark-pill chip is corrected, by a two-class selector rather than by editing the shared line. */
+:root { --spark-lite: #ffd98a; }        /* warm gold/cream: the currency mark over dark ground or art */
+.meta-chip.pts, .meta-chip.pts .ic { color: var(--spark-lite); }
+/* the "ready to spend" state swaps to a gold plate — the mark goes near-white so it stays legible on it */
+.meta-chip.pts.ready, .meta-chip.pts.ready .ic { color: #fff8e6; }
+.meta-chip.pts.ready b { color: #fff8e6; }
+
+/* ---- 1b. the title screen: ONLINE is the dominant action -------------------------------------------
+   Markup keeps all four hooks (#onlineBtn, [data-start="offline"], #localBtn, #titleShop) and all three
+   rows, so the measured 360x640 / 320x568 / 640x360 fit does not move — only which button is dominant.
+   `.btn.big.primary` over the painted title needs its own ground shadow to separate from the art. */
+#title .title-actions .btn.primary { box-shadow: 0 5px 0 #0b1230, 0 10px 22px rgba(10,20,50,.55), 0 0 26px rgba(70,110,200,.34), inset 0 2px 0 rgba(255,255,255,.3), inset 0 -3px 7px rgba(6,12,30,.5); }
+
+/* ---- 2a. the game-over buttons: a column, never a wrapping inline row -------------------------------
+   THE OWNER'S OVERLAP, diagnosed by measurement at 360x640: the four buttons were bare inline-blocks
+   inside `.title-card` with computed `margin: 0px`, so the gap between them measured 0.0 px — and every
+   `.btn` carries a SOLID box-shadow lip ("0 4px 0 #bcd6e8", "0 5px 0 #0b1230" on `.primary`) that paints
+   BELOW its border box. Zero gap + a 4-5 px lip = each button visibly painted over the one under it.
+   With four buttons (a ranked Cup: Play again / Change alliance / Ladder / Main menu) they additionally
+   wrapped into a ragged 1-2-1 inline row in which "Change alliance" and "Ladder" shared a line and
+   overhung the card's content box by 30 px on each side.
+   `.btn-col` (flex column, gap 11px, full-width children) is the pattern the title screen already uses. */
+.go-actions { margin: 14px auto 0; }
+.go-actions .btn { width: 100%; margin: 0; }
+.go-actions .btn[hidden] { display: none; }   /* a flex item must still obey `hidden` (#goLadderBtn) */
+
+/* ---- 2b. the win paintings ---------------------------------------------------------------------------
+   A win used to get a bare 104 px `trophy` icon while a LOSS got a 172 px painting. Lane K's
+   `trinkling-cup` / `trinkling-duelwin` now fill the same box as the defeat art, so all four game-over
+   beats share one geometry. `display:block` kills the inline baseline gap `.logo`'s 3.6rem/1 would add. */
+.go-art { display: block; width: min(250px, 76vw); height: 172px; margin: 0 auto; object-fit: contain; }
+
+/* ---- 2c. the card must FIT a short phone ------------------------------------------------------------
+   Adding real gaps between four buttons makes the tallest win state (a Perfect / ranked Cup) taller, and
+   at 320x568 it already pushed "Main menu" below the fold. The card is trimmed on short viewports rather
+   than left to scroll: art and type step down, padding tightens. `#gameover` keeps `overflow-y: auto` as
+   the safety net for a state none of these sizes anticipates — it is not the plan. */
+@media (max-height: 660px) {
+  #gameover .title-card { padding: 16px 18px 18px; }
+  .go-art { height: min(172px, 21vh); }
+  /* the top margin stays at 8px, NOT trimmed to nothing: `.logo`'s `bob` lifts the painting 8px and rotates
+     it 2deg, and on a 250 px-wide painting that swings its corners into the title's line box. Measured: at a
+     2 px top margin the two rectangles overlapped by 3.2 px; at 8 px they clear. */
+  #gameover #goTitle { font-size: 1.9rem; margin: 8px 0 2px; }
+  #gameover.defeat #goTitle { font-size: 1.9rem; margin: 8px 0 2px; }
+  #gameover .tag { margin: 2px 0 4px; }
+  .go-points { margin: 2px 0 6px; }
+  .go-actions { margin-top: 10px; gap: 9px; }
+  .perfect-fx { margin-top: 2px; }
+}
+/* 320x568 with a RANKED Cup is the tallest state the app can produce: painting + Cinzel title + two text
+   lines + the ✦ points line + FOUR buttons. These numbers are the measured minimum that keeps it off the
+   scrollbar at that size — see the R6-B block in docs/round5/GATES-R5.md for the before/after table. */
+@media (max-height: 600px) {
+  #gameover .title-card { padding: 12px 16px 14px; }
+  .go-art { height: min(132px, 18vh); }
+  #gameover #goTitle, #gameover.defeat #goTitle { font-size: 1.6rem; margin: 6px 0 2px; }
+  .go-actions { margin-top: 8px; gap: 7px; }
+  .go-actions .btn.big { padding: 11px 16px; font-size: .98rem; }
+  .go-actions .btn { padding: 9px 16px; }
+}
+
+/* ---- 3a. the duel clock (lane A hand-off) -----------------------------------------------------------
+   Lane A set these four INLINE from ensureDuelTimer() because style.css was not its file. Now that the
+   rule exists those four assignments can go. NO animation or transition belongs on `.duel-timer`: the
+   node is now stable and long-lived, so anything here would run for ever instead of once. */
+.duel-timer { font-variant-numeric: tabular-nums; display: inline-block; min-width: 2.6em; text-align: right; }
+
+/* ---- 3b. screen-enter motion ------------------------------------------------------------------------
+   The owner's third note offers a choice: "speed them up or interesting animations so then they don't
+   feel so slow". The speed-ups are in app.js; this is the second half — a short rise that makes a screen
+   change read as a deliberate move rather than a stall.
+   CONSTRAINTS HONOURED: `.title-card` / `.modal-card` carry backdrop-filter in gfx-high, so the CARD is
+   never animated — only its children. Transform + opacity only. It never gates input: the elements are
+   in the DOM, hit-testable and at their final position from frame one of their own animation, and the
+   whole thing is over in 220 ms. */
+/* WHAT IS AND IS NOT ANIMATED, and why. The round's rule is transform/opacity-only motion with NO filter on
+   an animated element — a filtered element that also animates makes the compositor re-run the filter, which
+   is the exact cost `gfx-lite` exists to avoid. Four things in this app carry a `filter` of their own:
+   the base `h1` rule near the top of this file (`drop-shadow(0 2px 0 #fff) drop-shadow(0 3px 5px …)`),
+   `.logo`, `.duel-hero` and `.title-wordmark` — the last three also carry their own `bob`. All four are
+   therefore EXCLUDED by `:not(...)` rather than overridden: they keep their static shadow and their bob, and
+   the rise runs on the text, the chips and the buttons, which is where it reads anyway.
+   Verified by a sweep over #title and #gameover in BOTH tiers: 0 elements animate while carrying a filter. */
+@keyframes scrRise { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: none; } }
+.scr-in .title-card > :not(h1):not(.logo):not(.duel-hero),
+.scr-in .deck-card > :not(h1),
+.scr-in .lad-card > :not(h1),
+.scr-in .title-actions > *, .scr-in .title-meta > *,
+.scr-in .codex-list, .scr-in .stall-list, .scr-in .hub-body > * {
+  animation: scrRise .22s var(--ease-soft) both;
+}
+.scr-in .title-card > :nth-child(2), .scr-in .deck-card > :nth-child(2), .scr-in .lad-card > :nth-child(2),
+.scr-in .title-actions > :nth-child(2) { animation-delay: .04s; }
+.scr-in .title-card > :nth-child(3), .scr-in .deck-card > :nth-child(3), .scr-in .lad-card > :nth-child(3),
+.scr-in .title-actions > :nth-child(3) { animation-delay: .08s; }
+.scr-in .title-card > :nth-child(n+4), .scr-in .deck-card > :nth-child(n+4), .scr-in .lad-card > :nth-child(n+4) { animation-delay: .11s; }
+
+/* ---- 3c. loading states: a screen waiting on the network shows something on-brand -------------------
+   CHECKED, NOT ASSUMED: every network screen in this client already paints in the same tick as show() —
+   ladder.js writes `<div class="lad-card skel">` into #ladBody / #ladList / #ladProfBody, and
+   cosmetics.openStall() calls renderStall() synchronously off the cached catalog with refresh() behind it.
+   So nothing here adds a second indicator. What those waits lacked was character: `.lad-card.skel` was
+   `min-height:120px; opacity:.6` — a grey nothing. It now carries the pulsing ✦, which is the owner's own
+   currency mark and the one thing on screen that says "this is coming, not stuck".
+   `.is-loading` is the same treatment as a standalone utility, for any container a module wants to mark
+   while it waits (see the note at warmNextScreen() in app.js). Both animate TRANSFORM and OPACITY only, on
+   a pseudo-element that carries no filter. */
+.lad-card.skel { position: relative; }
+.lad-card.skel::after { content: "\2726"; position: absolute; left: 50%; top: 50%; width: 1.6em; margin: -.8em 0 0 -.8em;
+  text-align: center; font-size: 1.9rem; line-height: 1.6em; color: var(--spark-lite); text-shadow: 0 2px 8px rgba(8,18,38,.55);
+  pointer-events: none; animation: sparkWait 1.15s var(--ease-soft) infinite; }
+.is-loading { position: relative; min-height: 96px; }
+.is-loading::after { content: "\2726"; position: absolute; left: 50%; top: 50%; width: 1.6em; margin: -.8em 0 0 -.8em;
+  text-align: center; font-size: 1.9rem; line-height: 1.6em; color: var(--spark-lite); text-shadow: 0 2px 8px rgba(8,18,38,.55);
+  pointer-events: none; animation: sparkWait 1.15s var(--ease-soft) infinite; }
+@keyframes sparkWait { 0%, 100% { opacity: .35; transform: scale(.82) rotate(0deg); } 50% { opacity: 1; transform: scale(1.12) rotate(90deg); } }
+/* stale content on screen while a refresh is in flight: it is real, just not yet confirmed */
+.is-stale { animation: staleBreathe 1.6s var(--ease-soft) infinite; }
+@keyframes staleBreathe { 0%, 100% { opacity: .78; } 50% { opacity: 1; } }
+.is-stale.is-loading::after { content: none; }
+
+/* gfx-lite: keep the motion, halve the cost — no stagger, shorter, and the waiting mark stops rotating */
+.gfx-lite .scr-in .title-card > :not(h1):not(.logo):not(.duel-hero),
+.gfx-lite .scr-in .deck-card > :not(h1), .gfx-lite .scr-in .lad-card > :not(h1),
+.gfx-lite .scr-in .title-actions > *, .gfx-lite .scr-in .title-meta > *,
+.gfx-lite .scr-in .codex-list, .gfx-lite .scr-in .stall-list,
+.gfx-lite .scr-in .hub-body > * { animation-duration: .16s; animation-delay: 0s; }
+.gfx-lite .is-loading::after, .gfx-lite .lad-card.skel::after { animation-duration: 1.4s; }
+
+@media (prefers-reduced-motion: reduce) {
+  /* exactly the positive selector above, so this turns off the rise and NOTHING else — `.logo`'s own bob
+     is not in scope here and must keep whatever the rest of the file decided for it. */
+  .scr-in .title-card > :not(h1):not(.logo):not(.duel-hero),
+  .scr-in .deck-card > :not(h1), .scr-in .lad-card > :not(h1),
+  .scr-in .title-actions > *, .scr-in .title-meta > *,
+  .scr-in .codex-list, .scr-in .stall-list, .scr-in .hub-body > * { animation: none; }
+  .is-loading::after, .lad-card.skel::after { animation: none; opacity: .8; }
+  .is-stale { animation: none; opacity: 1; }
+}

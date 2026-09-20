@@ -24,12 +24,12 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="theme-color" content="#6fd0a8" />
   <title>Trinklings</title>
-  <link rel="icon" type="image/png" href="assets/ui/favicon.png?v=3" />
-  <link rel="apple-touch-icon" href="assets/ui/favicon-180.png?v=3" />
+  <link rel="icon" type="image/png" href="assets/ui/favicon.png?v=4" />
+  <link rel="apple-touch-icon" href="assets/ui/favicon-180.png?v=4" />
   <link rel="preload" as="font" type="font/woff2" href="assets/fonts/Nunito.woff2" crossorigin />
   <link rel="preload" as="font" type="font/woff2" href="assets/fonts/Cinzel.woff2" crossorigin />
   <link rel="preload" as="image" href="assets/ui/hero-scene.webp" fetchpriority="high" />
-  <link rel="stylesheet" href="public/style.css?v=8bdfb87f4c" />
+  <link rel="stylesheet" href="public/style.css?v=0f8c3accd5" />
   <link rel="stylesheet" href="public/fx.css?v=969db94a22" />
 </head>
 <body>
@@ -51,14 +51,19 @@
       <button class="meta-chip" id="acctChip" type="button" hidden></button>
       <button class="meta-chip pts" id="ptsChip" type="button" aria-label="Fusion points">✦ <b id="ptsChipN">0</b><span id="ptsChipTail"></span></button>
     </div>
-    <!-- R5 (owner feedback 2): Offline stays the one dominant play action; Online + Local pair up, and the
-         Shop gets its own entry instead of being buried in Settings / ladder home. Same three rows as before,
-         so the title stays uncluttered at 360x640. #titleShop ships hidden — app.js un-hides it on exactly the
-         gate that un-hides #settingsStall (cosmetics.stallAvailable()), so the two entries never disagree. -->
+    <!-- R6 (owner feedback 1): "Online should be the big primary button rather than offline". ONLINE is now the
+         one dominant full-width action and wears the dark-navy `.primary` plate (the house CTA — Play again /
+         End Turn); Offline + Local pair beneath it in the same `.title-pair` grid the R5 layout already
+         measured; the Shop keeps its own row. STILL THREE ROWS, so the measured 360x640 / 320x568 / 640x360
+         fit is unchanged — only which button is dominant moved.
+         R5 note that still holds: #titleShop ships hidden — app.js un-hides it on exactly the gate that
+         un-hides #settingsStall (cosmetics.stallAvailable()), so the two entries never disagree.
+         The HOOKS are unchanged on purpose: `#onlineBtn`, `[data-start="offline"]`, `#localBtn` and
+         `#titleShop` are what app.js, test/client.test.js and tools/perf/verify-r4*.mjs address. -->
     <div class="btn-col title-actions">
-      <button class="btn big glass" data-start="offline">Offline</button>
+      <button class="btn big primary" id="onlineBtn">Online</button>
       <div class="title-pair">
-        <button class="btn glass" id="onlineBtn">Online</button>
+        <button class="btn glass" data-start="offline">Offline</button>
         <button class="btn glass" id="localBtn">Local</button>
       </div>
       <button class="btn glass title-shop" id="titleShop" type="button" hidden>Shop</button>
@@ -156,10 +161,17 @@
       <h1 id="goTitle">You win!</h1>
       <p id="goText" class="tag"></p>
       <p id="goPoints" class="go-points" hidden></p>
-      <button class="btn big primary" id="goAgainBtn">Play again</button>
-      <button class="btn" id="goChangeBtn">Change alliance</button>
-      <button class="btn" id="goLadderBtn" hidden>Ladder</button>
-      <button class="btn" id="goTitleBtn">Main menu</button>
+      <!-- R6 (owner feedback 2) "The win screen has overlapping buttons". These four were bare inline-blocks
+           in `.title-card`: computed `margin: 0`, so the measured gap between them was 0.0 px and every
+           `.btn`'s 4-5 px SOLID box-shadow lip painted over the button below it. With four of them (a ranked
+           Cup) they also wrapped into a ragged 1-2-1 inline row where "Change alliance" and "Ladder" shared a
+           line. They are now the house `.btn-col` flex column: one gap, full-width children, never a wrap. -->
+      <div class="btn-col go-actions">
+        <button class="btn big primary" id="goAgainBtn">Play again</button>
+        <button class="btn" id="goChangeBtn">Change alliance</button>
+        <button class="btn" id="goLadderBtn" hidden>Ladder</button>
+        <button class="btn" id="goTitleBtn">Main menu</button>
+      </div>
     </div>
   </section>
 
@@ -640,6 +652,6 @@
 </div>
 <audio id="bgm" loop preload="none" src="assets/audio/music.m4a"></audio>
 <audio id="bgm-battle" loop preload="none" src="assets/audio/battle-music.m4a"></audio>
-<script type="module" src="public/app.js?v=d086ed0145"></script>
+<script type="module" src="public/app.js?v=bf7a668926"></script>
 </body>
 </html>
