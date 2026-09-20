@@ -191,8 +191,14 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 /* round 3: a FUSED pet lists both parents' abilities + its ✦ Signature Move — that panel may grow further (capped), so the
    Signature line is on screen without an unmarked scroll. */
 .card-detail.multi { min-height: 108px; max-height: 34vh; max-height: 34dvh; }
-/* short portrait phones (360x780…): the space above the squad takes more — a long L3+L3 pair's Signature line ended below the fold */
-@media (orientation: portrait) and (min-height: 700px) and (max-height: 820px) { .card-detail.multi { max-height: 42vh; max-height: 42dvh; } }
+/* short portrait phones (360x640…820): the space above the squad takes more — a long L3+L3 pair's Signature line ended below the fold.
+   (R8) the lower bound came DOWN 700 -> 640. Measured at 360x640 on the R8 tree: the Signature line's bottom sits at 250-302 px against a
+   34dvh cap of 218, so it was cut on 30 of 30 of the longest pairs (on r7 the same probe cut 3 of 8 — the round's longer roster texts and
+   the signature name's new trigger tail each cost a line). 42dvh = 269 px at this height and the whole board still clears the fold.
+   640 is a MEASURED floor, not a round number: the board is top-flowed, so #endBtn's bottom tracks the panel at about 365 + panel px.
+   With the tallest fusion selected that is 634 at 640 (6 px of slack, ok), 630 at 630 (exactly on the fold) and **625 at 620 — 5 px BELOW
+   it**, which would clip END TURN. Heights 620-639 therefore keep the 34dvh cap and behave exactly as they did on r7. */
+@media (orientation: portrait) and (min-height: 640px) and (max-height: 820px) { .card-detail.multi { max-height: 42vh; max-height: 42dvh; } }
 .coach.show { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
 .card-detail .cd-flavor { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
 .coach.show { padding: 10px 13px; background: var(--glass-hi); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); border: 1px solid var(--glass-brd); border-radius: var(--r-md); font-size: .9rem; font-weight: 600; color: var(--ink); box-shadow: var(--frame), var(--sh-soft); animation: pop .3s var(--ease-bounce); }
@@ -669,15 +675,40 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 #title.show { animation-name: draftInFade; }
 @keyframes draftInFade { from { opacity: 0; } }
 .title-settings { position: absolute; top: calc(env(safe-area-inset-top) + 10px); right: 12px; z-index: 6; }
-.title-hero { position: relative; width: 100%; flex: 1 1 auto; min-height: 0; display: flex; align-items: center; justify-content: center; margin-top: 5vh; }
+/* (R8, owner feedback 4) The hero owns everything the chip row and the record plate gave back — ~107 px at
+   360x640 — and spends it as AIR, not as a bigger wordmark. `align-items: flex-start` pins the wordmark to the
+   top of the hero and `margin-top` clears the 52 px corner row (the gear / the chips), so the wordmark reads
+   against sky; the creatures stay anchored to the bottom of the hero, which is now far lower down the grass.
+   The old offset was a bare `5vh`, which is 18 px on a landscape phone — less than the corner row is tall. The
+   clamp FLOOR (56 px) is the part that does the clearing and cannot shrink away; the `13vh` term spends a tall
+   screen's extra height as sky above the wordmark; the ceiling stops a tablet pushing it into the meadow.
+   `env(safe-area-inset-top)` is already paid once by `.screen`'s padding and once by the gear's own `top`, so
+   the bar and the wordmark move together on a notched phone — adding it here again would double-count it. */
+.title-hero { position: relative; width: 100%; flex: 1 1 auto; min-height: 0; display: flex; align-items: flex-start; justify-content: center; margin-top: clamp(56px, 13vh, 96px); }
 .title-wordmark { width: min(92%, 470px); filter: drop-shadow(0 6px 20px rgba(0,0,0,.55)); z-index: 2; }
-.title-creatures { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
+/* 16 px of grass under the feet so the trio stands ON the meadow instead of on the Online button's shoulder. */
+.title-creatures { position: absolute; inset: 0 0 16px; pointer-events: none; z-index: 1; }
 .title-creatures .tc { position: absolute; bottom: 0; filter: drop-shadow(0 8px 12px rgba(20,40,70,.45)); animation: titleBob 3s var(--ease-soft) infinite; }
-.tc1 { left: 3%;  height: 30%; animation-delay: 0s; }
-.tc2 { right: 4%; height: 34%; animation-delay: .7s; }
-.tc3 { left: 33%; height: 24%; z-index: 0; animation-delay: 1.3s; }
+/* The heights are a share of the hero, and the hero is now much taller — on a 412x915 phone a bare 34% is a
+   240 px pufferfish and the trio turns into one overlapping pile. The px ceilings keep the group portrait the
+   same size it reads at on a 360 px phone and let the extra room show as grass between them. */
+.tc1 { left: 3%;  height: min(30%, 150px); animation-delay: 0s; }
+.tc2 { right: 4%; height: min(34%, 170px); animation-delay: .7s; }
+.tc3 { left: 33%; height: min(24%, 120px); z-index: 0; animation-delay: 1.3s; }
 @keyframes titleBob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
 .title-actions { width: 100%; max-width: 340px; margin: 0 auto 6px; }
+/* Landscape (640x360 and friends): the hero is ~216 px tall, and `width: min(92%, 470px)` on a 1376x768 wordmark
+   asks for 262 px of height inside it — which is why the title used to open with the wordmark CLIPPED off the top
+   of the screen and the three creatures reduced to specks behind it. Here the wordmark is sized by HEIGHT and
+   keeps its aspect, taking a little over half the hero so the creatures own the band beneath it. */
+@media (orientation: landscape) and (max-height: 600px) {
+  .title-hero { margin-top: 10px; }
+  .title-wordmark { width: auto; max-width: 84%; height: 56%; object-fit: contain; }
+  .title-creatures { inset: 0 0 10px; }
+  /* the trio is also pulled IN from the column edges here: `center/cover` crops the painted meadow to the
+     left-of-centre band at this aspect, so the old `right: 4%` parked the pufferfish over bare mountain. */
+  .tc1 { left: 6%; height: min(34%, 108px); } .tc2 { right: 12%; height: min(38%, 120px); } .tc3 { left: 30%; height: min(27%, 88px); }
+}
 #title .rank-row { justify-content: center; }
 #title .connect { text-align: center; }
 #title .title-card { background: rgba(255,255,255,.62); backdrop-filter: blur(3px); }
@@ -1200,7 +1231,14 @@ html.gfx-lite {
    ride the existing .float rise (transform/opacity only) ---- */
 .float.wait { font-family: 'Nunito', sans-serif; font-size: .66rem; font-weight: 900; letter-spacing: .01em; color: #fff; background: rgba(18,32,52,.8); border-radius: 999px; padding: 1px 8px; text-shadow: none; }
 .float.sig { font-family: 'Cinzel', Georgia, serif; font-size: .84rem; font-weight: 900; letter-spacing: .03em; color: #ffe08a; z-index: 24;
-  text-shadow: 0 1px 2px #5a3e00, 0 0 8px rgba(245,197,66,.9), 0 0 2px #5a3e00; }
+  text-shadow: 0 1px 2px #5a3e00, 0 0 8px rgba(245,197,66,.9), 0 0 2px #5a3e00;
+  /* (R8) a signature name may now carry a trigger tail ("…, From the First Step" — up to 45 chars, 404 px on one line at 360 px wide).
+     `.float` is `white-space: nowrap`, and floatOver()'s clamp gives up and centres anything WIDER than the arena, so the longest names
+     were cut off at BOTH screen edges. Let THIS float — and only this one — wrap inside the arena; the clamp then keeps it on screen.
+     `width: max-content` is load-bearing, not decoration: an absolutely positioned box with only `left` set shrink-to-fits into the
+     space from `left` to the container's right edge, so floatOver() measured 168 px at `left: 50%`, clamped against that, and the box
+     then re-laid-out wider than the clamp allowed for. max-content + max-width makes the measured width independent of the position. */
+  width: max-content; max-width: calc(100% - 16px); white-space: normal; text-align: center; line-height: 1.16; }
 
 /* ================= ROUND 4 — tactical-information UX (spec-client 6) ================= */
 
@@ -1257,6 +1295,10 @@ html.gfx-lite {
 .update-banner { position: absolute; left: 50%; top: calc(env(safe-area-inset-top) + 8px); transform: translateX(-50%); z-index: 19; display: flex; align-items: center; gap: 8px; max-width: calc(100% - 76px);
   padding: 5px 6px 5px 14px; border-radius: 999px; background: rgba(16,28,46,.9); color: #fff; font-size: .8rem; font-weight: 800; box-shadow: var(--sh-soft); }
 .update-banner .btn.small { padding: 5px 12px; font-size: .78rem; box-shadow: none; }
+/* (R8) The banner is centred at the very top and was sized to clear only the gear (`100% - 76px`). Now that the
+   account / points chips sit in the top-right corner it would land on them at 360 px, so WHILE THE TITLE IS UP it
+   drops below that row. #updateBanner is a later sibling of #title inside #app, so this costs game-over nothing. */
+#title.show ~ .update-banner { top: calc(env(safe-area-inset-top) + 60px); }
 
 /* ---- 6c: the order strip, the coach's tactic line, the Tactics sheet ---- */
 .order-strip { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; direction: rtl; height: 14px; margin-top: 3px; pointer-events: none; contain: layout style; }
@@ -1301,9 +1343,11 @@ html.gfx-lite {
 @media (prefers-reduced-motion: reduce) { .ri { animation: none; } }
 
 /* ---- item 4: the Perfect Cup title line + game-over treatment ---- */
-.title-record { width: fit-content; max-width: 92%; margin: 2px auto 10px; padding: 6px 14px; border-radius: 16px; text-align: center; background: rgba(249,253,255,.88); border: 1px solid var(--glass-brd); box-shadow: var(--sh-soft); }
-.title-record .tr-main { font-weight: 900; font-size: .88rem; color: var(--gilt-deep); display: flex; align-items: center; justify-content: center; gap: 5px; flex-wrap: wrap; }
-.title-record .tr-sub { font-size: .68rem; font-weight: 700; color: var(--ink-soft); margin-top: 1px; }
+/* (R8, owner feedback 4) was `.title-record`, a plate under the title buttons. The markup moved into the Settings
+   sheet, so the rule lost the title's own vertical rhythm (`margin: 2px auto 10px`) and sits in the sheet's. */
+.record-line { width: fit-content; max-width: 100%; margin: 0 auto 10px; padding: 6px 14px; border-radius: 16px; text-align: center; background: rgba(249,253,255,.88); border: 1px solid var(--glass-brd); box-shadow: var(--sh-soft); }
+.record-line .tr-main { font-weight: 900; font-size: .88rem; color: var(--gilt-deep); display: flex; align-items: center; justify-content: center; gap: 5px; flex-wrap: wrap; }
+.record-line .tr-sub { font-size: .68rem; font-weight: 700; color: var(--ink-soft); margin-top: 1px; }
 .perfect-badge { display: inline-flex; align-items: center; padding: 1px 8px; border-radius: 999px; font-size: .68rem; font-weight: 900; letter-spacing: .02em; white-space: nowrap; color: #5a3e00; background: linear-gradient(180deg, #ffe08a, #f5c542); box-shadow: 0 1px 2px rgba(90,70,10,.35); }
 .perfect-ribbon { width: fit-content; margin: 0 auto; padding: 2px 14px; border-radius: 999px; font: 900 .8rem/1.5 'Cinzel', Georgia, serif; letter-spacing: .08em; color: #5a3e00; background: linear-gradient(180deg, #ffe08a, #f5c542); box-shadow: 0 2px 6px rgba(90,70,10,.35); animation: pop .4s var(--ease-bounce) .25s backwards; }
 #gameover #goEmoji { filter: none; }   /* .logo bobs for ever: an animating element carries no filter. The paintings have their own ground shadow */
@@ -1321,7 +1365,15 @@ html.gfx-lite {
 @media (max-width: 420px) { .card .stat { padding: 1px 7px; letter-spacing: 0; } }
 
 /* ================= round 4 meta (agent C, step C2): chips · toast · locks · sheets · fusion tracker ================= */
-.title-meta { display: flex; justify-content: center; gap: 8px; width: 100%; max-width: 340px; margin: 0 auto 8px; min-height: 30px; flex-shrink: 0; }
+/* (R8, owner feedback 4) The chip row is a TOP-RIGHT corner cluster, not a flow row above the buttons: it sat
+   between the creatures' feet and the Online button and squeezed both. It is absolutely positioned with `right`
+   and NO `left`/`width`, so the box shrink-to-fits the chips — nothing can push the title sideways. `right: 62px`
+   parks it immediately left of the gear (42 px wide at `right: 12px`), and the `max-width` stops it before the
+   gear at every width. `flex-wrap` is the narrow-screen release valve: at 320 px with the "· Unlock!" tail up,
+   the points chip drops to a second line under the name instead of overflowing. `.title-meta` is title-only. */
+.title-meta { position: absolute; top: calc(env(safe-area-inset-top) + 11px); right: 62px; left: auto; z-index: 6;
+  display: flex; justify-content: flex-end; align-items: flex-start; flex-wrap: wrap; gap: 6px;
+  width: auto; max-width: calc(100% - 86px); margin: 0; min-height: 30px; flex-shrink: 0; }
 .meta-chip { display: inline-flex; align-items: center; gap: 5px; height: 30px; max-width: 190px; padding: 0 13px; border-radius: 999px; border: 1px solid rgba(255,255,255,.55);
   background: rgba(16,32,52,.72); color: #fff; font: 800 .8rem/1 'Nunito', sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
 .meta-chip:active { transform: translateY(1px); }
@@ -1406,7 +1458,8 @@ html.gfx-lite {
 .acct-row { display: flex; justify-content: space-between; gap: 10px; padding: 7px 2px; border-bottom: 1px solid var(--rule-soft); font-size: .84rem; font-weight: 700; color: var(--ink); }
 .acct-row span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-soft); }
 @media (prefers-reduced-motion: reduce) { .meta-chip.pts.ready, #unlockModal.done .unlock-art img { animation: none; } .toast { transition: none; } }
-@media (orientation: landscape) and (max-height: 600px) { .title-meta { margin-bottom: 4px; } }
+/* (R8) the landscape `.title-meta { margin-bottom }` tweak that stood here is gone: the chip row is
+   absolutely positioned in the top-right corner now, so a margin on it does nothing. */
 
 /* ================= round 4 meta (agent C, step C3): the ranked ladder ================= */
 .hub-tag { margin: 4px 0 14px; font-size: .8rem; }
@@ -1464,7 +1517,7 @@ html.gfx-lite {
 .lad-run { padding: 8px 10px; border-radius: 12px; background: rgba(255,255,255,.9); border: 1.5px solid var(--panel-line); font-size: .78rem; font-weight: 700; color: var(--ink); }
 .lad-mini { display: flex; gap: 4px; margin-top: 5px; } .lad-mini .art { position: relative; width: 44px; height: 44px; --pet-scale: 1; } .lad-mini .art img { width: 100%; height: 100%; object-fit: contain; animation: none; }
 @media (prefers-reduced-motion: reduce) { .meta-chip.pts.ready, .result-card > .lad-rankup, #unlockModal.done .unlock-art img { animation: none; } .toast { transition: none; } }
-@media (orientation: landscape) and (max-height: 600px) { .title-meta { margin-bottom: 4px; } .lad-nav { grid-template-columns: repeat(4, 1fr); } }
+@media (orientation: landscape) and (max-height: 600px) { .lad-nav { grid-template-columns: repeat(4, 1fr); } }   /* (R8) the dead `.title-meta { margin-bottom }` half dropped with the corner move */
 
 /* ===== COSMETICS — arena skin layers (spec-cosmetics §4.2) ===== */
 /* skin art is 2:1 (source 1024x512, shipped 768x384): the lower 75% is the slab, the upper 25% is a "rise zone" for the two low rear-corner props */
@@ -1721,7 +1774,10 @@ html.gfx-lite {
 /* 40 px of REAL height, not an invisible pad: `.meta-chip` carries `overflow: hidden` for the long-name
    ellipsis, which clips an absolutely-positioned ::after, so a pseudo-element tap pad would not exist. The
    probe shows ≥18 px of slack under the Shop button at 360x640, 320x568, 360x560 and 640x360, so the extra
-   10 px costs nothing. */
+   10 px costs nothing.
+   (R8) Still true with the Shop row UP and the chips in the corner: re-probed at 360x640 / 320x568 / 412x915 /
+   640x360 / 360x560 in both tiers — every title control measures ≥ 40 px tall, nothing is below the fold, and
+   #title's scrollHeight equals its clientHeight, i.e. the title still does not scroll at any of them. */
 .title-meta { min-height: 40px; }
 .meta-chip { height: 40px; }
 .title-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }

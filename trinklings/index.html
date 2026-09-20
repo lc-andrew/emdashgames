@@ -29,7 +29,7 @@
   <link rel="preload" as="font" type="font/woff2" href="assets/fonts/Nunito.woff2" crossorigin />
   <link rel="preload" as="font" type="font/woff2" href="assets/fonts/Cinzel.woff2" crossorigin />
   <link rel="preload" as="image" href="assets/ui/hero-scene.webp" fetchpriority="high" />
-  <link rel="stylesheet" href="public/style.css?v=4906e342db" />
+  <link rel="stylesheet" href="public/style.css?v=1ad18ade6d" />
   <link rel="stylesheet" href="public/fx.css?v=969db94a22" />
 </head>
 <body>
@@ -38,6 +38,15 @@
   <!-- TITLE -->
   <section id="title" class="screen show">
     <button class="icon-btn bare title-settings" id="titleSettings" title="Settings"><img src="assets/ui/gear.webp" alt="Settings"></button>
+    <!-- R8 (owner feedback 4): the two chips moved OUT of the flow into the TOP-RIGHT corner, immediately left of
+         the gear, so the menu can sit lower and the three title creatures read as standing on the grass. They are
+         absolutely positioned (style.css `.title-meta`) and shrink-to-fit, so a long display name wraps the points
+         chip onto a second line instead of pushing the page sideways. #updateBanner still owns the top centre —
+         while the title is up it is dropped below this row (`#title.show ~ #updateBanner`). -->
+    <div class="title-meta" id="titleMeta">
+      <button class="meta-chip" id="acctChip" type="button" hidden></button>
+      <button class="meta-chip pts" id="ptsChip" type="button" aria-label="Fusion points">✦ <b id="ptsChipN">0</b><span id="ptsChipTail"></span></button>
+    </div>
     <div class="title-hero">
       <img class="title-wordmark" src="assets/ui/wordmark-trinklings.webp" alt="Trinklings" fetchpriority="high" />
       <div class="title-creatures">
@@ -45,11 +54,6 @@
         <img class="tc tc2" src="assets/creatures/gnash.webp" alt="" />
         <img class="tc tc3" src="assets/creatures/foxfire.webp" alt="" />
       </div>
-    </div>
-    <!-- M1 — title chips (spec-client-meta §6.1). In flow above the three buttons: #updateBanner owns the top centre. -->
-    <div class="title-meta" id="titleMeta">
-      <button class="meta-chip" id="acctChip" type="button" hidden></button>
-      <button class="meta-chip pts" id="ptsChip" type="button" aria-label="Fusion points">✦ <b id="ptsChipN">0</b><span id="ptsChipTail"></span></button>
     </div>
     <!-- R6 (owner feedback 1): "Online should be the big primary button rather than offline". ONLINE is now the
          one dominant full-width action and wears the dark-navy `.primary` plate (the house CTA — Play again /
@@ -68,7 +72,10 @@
       </div>
       <button class="btn glass title-shop" id="titleShop" type="button" hidden>Shop</button>
     </div>
-    <div id="titleRecord" class="title-record" hidden></div>
+    <!-- R8 (owner feedback 4): the rank / Cups record line ("Wardling · 3 Cups · ✦ 1 Perfect") used to sit here,
+         under the buttons. It moved to the Settings sheet as #settingsRecord — see app.js showBest(). Nothing
+         about the tracking changed: cc_best, rankFor(), the rank-up announcement and the Perfect-Cup count on the
+         game-over screen are all untouched; only where the standing total is READ moved. -->
   </section>
 
   <!-- SHOP / GAME -->
@@ -352,6 +359,9 @@
   <div id="settingsModal" class="modal" hidden>
     <div class="modal-card">
       <h2>Settings</h2>
+      <!-- R8: the rank + Cups record, moved off the title. Painted by app.js showBest(); stays hidden until the
+           player has a Cup or a win, so a brand-new player sees the same settings list they saw before. -->
+      <div id="settingsRecord" class="record-line" hidden></div>
       <button class="btn" id="settingsAccount" hidden>Account: Sign in</button>
       <button class="btn" id="settingsEmotes">Emotes: On</button>
       <button class="btn" id="settingsStall" hidden>Shop</button>
@@ -654,6 +664,6 @@
 </div>
 <audio id="bgm" loop preload="none" src="assets/audio/music.m4a"></audio>
 <audio id="bgm-battle" loop preload="none" src="assets/audio/battle-music.m4a"></audio>
-<script type="module" src="public/app.js?v=e824764710"></script>
+<script type="module" src="public/app.js?v=a6086cde15"></script>
 </body>
 </html>
