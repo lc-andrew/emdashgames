@@ -2082,3 +2082,8 @@ html.gfx-lite {
   .is-loading::after, .lad-card.skel::after { animation: none; opacity: .8; }
   .is-stale { animation: none; opacity: 1; }
 }
+
+/* R7: the points sheet's primary button lives INSIDE the scrolling .sheet-body, whose overflow clipped the button's pressed-ledge
+   and shadow ("See my fusions" looked cut off). Give the scroller room for the ledge, and never let the button be the clipped edge. */
+#ptsModal .sheet-body { padding-bottom: 14px; }
+#ptsModal #ptsGo { display: block; width: 100%; margin: 12px 0 4px; }

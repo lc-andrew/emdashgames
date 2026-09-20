@@ -29,7 +29,7 @@
   <link rel="preload" as="font" type="font/woff2" href="assets/fonts/Nunito.woff2" crossorigin />
   <link rel="preload" as="font" type="font/woff2" href="assets/fonts/Cinzel.woff2" crossorigin />
   <link rel="preload" as="image" href="assets/ui/hero-scene.webp" fetchpriority="high" />
-  <link rel="stylesheet" href="public/style.css?v=0f8c3accd5" />
+  <link rel="stylesheet" href="public/style.css?v=fccd38d4c3" />
   <link rel="stylesheet" href="public/fx.css?v=969db94a22" />
 </head>
 <body>
@@ -492,8 +492,9 @@
       <div class="sheet-body">
         <div id="ptsBody"></div>
         <p class="pts-foot" id="ptsFoot"></p>
-        <button class="btn big primary" id="ptsGo"></button>
       </div>
+      <!-- R7: the primary action sits OUTSIDE the scrolling body so it can never be half-hidden at the fold on a short phone -->
+      <button class="btn big primary" id="ptsGo"></button>
       <button class="btn ghostbtn" id="ptsClose">Got it</button>
     </div>
   </div>
