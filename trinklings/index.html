@@ -18,6 +18,40 @@
         }
       } catch (e) { t = 'high'; }
       try { var c = document.documentElement.classList; c.remove('gfx-high', 'gfx-lite'); c.add('gfx-' + t); } catch (e) {}
+      /* (R9 lane B) LANGUAGE, decided in the SAME pre-paint block and for a stronger reason than the tier:
+         the :lang(zh) font stacks must apply to the FIRST paint or every heading visibly re-flows.
+         Order: cc_lang -> navigator.language starting 'zh' -> English. `L`, `s`, `d` — never `t`, which is
+         already this IIFE's graphics-tier binding four lines up.
+         BOTH attributes are stamped on purpose: lang="zh-Hans" is the SCRIPT subtag that font matchers and
+         CSS :lang() want, and data-lang="zh-CN" is the unambiguous preference value public/i18n.js reads
+         back. The build's <html>-tag rewrite starts from the existing tag and only adds/replaces
+         data-img-ext / data-thumbs, so both survive the dist build verbatim.
+         zh-TW / zh-HK match indexOf('zh') === 0 and therefore start in SIMPLIFIED in R9 — a known
+         compromise: Traditional is a translation, not a script conversion. */
+      var L = 'en';
+      try {
+        var s = window.localStorage.getItem('cc_lang');
+        if (s === 'en' || s === 'zh-CN') L = s;
+        else if (String((navigator.language || navigator.userLanguage || '')).toLowerCase().indexOf('zh') === 0) L = 'zh-CN';
+      } catch (e) { L = 'en'; }
+      try {
+        var d = document.documentElement;
+        d.setAttribute('data-lang', L);
+        d.setAttribute('lang', L === 'zh-CN' ? 'zh-Hans' : 'en');
+        /* app.js is a DEFERRED module, so the static English markup below would otherwise paint before
+           applyLang() ever runs — on a slow Android that is hundreds of milliseconds of English in a Chinese
+           build, and no post-load screenshot would ever show it. `visibility: hidden` (not display:none) so
+           layout still resolves and nothing re-flows when it lifts. Added ONLY when L !== 'en', so the
+           English path has no extra paint state at all. */
+        if (L !== 'en') d.classList.add('i18n-pending');
+      } catch (e) {}
+      /* THE BROKEN-BUNDLE FAILSAFE ONLY — not the normal path, which is app.js lifting the class the instant
+         applyLang() finishes. 4000 ms, deliberately LONGER than the boot it guards: a failsafe shorter than
+         that boot is worse than no guard, because it reveals the English markup, applyLang then swaps it, and
+         the player sees the flash PLUS a visible relayout. The browser gate measures boot-to-applyLang and
+         reds above 3000 ms, which is the signal that the failsafe — not the guard — has become the thing the
+         player sees. */
+      if (L !== 'en') setTimeout(function () { try { document.documentElement.classList.remove('i18n-pending'); } catch (e) {} }, 4000);
     })();
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
@@ -29,7 +63,7 @@
   <link rel="preload" as="font" type="font/woff2" href="assets/fonts/Nunito.woff2" crossorigin />
   <link rel="preload" as="font" type="font/woff2" href="assets/fonts/Cinzel.woff2" crossorigin />
   <link rel="preload" as="image" href="assets/ui/hero-scene.webp" fetchpriority="high" />
-  <link rel="stylesheet" href="public/style.css?v=1ad18ade6d" />
+  <link rel="stylesheet" href="public/style.css?v=2393c9b8eb" />
   <link rel="stylesheet" href="public/fx.css?v=969db94a22" />
 </head>
 <body>
@@ -50,6 +84,11 @@
     <div class="title-hero">
       <img class="title-wordmark" src="assets/ui/wordmark-trinklings.webp" alt="Trinklings" fetchpriority="high" />
       <div class="title-creatures">
+        <!-- (R9 lane F, owner: "ensure that they have Shadows as well") One ground shadow per pet. They are
+             SIBLINGS, not pseudo-elements, because an <img> has no ::after to hang one on, and they come
+             FIRST so they paint under all three pets. Empty + aria-hidden: decorative, never announced.
+             Geometry and phase live entirely in style.css (.tcshN rides .tcN's own rule). -->
+        <i class="tcsh tcsh1" aria-hidden="true"></i><i class="tcsh tcsh2" aria-hidden="true"></i><i class="tcsh tcsh3" aria-hidden="true"></i>
         <img class="tc tc1" src="assets/creatures/ducat.webp" alt="" />
         <img class="tc tc2" src="assets/creatures/gnash.webp" alt="" />
         <img class="tc tc3" src="assets/creatures/foxfire.webp" alt="" />
@@ -96,14 +135,17 @@
     <div id="cardDetail" class="card-detail" hidden></div>
 
     <div class="squad-wrap">
-      <div class="row-label"><span>Your squad</span><span class="row-tools"><button class="chip-btn" id="tacticsChip" type="button"></button><button class="chip-btn" id="rivalBtn" type="button" hidden>Rival<span class="long"> squad</span></button></span></div>
+      <div class="row-label"><span>Your squad</span><span class="row-tools"><button class="chip-btn" id="tacticsChip" type="button"></button><button class="chip-btn" id="rivalBtn" type="button" hidden data-i18n="html">Rival<span class="long"> squad</span></button><!-- (R9 lane C) Skip is ONE tap, permanent, no confirm — a confirm is the exact tap that lane exists to delete. Appended LAST so it sits at the screen edge; it inherits .chip-btn::before's house tap pad verbatim (32 px measured in BOTH engines, grown only downward and sideways — see the comment above `.chip-btn::before`, public/style.css:1358-1368, which records the measurement that forbids an upward extension). (R9-V2, C-8: this parenthetical still said 34 px, and cited a line range that now lands inside `.modal-card.sheet-card`; the lane corrected the number everywhere but here. C-9: the ` ob-chip` class went with it — it carried no rule in style.css and no reference in onboard.js, which addresses the element by id.) --><button class="chip-btn" id="obChip" type="button" hidden>Skip</button></span></div>
       <div id="squad" class="squad"></div>
       <div id="orderStrip" class="order-strip" aria-hidden="true"></div>
     </div>
 
     <div class="shop-wrap">
       <!-- (R5 §2.2) the Gear Shelf chip is retired: all three item cells are ordinary loadout cells in #shopSnacks. -->
-      <div class="row-label"><span>Shop</span></div>
+      <!-- (R9 lane D) The row-label is a space-between flex whose right half was empty; the squad row already uses
+           that half for .row-tools. Naming the halves costs ZERO height, and the shop's three gear cells finally
+           carry the word the owner ruled on: Gear. -->
+      <div class="row-label"><span>Shop</span><span class="rl-half">Gear</span></div>
       <div class="shop-row combined">
         <div id="shopPets" class="cells"></div>
         <div id="shopSnacks" class="cells"></div>
@@ -155,6 +197,11 @@
         </div>
         <div id="cosBonus" class="cos-bonus" hidden></div>
         <div class="lad-rankup" id="ladRankUp" hidden></div><!-- absolutely positioned: takes no layout height -->
+        <!-- (R9 lane C) The result card writes a bare "−1 ❤ · 4 left" / "+1 🏆 · 1/10" with no key to either
+             symbol. This gives them one, ONCE, on the first guided card — and onboard.onResult() UN-writes it
+             unconditionally at the top of every result card in every mode, so it is permanent MARKUP and never
+             permanent copy. It is inside #battle, so it costs #game's height budget nothing. -->
+        <p id="obResultNote" class="ob-result" hidden></p>
         <button class="btn big primary" id="continueBtn">Continue ▶</button>
       </div>
     </div>
@@ -208,7 +255,7 @@
     <div class="title-card">
       <img class="duel-hero" src="assets/ui/online-duel.webp" alt="Online duel" />
       <h1>Online Duel</h1>
-      <p class="tag" id="duelTag">Share a <b>room code</b> — <b>6 lives</b> each, last standing wins.</p>
+      <p class="tag" id="duelTag" data-i18n="html">Share a <b>room code</b> — <b>6 lives</b> each, last standing wins.</p>
       <input id="duelCode" class="duel-input" maxlength="6" placeholder="ROOM CODE" autocapitalize="characters" autocomplete="off" />
       <input id="duelName" class="duel-input" maxlength="12" placeholder="Your name" autocomplete="off" />
       <button class="btn big primary" id="duelJoin">Join room</button>
@@ -247,7 +294,7 @@
     <div class="title-card">
       <img class="duel-hero" src="assets/ui/duel-icon.webp" alt="Local" />
       <h1>Local Duel</h1>
-      <p class="tag">Same Wi-Fi, phone-to-phone. One player <b>Hosts</b>, the other <b>Joins</b> with the code.</p>
+      <p class="tag" data-i18n="html">Same Wi-Fi, phone-to-phone. One player <b>Hosts</b>, the other <b>Joins</b> with the code.</p>
       <input id="localName" class="duel-input" maxlength="12" placeholder="Your name" autocomplete="off" />
       <div id="localPick">
         <button class="btn big primary" id="localHostBtn">Host a game</button>
@@ -258,7 +305,7 @@
       <div id="localHostView" hidden>
         <div class="local-code" id="localCodeShow">----</div>
         <canvas id="localQR" width="176" height="176" class="local-qr"></canvas>
-        <p class="tag">On the other phone: open <b>Local → Join</b> and enter this code, or scan the QR.</p>
+        <p class="tag" data-i18n="html">On the other phone: open <b>Local → Join</b> and enter this code, or scan the QR.</p>
       </div>
       <div id="localStatus" class="tag" style="margin-top:12px"></div>
       <button class="btn ghostbtn" id="localBack">Back</button>
@@ -316,6 +363,11 @@
     <div class="modal-card tier-card">
       <div class="tier-emblem"><span id="tierBig">2</span></div>
       <h2 id="tierModalTitle">Tier 2 unlocked!</h2>
+      <!-- (R9 lane C) "Tier 2 unlocked!" + "Nice ▶" names a mechanic and never explains it, in a modal every
+           player meets on turn 3 of every run. Static markup: no hook, no step, no storage, no lifetime. It is
+           the only change in that lane which reaches a player who never sees the guide, and it is what makes
+           lane E's tier mark readable instead of a second unexplained mark. -->
+      <p id="tierModalSub" class="sheet-sub">Stronger Trinklings now show up in the shop.</p>
       <button class="btn big primary" id="tierModalOk">Nice ▶</button>
     </div>
   </div>
@@ -323,7 +375,7 @@
   <!-- FUSE INFO SCREEN — opens before EVERY fuse (tap or drag); never skipped. cc_fuse_warned only collapses the rules list. -->
   <div id="fuseModal" class="modal" hidden>
     <div class="modal-card fuse-card" role="dialog" aria-modal="true" aria-labelledby="fuseModalTitle">
-      <h2 id="fuseModalTitle">Fuse into <span id="fuseModalName">a new Trinkling</span>?</h2>
+      <h2 id="fuseModalTitle" data-i18n="html">Fuse into <span id="fuseModalName">a new Trinkling</span>?</h2>
       <p id="fuseModalNew" class="fz-new" hidden></p>
       <div id="fuseModalPair" class="fuse-pair"></div>
       <div id="fuseModalAbils" class="fuse-abils"></div>
@@ -332,10 +384,10 @@
       <details id="fuseModalRules" class="fuse-rules-wrap">
         <summary>How fusing works</summary>
         <ul class="fuse-rules">
-          <li><b>Reborn at 1/1</b> — both pets are used up and its stats start over.</li>
-          <li><b>Keeps both abilities</b> at their levels, each on its own trigger, plus a new Signature Move: <b id="fuseModalSig" class="sig-name">✦ Signature Move</b></li>
-          <li>Held battle items come along; fed boosts don’t. It can’t combine or fuse again.</li>
-          <li><b>Fuse spare pets, not your carries</b>, then <b>feed or shield</b> the 1/1 — lines tagged <b>Needs HP</b> wait until it’s fed.</li>
+          <li data-i18n="html"><b>Reborn at 1/1</b> — both pets are used up and its stats start over.</li>
+          <li data-i18n="html"><b>Keeps both abilities</b> at their levels, each on its own trigger, plus a new Signature Move: <b id="fuseModalSig" class="sig-name">✦ Signature Move</b></li>
+          <li>Held battle Gear comes along; stat boosts don’t. It can’t combine or fuse again.</li>
+          <li data-i18n="html"><b>Fuse spare pets, not your carries</b>, then <b>feed or shield</b> the 1/1 — lines tagged <b>Needs HP</b> wait until it’s fed.</li>
         </ul>
       </details>
       <div class="btn-row">
@@ -362,6 +414,11 @@
       <!-- R8: the rank + Cups record, moved off the title. Painted by app.js showBest(); stays hidden until the
            player has a Cup or a win, so a brand-new player sees the same settings list they saw before. -->
       <div id="settingsRecord" class="record-line" hidden></div>
+      <!-- (R9 lane B) Language is the FIRST button in the sheet, above #settingsAccount. The sheet scrolls at
+           360x640, so POSITION — not fit — decides whether a Chinese-speaking player ever finds the switch
+           (FB-R34), and `语言` reads with zero context in an otherwise English sheet (FB-R3). The shipped
+           label is the default; app.js's updateLangLabel() repaints it on open, like every other row. -->
+      <button class="btn" id="settingsLang">Language 语言: English</button>
       <button class="btn" id="settingsAccount" hidden>Account: Sign in</button>
       <button class="btn" id="settingsEmotes">Emotes: On</button>
       <button class="btn" id="settingsStall" hidden>Shop</button>
@@ -380,7 +437,7 @@
   <div id="triggersModal" class="modal" hidden>
     <div class="modal-card triggers-card">
       <h2>When abilities trigger</h2>
-      <p class="triggers-intro">A <b>Trinkling's ability</b> only fires at the moment shown below. The little tag on each card tells you which one it waits for.</p>
+      <p class="triggers-intro" data-i18n="html">A <b>Trinkling's ability</b> only fires at the moment shown below. The little tag on each card tells you which one it waits for.</p>
       <div id="triggersBody" class="triggers-body"></div>
       <button class="btn ghostbtn" id="triggersClose">Close</button>
     </div>
@@ -631,19 +688,20 @@
     <div class="modal-card howto">
       <h2>How to play</h2>
       <ul>
-        <li>Each turn you get <b>10 <img class="ic" src="assets/ui/coin.webp" alt="gold"></b> to spend in the shop. It doesn't carry over.</li>
-        <li>Every Trinkling shows two chips: a <b>grey Attack</b> and a <b>red Health</b> (X / Y). So "+2/+2" means +2 attack and +2 health.</li>
-        <li><b>Tap a shop Trinkling</b>, then <b>tap an empty squad slot</b> to buy it (<span id="howBuyCost">3</span> <img class="ic" src="assets/ui/coin.webp" alt="gold">).</li>
-        <li>Tap a squad Trinkling, then another slot to <b>reorder</b> — the <b>rightmost one fights first ▶</b>.</li>
-        <li>Some Trinklings <b>move the line</b> once the fight starts: they <b>swap</b> (<b>⇄</b>) — trade places with a friend — or <b>shove an enemy</b> to the front or the back of its line. Whoever ends up at the front is who swings next, so the order you set is not always the order you get.</li>
-        <li>Buy <b>copies of the same</b> Trinkling to <b>combine</b> them (bigger stats + it levels up), or drop <b>two different ones</b> together to <b>fuse</b> them (<span id="howFuseCost">12</span> <img class="ic" src="assets/ui/coin.webp" alt="gold">, or <span id="howBuyFuseCost">15</span> straight from the shop). The new Trinkling is <b>reborn at 1/1</b>, but keeps <b>both abilities</b> at their levels and gains a unique <b>✦ Signature Move</b>.</li>
-        <li>A fused Trinkling has <b>several abilities</b> — each fires on its <b>own trigger</b> (the tag beside it). Tap it to read them all. A 1/1 faints fast: <b>give it gear</b>, and fuse spare pets rather than your strongest.</li>
-        <li><b>Gear</b> is what you bring. Pick up to six before a run; only those show up in the shop. Each costs <span id="howSnackCost">3</span> <img class="ic" src="assets/ui/coin.webp" alt="gold"> to give to a Trinkling. Some is a <b>permanent</b> stat boost; some is <b>held</b> and acts in the fight — it blocks, lures, goes first, echoes. One held piece of each kind per Trinkling; fusing keeps it.</li>
-        <li>Tap a squad Trinkling and hit <b>Sell</b> to get some gold back.</li>
-        <li><b>Reroll</b> the shop for new Trinklings, or select a shop item and hit <b>Freeze</b> to keep it next turn (free).</li>
-        <li>Hit <b>End Turn</b> to start a <b>fight</b> — the auto-battle. Boosts "for the fight" last one battle; <b>(permanent)</b> ones stay forever.</li>
-        <li><b>Win 10 fights</b> to collect 10 <img class="ic" src="assets/ui/trophy.webp" alt="trophies"> and take the Cup!</li>
-        <li>Lose a fight, lose a <img class="ic" src="assets/ui/heart.webp" alt="life">. At <b>0</b> the game ends — no Trinkling is ever truly hurt.</li>
+        <li data-i18n="html">Each turn you get <b>10 <img class="ic" src="assets/ui/coin.webp" alt="gold"></b> to spend in the shop. It doesn't carry over.</li>
+        <li data-i18n="html">Every Trinkling and every piece of Gear carries a small <b>tier</b> badge in its top corner — <b>T1</b> up to <b>T6</b>. A new tier opens every second turn, and the higher the tier, the stronger the Trinkling. Tap a card to see its tier written out.</li>
+        <li data-i18n="html">Every Trinkling shows two chips: a <b>grey Attack</b> and a <b>red Health</b> (X / Y). So "+2/+2" means +2 attack and +2 health.</li>
+        <li data-i18n="html"><b>Tap a shop Trinkling</b>, then <b>tap an empty squad slot</b> to buy it (<span id="howBuyCost">3</span> <img class="ic" src="assets/ui/coin.webp" alt="gold">).</li>
+        <li data-i18n="html">Tap a squad Trinkling, then another slot to <b>reorder</b> — the <b>rightmost one fights first ▶</b>.</li>
+        <li data-i18n="html">Some Trinklings <b>move the line</b> once the fight starts: they <b>swap</b> (<b>⇄</b>) — trade places with a friend — or <b>shove an enemy</b> to the front or the back of its line. Whoever ends up at the front is who swings next, so the order you set is not always the order you get.</li>
+        <li data-i18n="html">Buy <b>copies of the same</b> Trinkling to <b>combine</b> them (bigger stats + it levels up), or drop <b>two different ones</b> together to <b>fuse</b> them (<span id="howFuseCost">12</span> <img class="ic" src="assets/ui/coin.webp" alt="gold">, or <span id="howBuyFuseCost">15</span> straight from the shop). The new Trinkling is <b>reborn at 1/1</b>, but keeps <b>both abilities</b> at their levels and gains a unique <b>✦ Signature Move</b>.</li>
+        <li data-i18n="html">A fused Trinkling has <b>several abilities</b> — each fires on its <b>own trigger</b> (the tag beside it). Tap it to read them all. A 1/1 faints fast: <b>give it gear</b>, and fuse spare pets rather than your strongest.</li>
+        <li data-i18n="html"><b>Gear</b> is what you bring. Pick up to six before a run; only those show up in the shop. Each costs <span id="howSnackCost">3</span> <img class="ic" src="assets/ui/coin.webp" alt="gold"> to give to a Trinkling. <b>Tap a piece of Gear, then tap the Trinkling that gets it</b> (or drag it across). Some is a <b>permanent</b> stat boost; some is <b>held</b> and acts in the fight — it blocks, lures, goes first, echoes. One held piece of each kind per Trinkling; fusing keeps it.</li>
+        <li data-i18n="html">Tap a squad Trinkling and hit <b>Sell</b> to get some gold back.</li>
+        <li data-i18n="html"><b>Reroll</b> the shop for new Trinklings, or select a shop card and hit <b>Freeze</b> to keep it next turn (free).</li>
+        <li data-i18n="html">Hit <b>End Turn</b> to start a <b>fight</b> — the auto-battle. Boosts "for the fight" last one battle; <b>(permanent)</b> ones stay forever.</li>
+        <li data-i18n="html"><b>Win 10 fights</b> to collect 10 <img class="ic" src="assets/ui/trophy.webp" alt="trophies"> and take the Cup!</li>
+        <li data-i18n="html">Lose a fight, lose a <img class="ic" src="assets/ui/heart.webp" alt="life">. At <b>0</b> the game ends — no Trinkling is ever truly hurt.</li>
       </ul>
       <button class="btn big primary" id="howClose">Got it!</button>
     </div>
@@ -659,11 +717,53 @@
   </div>
 
   <!-- "A new version is ready" — keyed on the BUILD HASH; title / game-over only, never during a run -->
+  <!-- ONBOARDING (R9 lane C) — the spotlight layer, a child of #app.
+       z-index 15: ABOVE the board, BELOW .update-banner (19 — a "new version is ready" banner must never be
+       dimmed by a tutorial scrim) and BELOW every .modal (20), so #tierModal / #fuseModal / #rewardModal cover
+       it without a line of coordination. A layer OUTSIDE #app at any z>1 would paint over all of them (#app is
+       position:relative;z-index:1). position:fixed so getBoundingClientRect() values are used raw;
+       pointer-events:none throughout — it points at a control, it never blocks one. It is NOT in #game's flow,
+       so the measured 360x560 zero-slack height budget (verify-r4.mjs) is untouched by construction. -->
+  <!-- (R9-V2, C-10) aria-hidden MOVED OFF THE CONTAINER ONTO THE DECORATIVE CHILD. #obHole is a ring and has
+       nothing to say; #obTip carries the battle lesson ("They fight on their own. Tap Skip to jump ahead.") and
+       is the ONLY surface that carries it — every other cue paints into #coach, #hint or #obResultNote, none of
+       which is aria-hidden. On the container it was the one lesson a screen-reader user could not receive.
+       role="status" announces the bubble once, when placeTip() un-hides it. .ob-layer keeps pointer-events:none,
+       so nothing about interaction moves. -->
+  <div id="obLayer" class="ob-layer" hidden>
+    <div id="obHole" class="ob-hole" hidden aria-hidden="true"></div>
+    <div id="obTip"  class="ob-tip"  role="status" hidden></div>
+  </div>
+
+  <!-- ONBOARDING WELCOME — the one card a brand-new player meets. ONE primary, ONE skip. .sheet-card so the
+       primary sits OUTSIDE .sheet-body and can never be half-hidden at the fold (the same reason #ptsGo sits
+       outside its scroller). Every string is written by onboard.js with the numbers interpolated from CONFIG,
+       so there is no second copy of any sentence to drift and lane B gets one dictionary. The three creatures
+       are the three the title already paints — zero new bytes, zero new art, no humanoid. -->
+  <div id="obWelcome" class="modal" hidden>
+    <div class="modal-card sheet-card ob-card" role="dialog" aria-modal="true" aria-labelledby="obTitle">
+      <div class="ob-art" aria-hidden="true">
+        <img src="assets/creatures/ducat.webp" alt=""><img src="assets/creatures/gnash.webp" alt=""><img src="assets/creatures/foxfire.webp" alt="">
+      </div>
+      <h2 id="obTitle"></h2>
+      <div class="sheet-body">
+        <p class="ob-lead" id="obLead"></p>
+        <ul class="ob-rows">
+          <li><img class="ic" src="assets/ui/coin.webp"   alt=""><span id="obRow1"></span></li>
+          <li><img class="ic" src="assets/ui/heart.webp"  alt=""><span id="obRow2"></span></li>
+          <li><img class="ic" src="assets/ui/trophy.webp" alt=""><span id="obRow3"></span></li>
+        </ul>
+      </div>
+      <button class="btn big primary" id="obStart"></button>
+      <button class="btn ghostbtn" id="obSkip"></button>
+    </div>
+  </div>
+
   <div id="updateBanner" class="update-banner" hidden><span>A new version is ready.</span><button class="btn small" id="updateRefresh" type="button">Refresh</button></div>
 
 </div>
 <audio id="bgm" loop preload="none" src="assets/audio/music.m4a"></audio>
 <audio id="bgm-battle" loop preload="none" src="assets/audio/battle-music.m4a"></audio>
-<script type="module" src="public/app.js?v=a6086cde15"></script>
+<script type="module" src="public/app.js?v=c0097e2c64"></script>
 </body>
 </html>

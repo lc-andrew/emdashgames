@@ -25,6 +25,28 @@
   --parchment: #ffffff; --parchment-hi: #f1f8ff; --marble: #d6eefb;
   /* tier ramp — bright ascending (slate → green → sky → violet → amber → gold) */
   --tier1: #9db1c2; --tier2: #5fc39a; --tier3: #4fb0e6; --tier4: #a983ea; --tier5: #f0955c; --tier6: #f5c542;
+  /* (R9 lane B) FONT-FAMILY TOKENS. Three roles, one definition each, and every family declaration in this
+     sheet now reads one of them: Nunito = body/UI, Cinzel = all display, Cinzel Decorative = hero titles and
+     the battle-result stamp. 64 of the 75 family declarations (38 `font-family:` + 37 `font:` shorthands)
+     were rewritten to these; the other 11 are deliberately left — 3 `font-family` inside @font-face (those
+     DEFINE the faces), 3 `font-family: inherit` + 3 `font: inherit` (which inherit whichever token their
+     parent resolved), and one `ui-monospace, monospace` slot that is monospace on purpose.
+     THE LATIN FACES STAY FIRST IN THE ZH STACKS, and that is the whole design: font fallback is per-glyph, so
+     Latin creature names, `Lv3`, `T4` and every digit keep the Cinzel/Nunito look while only hanzi fall
+     through to the system CJK face. That is the difference between a bilingual design and a Chinese build
+     that lost its typography.
+     NO CJK WEB FONT. A subset CJK WOFF2 would need build_assets.py's FONT_FILES, deploy_pages.sh's
+     FONT_NAMES and verify_dist.mjs's font list changed in lockstep, and it puts a few hundred KB in front of
+     a first paint that currently preloads two faces. System CJK (PingFang SC on iOS, Noto Sans CJK SC on
+     Android) is correct and free.
+     RECORDED AS A CHANGE, NOT A SILENT IMPROVEMENT: unifying on these three stacks gives 45 declarations that
+     said `'Nunito', sans-serif` the four system-sans fallbacks between Nunito and sans-serif, and gives 9
+     that said `'Cinzel', serif` the Georgia step the other 4 already had. That only decides which face draws
+     a glyph the primary family LACKS — none in English, and exactly the case the zh block below rewrites.
+     `.front-tag` had NO fallback at all (a bare `'Nunito'`), which was a latent bug; it has a real tail now. */
+  --ff-body: 'Nunito', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  --ff-display: 'Cinzel', Georgia, serif;
+  --ff-hero: 'Cinzel Decorative', 'Cinzel', serif;
   --r-sm: 8px; --r-md: 13px; --r-lg: 18px; --r-xl: 24px;
   --sh-soft: 0 5px 16px rgba(20,50,80,.22); --sh-pop: 0 14px 34px rgba(20,45,75,.34);
   --ease-bounce: cubic-bezier(.34,1.56,.64,1); --ease-soft: cubic-bezier(.4,0,.2,1);
@@ -39,7 +61,7 @@
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; height: 100%; }
 body {
-  font-family: 'Nunito', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  font-family: var(--ff-body);
   color: var(--ink); font-weight: 600;
   /* the painted RPG landscape — a lush valley of mossy stone bricks, sits behind all the glass UI */
   background: var(--bg-deep);   /* the painted landscape itself is the fixed body::after layer below */
@@ -55,7 +77,7 @@ body::after { content: ""; position: fixed; inset: 0; z-index: -1; pointer-event
   background: url('../assets/ui/bg-shop.webp') center center / cover no-repeat; }
 #app { position: relative; z-index: 1; height: 100dvh; max-width: 560px; margin: 0 auto; }
 
-h1, h2 { font-family: 'Cinzel', Georgia, serif; font-weight: 800; text-transform: uppercase; letter-spacing: .09em; color: var(--gilt-deep); }
+h1, h2 { font-family: var(--ff-display); font-weight: 800; text-transform: uppercase; letter-spacing: .09em; color: var(--gilt-deep); }
 
 /* ---- icons ---- */
 .ic { width: 1.15em; height: 1.15em; object-fit: contain; vertical-align: -.2em; display: inline-block; }
@@ -67,7 +89,7 @@ h1, h2 { font-family: 'Cinzel', Georgia, serif; font-weight: 800; text-transform
 
 /* ---- buttons: engraved metal plates; press-lip stamp ---- */
 .btn {
-  position: relative; border: none; border-radius: var(--r-lg); padding: 13px 18px; font-family: 'Nunito', sans-serif; font-weight: 800;
+  position: relative; border: none; border-radius: var(--r-lg); padding: 13px 18px; font-family: var(--ff-body); font-weight: 800;
   background: linear-gradient(180deg, #ffffff, #e9f3fb); color: var(--ink); cursor: pointer; touch-action: manipulation;
   box-shadow: 0 4px 0 #bcd6e8, var(--sh-soft), inset 0 1px 0 rgba(255,255,255,.8); border: 1.5px solid var(--panel-line);
   transition: transform .12s var(--ease-bounce), box-shadow .12s var(--ease-bounce), filter .12s;
@@ -77,7 +99,7 @@ h1, h2 { font-family: 'Cinzel', Georgia, serif; font-weight: 800; text-transform
 .btn.primary { position: relative; overflow: hidden; background: linear-gradient(180deg, #3d4d78 0%, #2c3a63 38%, #1f2b4f 72%, #141d38 100%);
   color: #ffffff; border: 2px solid rgba(255,255,255,.82); border-radius: var(--r-lg);
   box-shadow: 0 5px 0 #0b1230, 0 9px 20px rgba(10,20,50,.5), 0 0 24px rgba(70,110,200,.4), inset 0 2px 0 rgba(255,255,255,.3), inset 0 -3px 7px rgba(6,12,30,.5);
-  font-family: 'Nunito', sans-serif; text-transform: uppercase; letter-spacing: .07em; text-shadow: 0 1px 0 rgba(6,12,30,.7), 0 2px 5px rgba(4,8,20,.5); }
+  font-family: var(--ff-body); text-transform: uppercase; letter-spacing: .07em; text-shadow: 0 1px 0 rgba(6,12,30,.7), 0 2px 5px rgba(4,8,20,.5); }
 .btn.primary::after { content: ""; position: absolute; top: 0; left: -60%; width: 42%; height: 100%; pointer-events: none; transform: translateX(0) skewX(-18deg);
   background: linear-gradient(105deg, transparent, rgba(255,255,255,.5), transparent); animation: btnShine 3.6s ease-in-out infinite; }
 /* the sweep moves by TRANSFORM (compositor-only; animating `left` re-laid-out + repainted forever): left -60% → 135% of
@@ -141,7 +163,7 @@ h1, h2 { font-family: 'Cinzel', Georgia, serif; font-weight: 800; text-transform
 .logo { font-size: 3.6rem; line-height: 1; filter: drop-shadow(0 6px 14px rgba(0,0,0,.5)); animation: bob 2.6s var(--ease-soft) infinite; }
 /* DEFEAT screen (per feedback): a proper title + the sad Trinkling, warm not grim */
 #gameover.defeat .title-card { background: rgba(255,247,244,.62); }
-#gameover.defeat #goTitle { font-family: 'Cinzel', serif; font-size: 2.5rem; font-weight: 900; letter-spacing: .05em; text-transform: uppercase;
+#gameover.defeat #goTitle { font-family: var(--ff-display); font-size: 2.5rem; font-weight: 900; letter-spacing: .05em; text-transform: uppercase;
   color: var(--coral-deep); text-shadow: 0 2px 0 rgba(255,255,255,.55), 0 3px 10px rgba(150,45,65,.35); margin: 2px 0 4px; }
 #gameover.defeat .logo { animation: sadBob 3.4s var(--ease-soft) infinite; }
 @keyframes sadBob { 0%,100% { transform: translateY(0) rotate(-1.5deg); } 50% { transform: translateY(3px) rotate(1.5deg); } }
@@ -150,7 +172,7 @@ h1, h2 { font-family: 'Cinzel', Georgia, serif; font-weight: 800; text-transform
 .duel-hero { display: block; width: auto; height: 96px; max-width: 80%; margin: 0 auto 2px; object-fit: contain; filter: drop-shadow(0 5px 12px rgba(0,0,0,.35)); animation: bob 2.6s var(--ease-soft) infinite; }
 @keyframes bob { 0%,100% { transform: translateY(0) rotate(-2deg);} 50% { transform: translateY(-8px) rotate(2deg);} }
 /* the engraved-metal wordmark */
-h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; letter-spacing: .06em; margin: 14px 0 2px;
+h1 { font-family: var(--ff-hero); font-size: 2.2rem; letter-spacing: .06em; margin: 14px 0 2px;
   color: var(--gilt-deep); -webkit-text-fill-color: var(--gilt-deep);
   filter: drop-shadow(0 2px 0 #ffffff) drop-shadow(0 3px 5px rgba(40,90,130,.3)); }
 .tag { color: var(--ink-soft); margin: 6px 0 16px; line-height: 1.5; font-weight: 600; }
@@ -220,7 +242,7 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 .hint-slot { height: 54px; flex-shrink: 0; overflow: hidden; }   /* hard guarantee: however long a hint gets, the pill is clipped INSIDE the slot and #game never gains a scrollbar */
 
 /* ---- rows ---- */
-.row-label { position: relative; top: -7px; display: flex; justify-content: space-between; align-items: baseline; font-family: 'Cinzel', serif; text-transform: uppercase; letter-spacing: .05em; font-weight: 800; color: #fff; text-shadow: 0 1px 2px rgba(20,45,75,.55), 0 1px 8px rgba(20,45,75,.4); margin: -4px 4px 6px; font-size: .84rem; }
+.row-label { position: relative; top: -7px; display: flex; justify-content: space-between; align-items: baseline; font-family: var(--ff-display); text-transform: uppercase; letter-spacing: .05em; font-weight: 800; color: #fff; text-shadow: 0 1px 2px rgba(20,45,75,.55), 0 1px 8px rgba(20,45,75,.4); margin: -4px 4px 6px; font-size: .84rem; }
 .row-label.sub { margin-top: 8px; font-size: .72rem; color: rgba(255,255,255,.9); }   /* keep "Items" readable on the stone (was dark ink) */
 /* (R5 §2.2) The round-4 Gear Shelf chip (`.gear-shelf`, its `.gs-tag` / `.gs-next` parts and their two media-query
    reliefs) is DELETED with the shelf itself: all three item cells are ordinary loadout cells in #shopSnacks now. The
@@ -228,8 +250,8 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 .cd-rule { font-size:.66rem; line-height:1.3; opacity:.8; margin-top:3px; }
 .cd-held, .ht-held { font-size:.7rem; line-height:1.3; margin-top:3px; }
 .held-ic { width:16px; height:16px; vertical-align:-3px; margin-right:3px; }
-.front-tag { font-size: .68rem; font-weight: 800; color: #1f7d49; font-family: 'Nunito'; letter-spacing: 0; text-transform: none; }
-.tier-tag { font-family: 'Nunito', sans-serif; font-size: .72rem; font-weight: 800; background: linear-gradient(180deg,var(--gilt),var(--accent-deep)); color: var(--silver-hi); padding: 3px 10px; border-radius: 4px; box-shadow: inset 0 1px 0 rgba(255,255,255,.25); }
+.front-tag { font-size: .68rem; font-weight: 800; color: #1f7d49; font-family: var(--ff-body); letter-spacing: 0; text-transform: none; }
+.tier-tag { font-family: var(--ff-body); font-size: .72rem; font-weight: 800; background: linear-gradient(180deg,var(--gilt),var(--accent-deep)); color: var(--silver-hi); padding: 3px 10px; border-radius: 4px; box-shadow: inset 0 1px 0 rgba(255,255,255,.25); }
 .squad-wrap, .shop-wrap { flex-shrink: 0; }
 .squad, .shop-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
 /* squad front (index 0) sits on the RIGHT to match the reversed battle order (pets face right → fight first);
@@ -284,8 +306,11 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 .card:nth-child(3n+1) .art img { animation-delay: -1.7s; }
 .card:nth-child(3n+2) .art img { animation-delay: -2.5s; }
 .card .art .initial { font-weight: 900; font-size: 1.4rem; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.4); }
-.card .nm { display: flex; align-items: center; justify-content: center; gap: 3px; font-size: .64rem; font-weight: 800; color: var(--ink); margin-top: 3px; min-width: 0; }
-.card .nm-txt { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+/* (R9) `.card .nm` / `.card .nm-txt` and their four media-query reliefs are DELETED. No public/*.js card renderer
+   has emitted `class="nm` since the 2026-09-12 card-simplification pass (the only live `.nm` in the tree is
+   `.lad-row .nm`, a different selector, in public/ladder.js). Lane D ships NO gear-name label — 'Lucky Clover' and
+   'Lucky Coin' both ellipsis to 'Lucky C…' in a 36 px cell at 320 px, and a false identity is worse than no label —
+   so these rules have no future caller either. The gear name lives in the armed hint and the tap-detail. */
 /* always-visible ability line on every creature card (shop, squad, reward) */
 .card-abil { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
   margin-top: 3px; font-size: .5rem; line-height: 1.28; text-align: left; color: var(--ink-soft); font-weight: 700; }
@@ -311,7 +336,11 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 .cd-m .atk { background: linear-gradient(180deg,#5c6675,#39424f); }
 .cd-m .hp { background: linear-gradient(180deg,#ff6f84,#e0475f); }
 .cd-m .cd-mv { background: rgba(18,38,66,.55); }
-.price { position: absolute; top: 3px; left: 4px; z-index: 2; display: inline-flex; align-items: center; gap: 2px; background: linear-gradient(180deg,#ffe9a8,#f5c542); color: #6b4e12; font-size: .6rem; font-weight: 900; border-radius: 999px; padding: 1px 6px 1px 4px; box-shadow: var(--sh-soft); }
+/* (R9 lane E) The card's top-left corner now belongs to the PERMANENT tier mark, so the three TRANSIENT marks
+   that used to share it move. All three are edited IN PLACE: an appended `.price { … }` would have the same
+   specificity as the original and would silently depend on source order. "FREE" drops to just under the 15 px
+   mark (2 + 15 = 17, + 2 of air). `.price` is shop-only and `.rot-pip` is squad-only, so they can never meet. */
+.price { position: absolute; top: 19px; left: 3px; z-index: 2; display: inline-flex; align-items: center; gap: 2px; background: linear-gradient(180deg,#ffe9a8,#f5c542); color: #6b4e12; font-size: .6rem; font-weight: 900; border-radius: 999px; padding: 1px 6px 1px 4px; box-shadow: var(--sh-soft); }
 .price .ic { width: .8em; height: .8em; }
 .freeze { position: absolute; top: 2px; right: 2px; z-index: 3; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--panel-line); background: rgba(255,255,255,.92); cursor: pointer; box-shadow: var(--sh-soft); display: flex; align-items: center; justify-content: center; padding: 0; }
 .freeze .ic { width: 13px; height: 13px; }
@@ -334,8 +363,8 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
   background: rgba(18,32,52,.8); box-shadow: 0 0 0 1.5px rgba(255,255,255,.75), 0 1px 3px rgba(12,26,44,.45); transition: opacity .3s var(--ease-soft); }
 .held-it img { width: 26px; height: 26px; object-fit: contain; }   /* item art fills ~50–76% of its canvas → oversize so the object reads ~17–20px */
 .held-n { position: absolute; right: -6px; top: -5px; min-width: 14px; height: 14px; padding: 0 3px; box-sizing: border-box; border-radius: 7px;
-  background: linear-gradient(180deg,#ffe9a8,#f5c542); color: #4a3408; font: 900 .58rem/14px 'Nunito', sans-serif; text-align: center; box-shadow: 0 1px 2px rgba(20,40,70,.45); }
-.held-more { color: #fff; font: 900 .66rem/1 'Nunito', sans-serif; letter-spacing: -.02em; }
+  background: linear-gradient(180deg,#ffe9a8,#f5c542); color: #4a3408; font: 900 .58rem/14px var(--ff-body); text-align: center; box-shadow: 0 1px 2px rgba(20,40,70,.45); }
+.held-more { color: #fff; font: 900 .66rem/1 var(--ff-body); letter-spacing: -.02em; }
 /* spent (a Firepip's first strike landed / a Honeypot's faint fired): dims + one pop — opacity + transform only */
 .held-it.used { opacity: .38; animation: heldSpend .42s var(--ease-bounce); }
 .held-it.fire { animation: heldSpend .42s var(--ease-bounce); }   /* (R4) a gear badge pulses when it acts — reuses the transform keyframes */
@@ -381,7 +410,7 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 .side { position: absolute; left: 0; right: 0; z-index: 1; background: none; padding: 0 8px; }
 .side.enemy { top: 11%; }     /* enemy line rests ON the TOP grass ledge (was too low/off the platform) */
 .side.mine { bottom: 13%; }   /* your line rests on the BOTTOM grass ledge */
-.side-label { font-family: 'Nunito', sans-serif; font-size: .74rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: #fff; text-shadow: 0 1px 2px rgba(20,45,75,.7), 0 1px 6px rgba(20,45,75,.5); margin-bottom: 3px; }
+.side-label { font-family: var(--ff-body); font-size: .74rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: #fff; text-shadow: 0 1px 2px rgba(20,45,75,.7), 0 1px 6px rgba(20,45,75,.5); margin-bottom: 3px; }
 .side.enemy .side-label { text-align: right; }
 /* row-reverse → index 0 (the front unit that fights first) renders on the RIGHT, since the art faces right */
 /* keep the row centred AND within the grass platform (was spilling off the sides on wider phones) */
@@ -454,7 +483,7 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
   clip-path: polygon(50% 0, 100% 16%, 100% 55%, 50% 100%, 0 55%, 0 16%);
   filter: drop-shadow(0 1px 2px rgba(20,40,70,.55)); }
 .float { position: absolute; left: 50%; top: -2px; transform: translateX(-50%); font-weight: 900; font-size: .92rem; pointer-events: none; animation: floatUp 1s var(--ease-soft) forwards; z-index: 5; white-space: nowrap; }
-.float.dmg { color: var(--coral-deep); } .float.buff { color: var(--glow); } .float.abil { color: var(--gilt-bloom); font-size: .78rem; font-family: 'Cinzel', serif; }
+.float.dmg { color: var(--coral-deep); } .float.buff { color: var(--glow); } .float.abil { color: var(--gilt-bloom); font-size: .78rem; font-family: var(--ff-display); }
 .float.item { color:#bfe9ff; }   /* (R4) "Bell Jar!", "Shiny Lure!", "Herald's Horn!", "Echo Shell!" */
 /* (R4 final) these two float OVER the pit's bright dust cloud, and deploy A put its most important battle message
    there ("Last gasp · kept +3/+0"). Pale ink on pale dust was unreadable in a 360px screenshot — the same dark
@@ -493,7 +522,7 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
   animation: emblemIn .5s var(--ease-bounce) both; }
 .result-emblem img { width: 120px; height: 120px; object-fit: contain; filter: drop-shadow(0 5px 9px rgba(20,40,70,.34)); }
 @keyframes emblemIn { 0% { transform: scale(0) rotate(-25deg); opacity: 0; } 60% { transform: scale(1.12) rotate(6deg); } 100% { transform: scale(1) rotate(0); opacity: 1; } }
-.result-banner { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 1.9rem; font-weight: 900; text-transform: uppercase; letter-spacing: .05em; line-height: 1; animation: stampDown .4s var(--ease-bounce);
+.result-banner { font-family: var(--ff-hero); font-size: 1.9rem; font-weight: 900; text-transform: uppercase; letter-spacing: .05em; line-height: 1; animation: stampDown .4s var(--ease-bounce);
   color: #2a9c5e; -webkit-text-fill-color: #2a9c5e; filter: drop-shadow(0 2px 0 #ffffff) drop-shadow(0 2px 5px rgba(40,90,130,.3)); }
 .result-banner.lose { color: #e04b64; -webkit-text-fill-color: #e04b64; }
 .result-banner.draw { color: #5f7d95; -webkit-text-fill-color: #5f7d95; }
@@ -513,10 +542,10 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 .triggers-card { text-align: left; max-width: 440px; width: 100%; max-height: 84dvh; display: flex; flex-direction: column; }
 .triggers-intro { font-size: .86rem; color: var(--ink-soft); line-height: 1.45; font-weight: 600; margin: 2px 0 10px; }
 .triggers-body { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; margin: 0 -4px 12px; padding: 0 4px; }
-.trig-sec { font-family: 'Cinzel', serif; text-transform: uppercase; letter-spacing: .06em; font-weight: 800; font-size: .78rem; color: var(--gilt-deep); margin: 12px 0 6px; }
+.trig-sec { font-family: var(--ff-display); text-transform: uppercase; letter-spacing: .06em; font-weight: 800; font-size: .78rem; color: var(--gilt-deep); margin: 12px 0 6px; }
 .trig-sec:first-child { margin-top: 0; }
 .trig-note { padding: 8px 10px; margin-bottom: 8px; border-radius: var(--r-md); background: rgba(120,140,180,.10); border: 1px solid rgba(120,140,180,.18); }
-.trig-note-lbl { display: block; font-family: 'Cinzel', serif; text-transform: uppercase; letter-spacing: .05em; font-weight: 800; font-size: .72rem; color: var(--gilt-deep); margin-bottom: 2px; }
+.trig-note-lbl { display: block; font-family: var(--ff-display); text-transform: uppercase; letter-spacing: .05em; font-weight: 800; font-size: .72rem; color: var(--gilt-deep); margin-bottom: 2px; }
 .trig-note-txt { font-size: .82rem; line-height: 1.42; color: var(--ink); font-weight: 600; }
 .trig-row { display: flex; align-items: baseline; gap: 9px; padding: 6px 0; border-top: 1px solid rgba(120,140,180,.16); }
 .trig-tag { flex: none; min-width: 88px; font-size: .68rem; font-weight: 800; text-transform: uppercase; letter-spacing: .03em; color: var(--gilt-deep); background: rgba(120,140,180,.13); border-radius: 999px; padding: 3px 8px; text-align: center; }
@@ -544,7 +573,7 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 .faction-card.sel { border-color: #fff; box-shadow: 0 0 0 2px var(--gilt), 0 0 18px rgba(43,163,216,.55), var(--frame), var(--sh-pop); background: rgba(14,52,78,.86); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); }
 .faction-card.sel .fname, .faction-card.sel .ftag { color: #ffffff !important; }
 .faction-card.sel .fpick { color: #7fe0c0; }
-.faction-card .fname { font-family: 'Nunito', sans-serif; font-weight: 800; font-size: .8rem; color: var(--gilt-bloom); text-transform: uppercase; letter-spacing: .02em; }
+.faction-card .fname { font-family: var(--ff-body); font-weight: 800; font-size: .8rem; color: var(--gilt-bloom); text-transform: uppercase; letter-spacing: .02em; }
 .faction-card .ftag { font-weight: 900; font-size: .66rem; color: var(--ink); margin: 3px 0 2px; }
 .faction-card .flaw { font-size: .63rem; color: var(--ink-soft); line-height: 1.3; margin-top: 3px; }
 /* real strategy blurb per faction (clamped to 2 lines; tap "more" to expand) so the first pick is informed */
@@ -558,7 +587,7 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 .faction-card.sel .fpick { opacity: 1; }
 @media (max-width: 420px) { .faction-grid { grid-template-columns: 1fr; } }
 @keyframes pop { 0% { transform: scale(.82); opacity: 0;} 100% { transform: scale(1); opacity: 1;} }
-@media (min-width: 620px) { .card .nm { font-size: .74rem;} .card .stats { font-size: .8rem;} #battle { --bw: 78px; } }
+@media (min-width: 620px) { .card .stats { font-size: .8rem;} #battle { --bw: 78px; } }
 /* ability text makes cards taller — let the build screen scroll instead of clipping the action bar */
 #game { overflow-y: auto; -webkit-overflow-scrolling: touch; }
 /* rejected-action feedback — a red shake/flash so a failed buy/placement is felt, not just heard */
@@ -576,10 +605,11 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 /* reduced motion: the DECORATIVE loops stop (idle bobs, shine sweeps, pulses, dust drift, screen shake). Functional
    transitions (battle staging, FLIP glides) and one-shot feedback stay so the game still reads. */
 @media (prefers-reduced-motion: reduce) {
-  .logo, #gameover.defeat .logo, .duel-hero, .title-creatures .tc, .card:not(.flash-pulse) .art img, .card.frozen .art-wrap::after,
+  .logo, #gameover.defeat .logo, .duel-hero, .title-creatures .tc, .title-creatures .tcsh::after, .card:not(.flash-pulse) .art img, .card.frozen .art-wrap::after,
   .bcard .art, .btn.primary::after, .merge-badge, .card.target-armed::before, .card.empty.target-armed::after,
   .card.empty.drop-target::before, .arena::after, .arena.shake { animation: none !important; }
   .card.mergeable:not(.evolving):not(.merging):not(.invalid), .card.fusable:not(.evolving):not(.fusing-cine):not(.invalid) { animation: none !important; }
+  .card.give-ok:not(.invalid) { animation: none !important; }   /* (R9 lane D) the armed-Gear ring holds steady */
   .btn.primary::after { opacity: 0; }
   .card.target-armed:not(.empty)::before { opacity: .45 !important; }   /* a steady glow instead of the breathing one */
 }
@@ -600,7 +630,7 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
   animation: evolveRing .9s var(--ease-soft) forwards; }
 @keyframes evolveRing { 0% { opacity: 0; transform: scale(.8);} 25% { opacity: 1;} 100% { opacity: 0; transform: scale(1.35);} }
 .evolve-label { position: absolute; top: -8px; left: 50%; z-index: 7; transform: translateX(-50%); white-space: nowrap; pointer-events: none;
-  font-family: 'Cinzel Decorative', 'Cinzel', serif; font-weight: 900; font-size: .68rem; letter-spacing: .04em;
+  font-family: var(--ff-hero); font-weight: 900; font-size: .68rem; letter-spacing: .04em;
   color: var(--gilt-bloom); text-shadow: 0 1px 3px #0a0c1c, 0 0 10px rgba(154,108,242,.9);
   animation: evolveLabel 1.1s var(--ease-soft) forwards; }
 @keyframes evolveLabel { 0% { opacity: 0; transform: translate(-50%, 8px) scale(.7);} 20% { opacity: 1; transform: translate(-50%, -2px) scale(1.06);} 70% { opacity: 1;} 100% { opacity: 0; transform: translate(-50%, -18px) scale(1);} }
@@ -644,11 +674,47 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 .btn.fb-mic { width: auto; margin: 10px auto 0; display: inline-flex; }
 .btn.fb-mic.on { background: linear-gradient(180deg,#ffd9de,#ffb3bf); border-color: var(--coral-deep); color: #7a1626; }
 
-/* ---- tier badge (inline in the name; reused in the codex) ---- */
-/* simplified tier symbol: a flat solid tier-colour rounded chip with the number (no gradient/bevel) */
-.tierbadge { flex: none; display: inline-flex; align-items: center; justify-content: center; min-width: 14px; height: 14px; padding: 0 3px; vertical-align: middle; font-family: 'Nunito', sans-serif; font-weight: 900; font-size: .6rem; line-height: 1; border-radius: 4px; color: #fff; background: var(--tier1); box-shadow: 0 1px 2px rgba(20,40,70,.35); }
-.tierbadge.t1 { background: var(--tier1); } .tierbadge.t2 { background: var(--tier2); } .tierbadge.t3 { background: var(--tier3); }
-.tierbadge.t4 { background: var(--tier4); } .tierbadge.t5 { background: var(--tier5); color: #4a2c00; } .tierbadge.t6 { background: var(--tier6); color: #5a3e00; }
+/* ---- tier mark (R9 lane E) -----------------------------------------------------------------------
+   ONE component, two dresses: `.tierbadge` inline (tap-detail, Codex, rival rows, gear loadout sheet)
+   and `.tierbadge.tiermark` pinned to a card's top-left corner. The NUMBER is the signal now; the
+   tier colour is redundant reinforcement, which is why the pills may be near-isoluminant to each
+   other (1.02-1.06) while every one of them clears 4.5:1 against its own ink (7.30-11.53:1 measured,
+   where the old white-on-tier-colour chip was 2.15-2.95:1 for tiers 1-4 — the tiers a player meets on
+   turns 1-8). font-size is a px LITERAL, not a rem: the gate asserts a RENDERED glyph >= 10 px and
+   .6rem is 9.6 px at the default root. height 15 = 10.5 of glyph + 2.25 of optical padding a side.
+   min-width 19 so a row of cards cannot ripple as tiers change ("T6" is the widest at ~12 px of advance).
+   The box-shadow hairline is what separates a pale pill from the pale-grass half of the painted scene
+   (~2:1 against it) — and it is a SHADOW, not a border, so `.card { border-color: … !important }`
+   cannot reach it. No backdrop-filter, no animation, no filter: byte-identical in gfx-lite and under
+   prefers-reduced-motion, so there is no lite variant to keep in sync.
+   The two custom properties carry LITERAL FALLBACKS: a `.tierbadge` that ever reaches the DOM without
+   a tN class must render a wrong-coloured pill, never an invisible one — which is the one failure mode
+   this lane exists to prevent. */
+.tierbadge { flex: none; display: inline-flex; align-items: center; justify-content: center;
+  min-width: 19px; height: 15px; padding: 0 3px; vertical-align: middle;
+  font-family: var(--ff-body); font-weight: 900; font-size: 10.5px; line-height: 1; letter-spacing: .01em;
+  border-radius: 5px; color: var(--tm-ink, #22303d); background: var(--tm-bg, #e8eef4);
+  box-shadow: 0 0 0 1px rgba(14,28,46,.45), 0 1px 2px rgba(14,28,46,.35); }
+.tierbadge.t1 { --tm-bg: #e8eef4; --tm-ink: #22303d; }
+.tierbadge.t2 { --tm-bg: #d9f6e9; --tm-ink: #0c5238; }
+.tierbadge.t3 { --tm-bg: #dceefb; --tm-ink: #0a4668; }
+.tierbadge.t4 { --tm-bg: #ece1fc; --tm-ink: #472680; }
+.tierbadge.t5 { --tm-bg: #ffe6d2; --tm-ink: #7a3806; }
+.tierbadge.t6 { --tm-bg: #fff0c4; --tm-ink: #6b4700; }
+/* the corner mark. z-index 5: above .price/.lvl/.rot-pip (2-3) and above .held, the frozen ice and the ::after
+   crown (4); below .shieldbadge (6), which is a battle-card element only. `.card { contain: layout style }` makes
+   every card its own stacking context, so these numbers only ever compete with each other.
+   pointer-events:none — the whole card is the tap target, and a mark that swallowed a tap would break give/buy. */
+.card .tiermark { position: absolute; top: 2px; left: 2px; z-index: 5; pointer-events: none; }
+/* BATTLE: top-RIGHT, not top-left. `.shieldbadge` is pinned top-left at z-index 6 and would cover ~12x13 px of a
+   top-left mark AND win the stack; nothing else on a .bcard occupies the top-right. */
+.bcard .tiermark { position: absolute; top: 0; right: 0; left: auto; z-index: 5; pointer-events: none; }
+/* the far line is drawn in a .7x-wide box whose .art keeps the full --bw, so the mark shifts OUT by the same inset
+   the shield shifts IN and keeps its spot beside the pet. */
+#battle .side.enemy .bcard > .tiermark { right: calc(0px - var(--bw) * .15); }
+/* the tap-detail's tier item: "[T3] of 6". The mark reads T3 and the suffix completes the sentence, so there is no
+   "TIER" label saying it twice — the full words are on the item's aria-label and the mark's title. */
+.cd-tier > i { font-style: normal; text-transform: none; font-size: .62rem; font-weight: 800; color: var(--ink-soft); }
 
 /* ---- HUD mini-labels (touch devices have no title= tooltips) ---- */
 .hud-item .hud-lbl { font-size: .5rem; opacity: .72; margin: 0 1px 0 2px; }
@@ -659,7 +725,7 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 
 /* ---- persistent rank ladder on the title ---- */
 .rank-row { display: flex; flex-direction: column; align-items: center; gap: 1px; margin: 2px 0 8px; min-height: 1em; }
-.rank-name { font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 1rem; color: var(--gilt-deep); display: inline-flex; align-items: center; gap: 5px; }
+.rank-name { font-family: var(--ff-body); font-weight: 800; font-size: 1rem; color: var(--gilt-deep); display: inline-flex; align-items: center; gap: 5px; }
 .rank-prog { font-size: .72rem; color: var(--ink-soft); font-weight: 700; }
 .rankup-line { color: var(--glow); font-weight: 800; }
 
@@ -688,14 +754,49 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 .title-wordmark { width: min(92%, 470px); filter: drop-shadow(0 6px 20px rgba(0,0,0,.55)); z-index: 2; }
 /* 16 px of grass under the feet so the trio stands ON the meadow instead of on the Online button's shoulder. */
 .title-creatures { position: absolute; inset: 0 0 16px; pointer-events: none; z-index: 1; }
-.title-creatures .tc { position: absolute; bottom: 0; filter: drop-shadow(0 8px 12px rgba(20,40,70,.45)); animation: titleBob 3s var(--ease-soft) infinite; }
+/* (R9 lane F) THE BOB IS DRIVEN BY CUSTOM PROPERTIES, not by per-pet `animation-delay`. The three
+   `.tcN { animation-delay: … }` declarations that shipped from R6 to R9 were DEAD CSS: this rule is
+   `.title-creatures .tc` = (0,2,0) and its `animation` SHORTHAND resets animation-delay to 0s, so the
+   (0,1,0) `.tcN` rules lost every cascade and all three pets bobbed in perfect lockstep at 3s/0s
+   (measured on the pre-lane tree: delay 0s, phase .7944, y -1.197 px on all three). Custom properties are
+   NOT touched by a shorthand, so --bob-d / --bob-o / --bob-h survive it, and the shadow's ::after reads
+   the SAME three properties by inheritance — pet and shadow cannot drift apart by construction.
+   The offsets are NEGATIVE: a positive delay would park two of the three dead still for up to 2 s every
+   time the title mounts. Periods 3.1 / 3.7 / 2.9 s are coprime in tenths, so the trio next realigns after
+   31x37x29 tenths = 55 minutes. Amplitudes differ too (a cast-iron beetle bobs less than a floating
+   pufferfish); `var(--bob-h, -9px)` keeps the old -9 px as the literal fallback. transform-only, so
+   gfx-lite keeps the motion at no cost and no rule here needs a lite twin. */
+.title-creatures .tc { position: absolute; bottom: 0; filter: drop-shadow(0 8px 12px rgba(20,40,70,.45));
+  animation: titleBob var(--bob-d, 3s) var(--ease-soft) var(--bob-o, 0s) infinite; }
+/* (R9 lane F, owner: "ensure that they have Shadows as well") The GROUND shadow. An <img> cannot host a
+   pseudo-element, so each pet gets one empty sibling, painted before the pets in DOM order and therefore
+   under all three. The box is the pet's own square (all three PNGs are 1024x1024, so rendered width ==
+   rendered height) — which is why `.tcshN` joins `.tcN` in the geometry rules below and never repeats a
+   number. --fx / --fy / --fw are that PNG's alpha-measured foot centre, foot LINE and foot width as a
+   share of the square, so the ellipse lands under the feet and not under the transparent margin: the
+   painted art stops at 79.6% / 87.6% / 93.2% of its own box, which is three different heights.
+   The ellipse is a radial-gradient (no image, no filter, nothing gfx-lite has to strip); `margin-left` /
+   `margin-bottom` do the centring so `transform` is free for the counter-phase. Absolute inside a box
+   that is already absolute: zero in-flow height, so the 320x568 and 640x360 fits verify-r4 pins cannot move.
+   Why gfx-lite needed this most: style.css:1130 strips `filter` from `.title-creatures .tc` in that tier,
+   so until now a lite phone (the owner's report came from Android) had NO shadow under the trio at all. */
+.title-creatures .tcsh { position: absolute; bottom: 0; width: auto; aspect-ratio: 1; z-index: 0; pointer-events: none; }
+.title-creatures .tcsh::after { content: ""; position: absolute; left: var(--fx, 50%); bottom: var(--fy, 8%);
+  width: var(--fw, 52%); height: calc(var(--fw, 52%) * .30);
+  margin-left: calc(var(--fw, 52%) / -2); margin-bottom: calc(var(--fw, 52%) * -.15);
+  background: radial-gradient(closest-side, rgba(16,36,22,calc(.62 * var(--sh-k, 1))), rgba(16,36,22,calc(.47 * var(--sh-k, 1))) 46%,
+    rgba(16,36,22,calc(.19 * var(--sh-k, 1))) 72%, rgba(16,36,22,0) 100%);
+  animation: titleShadow var(--bob-d, 3s) var(--ease-soft) var(--bob-o, 0s) infinite; }
 /* The heights are a share of the hero, and the hero is now much taller — on a 412x915 phone a bare 34% is a
    240 px pufferfish and the trio turns into one overlapping pile. The px ceilings keep the group portrait the
    same size it reads at on a 360 px phone and let the extra room show as grass between them. */
-.tc1 { left: 3%;  height: min(30%, 150px); animation-delay: 0s; }
-.tc2 { right: 4%; height: min(34%, 170px); animation-delay: .7s; }
-.tc3 { left: 33%; height: min(24%, 120px); z-index: 0; animation-delay: 1.3s; }
-@keyframes titleBob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
+.tc1, .tcsh1 { left: 3%;  height: min(30%, 150px); --bob-d: 3.1s; --bob-o: 0s;     --bob-h: -7px;  --fx: 46.5%; --fy: 20.4%; --fw: 62%; }
+.tc2, .tcsh2 { right: 4%; height: min(34%, 170px); --bob-d: 3.7s; --bob-o: -1.25s; --bob-h: -11px; --fx: 47.9%; --fy: 2.5%;  --fw: 44%; }
+.tc3, .tcsh3 { left: 33%; height: min(24%, 120px); --bob-d: 2.9s; --bob-o: -2.05s; --bob-h: -8px;  --fx: 47.9%; --fy: 6.8%;  --fw: 48%; --sh-k: 1.45; }
+.tc3 { z-index: 0; }
+@keyframes titleBob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(var(--bob-h, -9px)); } }
+/* counter-phase: at 50% the pet is at the top of its bob, so the shadow is at its smallest and faintest. */
+@keyframes titleShadow { 0%,100% { transform: scale(1); opacity: 1; } 50% { transform: scale(.80); opacity: .58; } }
 .title-actions { width: 100%; max-width: 340px; margin: 0 auto 6px; }
 /* Landscape (640x360 and friends): the hero is ~216 px tall, and `width: min(92%, 470px)` on a 1376x768 wordmark
    asks for 262 px of height inside it — which is why the title used to open with the wordmark CLIPPED off the top
@@ -707,7 +808,15 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
   .title-creatures { inset: 0 0 10px; }
   /* the trio is also pulled IN from the column edges here: `center/cover` crops the painted meadow to the
      left-of-centre band at this aspect, so the old `right: 4%` parked the pufferfish over bare mountain. */
-  .tc1 { left: 6%; height: min(34%, 108px); } .tc2 { right: 12%; height: min(38%, 120px); } .tc3 { left: 30%; height: min(27%, 88px); }
+  /* (R9 lane F) the shadow boxes are the same squares, so they ride the same three selectors here too —
+     leave `.tcshN` out and the ellipses stay at portrait geometry while the pets move. */
+  .tc1, .tcsh1 { left: 6%; height: min(34%, 108px); } .tc2, .tcsh2 { right: 12%; height: min(38%, 120px); } .tc3, .tcsh3 { left: 30%; height: min(27%, 88px); }
+  /* …and the pufferfish's shadow is DIMMED here, not moved. `center/cover` crops the painted meadow to the
+     left-of-centre band at this aspect, so at 640x360 gnash hovers over DISTANT MOUNTAIN — there is no ground
+     under it to catch a contact ellipse, and a full-strength one read as a smudge hanging in the haze
+     (measured 25.7% luminance drop over the mist at 640x360). At .55 it still grounds the fish in depth
+     without claiming a floor that the painting does not have. The other two stand on grass and keep theirs. */
+  .tcsh2 { --sh-k: .55; }
 }
 #title .rank-row { justify-content: center; }
 #title .connect { text-align: center; }
@@ -719,7 +828,7 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 .codex-list { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 .codex-faction { margin-bottom: 16px; }
 .codex-fhead { background: var(--panel-hi); border-radius: var(--r-md); padding: 8px 11px; box-shadow: var(--frame); margin-bottom: 8px; }
-.codex-fname { font-family: 'Nunito', sans-serif; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--gilt-deep); font-size: .92rem; }
+.codex-fname { font-family: var(--ff-body); font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--gilt-deep); font-size: .92rem; }
 .codex-flaw { font-size: .68rem; font-weight: 700; color: var(--gilt-deep); margin: 2px 0; }
 .codex-fsyn { font-size: .66rem; color: var(--ink-soft); line-height: 1.35; }
 .codex-fcount { font-size: .64rem; font-weight: 800; color: var(--glow); margin-top: 4px; }
@@ -787,7 +896,6 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
   .row-label { margin: 6px 4px 5px; font-size: .72rem; top: 0; }
   .row-label.sub { margin-top: 5px; }
   .card { min-height: 60px; padding: 3px 2px; }
-  .card .nm { font-size: .58rem; margin-top: 2px; }
   .card .stats { font-size: .64rem; }
   /* short landscape: shave the fixed-height coach/detail slot (74px→44px) so the board + End Turn fit without scrolling */
   .coach.show, .card-detail { height: 44px; -webkit-line-clamp: 2; padding: 5px 10px; font-size: .8rem; margin-top: 3px; }
@@ -818,7 +926,6 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 }
 /* VERY NARROW portrait (<=340px): shrink chrome so 5 cards + labels never overflow */
 @media (max-width: 344px) {
-  .card .nm { font-size: .58rem; }
   .squad, .shop-row { gap: 4px; }
   .hud-item { padding: 2px 6px; font-size: .92rem; }
   .row-label { font-size: .74rem; }
@@ -879,10 +986,10 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
   background: var(--glass-hi); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-brd); border-radius: var(--r-md); box-shadow: var(--frame), var(--sh-pop);
   padding: 8px 11px; animation: pop .16s var(--ease-bounce); }
-.hold-tip .ht-name { font-family: 'Nunito', sans-serif; font-weight: 900; font-size: .82rem; color: var(--gilt-deep); }
+.hold-tip .ht-name { font-family: var(--ff-body); font-weight: 900; font-size: .82rem; color: var(--gilt-deep); }
 .hold-tip .ht-abil { margin-top: 3px; font-size: .74rem; font-weight: 600; line-height: 1.35; color: var(--ink); }
 .hold-tip.reward-tip { position: fixed; }   /* appended to <body> and positioned in viewport coords */
-.reward-card .reward-name { text-align: center; font-family: 'Nunito', sans-serif; font-weight: 800; font-size: .78rem; color: var(--ink); margin-top: 3px; }
+.reward-card .reward-name { text-align: center; font-family: var(--ff-body); font-weight: 800; font-size: .78rem; color: var(--ink); margin-top: 3px; }
 
 /* ---- replay transport ---- */
 .battle-actions .replay-only { display: none; }
@@ -891,7 +998,7 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 .btn.small.on { background: linear-gradient(180deg,#5fce8f,#2a9c5e); color: #fff; }
 
 /* ---- bigger battle damage numbers (SAP-style pop) ---- */
-.float.dmg { font-family: 'Cinzel', serif; font-weight: 900; color: #ff3b46; font-size: 1.5rem;
+.float.dmg { font-family: var(--ff-display); font-weight: 900; color: #ff3b46; font-size: 1.5rem;
   text-shadow: 0 2px 0 #7a0d13, 0 0 10px rgba(255,59,70,.6), 0 1px 3px rgba(0,0,0,.5); }
 .duel-timer { font-weight: 900; color: var(--gilt-deep); } .duel-timer.low { color: var(--coral-deep); }
 .opp-ready { color: #2e9e6b; font-weight: 900; } .opp-wait { opacity: .6; font-style: italic; }
@@ -907,9 +1014,9 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 #squad .card:not(.empty):not(.frozen) .art-wrap::after, #shopPets .card:not(.empty):not(.frozen) .art-wrap::after, #shopSnacks .card:not(.empty):not(.frozen) .art-wrap::after {
   content: ""; position: absolute; left: 16%; right: 16%; bottom: 3px; height: 9px; z-index: 0;
   background: radial-gradient(ellipse at center, rgba(12,30,54,.42), transparent 72%); }
-/* names/pips legible directly on the scene */
-/* item names sit on the bare scene → white text + dark halo (text-on-frosted stays dark; text-on-scene is white) */
-#shopSnacks .card .nm { color: #fff; text-shadow: 0 1px 2px rgba(12,26,44,.9), 0 1px 6px rgba(12,26,44,.7); }
+/* (R9) the `#shopSnacks .card .nm` white-on-scene relief went with the label it styled — see the note at the
+   `.card .nm` deletion above. What sits on the bare scene in a gear cell now is the tier mark and the coin chip,
+   and both carry their own opaque pill + hairline rather than a text shadow. */
 /* fused pets keep their gold ring (it IS the merged indicator) even without the glass tile */
 /* fused pets keep a gold glow ring but NO plate (cards have no background anywhere on the board) */
 #squad .card.is-fused { border-color: transparent !important; background: none; -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: none; filter: drop-shadow(0 0 6px rgba(245,197,66,.9)); }
@@ -930,7 +1037,7 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 /* tier-unlock modal */
 .tier-card { text-align: center; }
 .tier-emblem { width: 84px; height: 84px; margin: 2px auto 12px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-  background: radial-gradient(circle at 50% 38%, #fff, var(--gold) 80%); color: #7a4d00; font-family: 'Cinzel', serif; font-weight: 900; font-size: 2.4rem;
+  background: radial-gradient(circle at 50% 38%, #fff, var(--gold) 80%); color: #7a4d00; font-family: var(--ff-display); font-weight: 900; font-size: 2.4rem;
   box-shadow: 0 0 0 4px rgba(255,255,255,.5), 0 8px 22px rgba(20,40,70,.3), 0 0 30px 5px rgba(245,197,66,.6); animation: emblemIn .5s var(--ease-bounce) both; }
 
 /* down-arrows over empty squad slots while a shop pet is held (SAP "place here" affordance) */
@@ -946,7 +1053,28 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
   opacity: .92; box-shadow: 0 12px 28px rgba(10,20,40,.5), var(--frame);
   filter: drop-shadow(0 6px 10px rgba(10,20,40,.45)); will-change: transform; }
 .card.drag-source { opacity: .4; }                            /* the picked-up card dims while the ghost carries it */
-.card.drag-ok { outline: 2px dashed var(--glow); outline-offset: 1px; box-shadow: 0 0 0 3px rgba(157,180,255,.4), 0 0 14px 2px rgba(157,180,255,.45); }   /* valid Swap/Feed drop onto an occupied pet */
+.card.drag-ok { outline: 2px dashed var(--glow); outline-offset: 1px; box-shadow: 0 0 0 3px rgba(157,180,255,.4), 0 0 14px 2px rgba(157,180,255,.45); }   /* valid Swap drop onto an occupied pet */
+/* ---- R9 lane D: Gear is armed — who RECEIVES it (solid ring) and who REFUSES it (dimmed) ----------
+   SOLID, where combine (.mergeable) and fuse (.fusable) are DASHED: the shape, not just the hue, tells the two
+   apart for a colour-blind player, and `--mint` is a sibling of `--glow` rather than the same token so the two
+   never read as the same affordance. The ring is an OUTLINE first and a box-shadow second, because the grounding
+   rule `#squad .card:not(.empty) { box-shadow: none }` is (1,2,0) against this rule's (0,2,0) and wins the
+   box-shadow on the squad — the outline and the pulse are what a squad card actually shows, and that is enough
+   (the same is already true of `.card.drag-ok`). The shop side, which the grounding rule also covers, never gets
+   this class: only squad cells receive Gear.
+   givePulse peaks at 1.055, not .mergeable's 1.18: up to FIVE cards pulse at once here where at most one or two
+   ever do for combine/fuse. 1.055 × 62.4 px = 65.8 px — 3.4 px of growth into a 6 px gutter at 360 px; at 320 px,
+   1.055 × 56.0 = 59.1 px, 3.1 px into a 4 px gap. Both fit. */
+.card.give-ok { outline: 3px solid var(--mint); outline-offset: 1px;
+  box-shadow: 0 0 0 3px rgba(79,194,160,.38), 0 0 14px 2px rgba(79,194,160,.5);
+  animation: givePulse 1.15s ease-in-out infinite; }
+@keyframes givePulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.055); } }
+/* opacity ONLY — never a filter: the card's art is mid-`petIdle` and gfx-lite's rule is "nothing that animates
+   carries a filter".
+   :not(.invalid) — a REFUSED tap lands on a card this rule has just knocked to 35 %, where the coral ring and the
+   invalidShake would be the faintest they will ever be, on the one card the player MUST notice. flashInvalid holds
+   .invalid for 420 ms; for those 420 ms the card is at full opacity. FB-R34. */
+.card.give-no:not(.invalid) { opacity: .35; }
 /* pets slide in at the start of a fight (SAP-style entrance) */
 /* fill `backwards`, not `both`: a held forwards-fill kept every bench card on a compositor animation (a render pass
    each, every frame). No delay + an implicit end keyframe → pixel-identical. */
@@ -983,7 +1111,7 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 
 /* white glassy title buttons (Offline / Online) */
 .btn.glass { background: rgba(255,255,255,.5); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
-  border: 1px solid var(--glass-brd); color: var(--ink); font-family: 'Nunito', sans-serif; text-transform: uppercase; letter-spacing: .05em;
+  border: 1px solid var(--glass-brd); color: var(--ink); font-family: var(--ff-body); text-transform: uppercase; letter-spacing: .05em;
   box-shadow: var(--frame), var(--sh-soft), inset 0 1px 0 rgba(255,255,255,.7); text-shadow: 0 1px 2px rgba(255,255,255,.55); }
 .btn.glass:active { transform: translateY(2px); box-shadow: var(--frame), var(--sh-soft); }
 
@@ -1004,7 +1132,7 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.2rem; lette
 .btn-ic { width: 1.3em; height: 1.3em; object-fit: contain; vertical-align: -0.28em; margin-right: 3px; }
 .btn-ic.duel-ic { width: 1.9em; height: 1.9em; vertical-align: -0.55em; margin-right: 1px; }
 .local-or { margin: 12px 0 8px; opacity: .7; font-size: .85rem; }
-.local-code { font-family: 'Cinzel', serif; font-weight: 800; font-size: 2.2rem; letter-spacing: .22em; color: var(--gilt-deep); margin: 8px 0; }
+.local-code { font-family: var(--ff-display); font-weight: 800; font-size: 2.2rem; letter-spacing: .22em; color: var(--gilt-deep); margin: 8px 0; }
 .local-qr { width: 176px; height: 176px; border-radius: 10px; background: #fff; padding: 6px; box-shadow: var(--sh-soft); }
 
 /* Online connection indicator dot (green = online) */
@@ -1059,6 +1187,14 @@ html.gfx-lite {
 .gfx-lite .card.mergeable, .gfx-lite .card.fusable { animation-name: mergePulseLite; }
 .gfx-lite .card.empty.target-armed::after { animation: none; }   /* the drag-hover ring on an empty slot holds steady (its pulse animates box-shadow) */
 @keyframes mergePulseLite { 0%,100% { transform: scale(1); } 50% { transform: scale(1.18); } }
+/* (R9 lane D) `give-ok` is the FIRST animation ever applied to a fused squad card — `canCombine = !c.fused` keeps
+   .mergeable/.fusable off them, but a fused unit is a perfectly legal Gear target — and `#squad .card.is-fused`
+   carries filter: drop-shadow. On the low tier that card holds still and keeps its gold ring; the solid mint
+   outline + static box-shadow still say "armed", so nothing is lost. There is deliberately NO
+   `.gfx-lite .card.give-ok { animation-name: mergePulseLite }`: mergePulseLite peaks at 1.18, the exact scale
+   givePulse rejects, and the lite variant exists because mergePulse animates OPACITY — givePulse animates transform
+   only and is already lite-safe. */
+.gfx-lite #squad .card.is-fused.give-ok { animation: none; }
 /* cinematic fusion without blend modes/blur: softer colour stops so the swirl still reads as light, not paint */
 .gfx-lite .fuse-vortex { mix-blend-mode: normal; filter: none;
   background: conic-gradient(from 0deg, transparent, rgba(154,108,242,.5), transparent 25%, rgba(143,208,240,.5), transparent 50%, rgba(255,214,102,.55), transparent 75%, rgba(198,169,255,.5), transparent); }
@@ -1076,11 +1212,11 @@ html.gfx-lite {
 .hold-tip .ht-held { margin-top: 3px; font-size: .7rem; font-weight: 800; opacity: .85; }
 /* "Next: 1/2" — a quiet slate tag after a TURN-TAKING ability (tap-detail, battle hold-tip, reward tip, codex). Static, no filter; sized in em
    so it follows whichever ability line it sits in. (Round 4: the "Levels: stats only" and "Odds N%" chips are gone — every ability grows, nothing rolls.) */
-.lvrot { display: inline-block; margin-left: 4px; padding: 0 6px; border-radius: 999px; font-family: 'Nunito', sans-serif; font-size: .8em; font-weight: 800; font-style: normal;
+.lvrot { display: inline-block; margin-left: 4px; padding: 0 6px; border-radius: 999px; font-family: var(--ff-body); font-size: .8em; font-weight: 800; font-style: normal;
   line-height: 1.45; letter-spacing: .02em; color: var(--ink-soft); background: rgba(57,80,95,.1); box-shadow: inset 0 0 0 1px rgba(57,80,95,.32); white-space: nowrap; vertical-align: 1px; }
 /* (R4) the "Next: 2/2 ⟳" tag on its "instead" turn, and the ⟳ pip on a squad card whose next fire is that turn. Static — no animation, no filter. */
 .lvrot.alt { color: #7a4a00; background: rgba(255,176,32,.2); box-shadow: inset 0 0 0 1px rgba(200,130,20,.5); }
-.rot-pip { position: absolute; top: 1px; left: 3px; z-index: 3; pointer-events: none; font: 900 .8rem/1 'Nunito', sans-serif; color: #7a4a00; text-shadow: 0 1px 0 rgba(255,255,255,.7); }
+.rot-pip { position: absolute; top: 19px; left: 3px; z-index: 3;   /* (R9) under the tier mark — see .price */ pointer-events: none; font: 900 .8rem/1 var(--ff-body); color: #7a4a00; text-shadow: 0 1px 0 rgba(255,255,255,.7); }
 /* "Fed +A/+H" — the tracked stat-food total in the tap-detail header (stat foods are baked into atk/hp, so they leave no badge) */
 .cd-fed { flex: none; display: inline-flex; align-items: center; margin-top: 1px; padding: 1px 7px; border-radius: 999px; font-size: .66rem; font-weight: 900; line-height: 1.35;
   white-space: nowrap; color: #1d6b55; background: rgba(79,194,160,.2); box-shadow: inset 0 0 0 1px rgba(47,157,143,.45); }
@@ -1156,7 +1292,7 @@ html.gfx-lite {
 .abil-line.sig { margin-top: 2px; padding: 4px 7px 5px; border-top: none; border-radius: 8px;
   background: linear-gradient(180deg, rgba(255,233,168,.6), rgba(245,197,66,.24)); box-shadow: inset 0 0 0 1px rgba(217,158,30,.55); }
 .sig-chip { display: inline-flex; align-items: center; gap: 3px; margin: 0 4px 2px 0; padding: 0 7px; border-radius: 999px; white-space: nowrap; vertical-align: baseline;
-  font-family: 'Cinzel', Georgia, serif; font-weight: 900; font-size: .76em; letter-spacing: .03em; text-transform: uppercase; line-height: 1.5;
+  font-family: var(--ff-display); font-weight: 900; font-size: .76em; letter-spacing: .03em; text-transform: uppercase; line-height: 1.5;
   color: #5a3e00; background: linear-gradient(180deg, #ffe08a, #f5c542); box-shadow: 0 1px 2px rgba(90,70,10,.35); }
 .sig-name { font-weight: 900; color: #6b4a00; }
 .abil-list > .abil-line { margin-top: 0; }
@@ -1168,7 +1304,7 @@ html.gfx-lite {
 /* fused-pet notes (app.js abilityLinesHTML): a parent line a reborn 1/1 can't use yet is dimmed + tagged; the Signature line's placement tip.
    Static text (no animation, no filter). */
 .abil-line.needs-hp .abil-txt, .abil-line.needs-hp .trig-badge, .abil-line.needs-hp .abil-lv { opacity: .6; }
-.abil-warn, .abil-tip { display: inline-block; margin-left: 4px; padding: 0 6px; border-radius: 999px; font-family: 'Nunito', sans-serif; font-size: .78em; font-weight: 900;
+.abil-warn, .abil-tip { display: inline-block; margin-left: 4px; padding: 0 6px; border-radius: 999px; font-family: var(--ff-body); font-size: .78em; font-weight: 900;
   line-height: 1.45; letter-spacing: .02em; white-space: nowrap; vertical-align: 1px; }
 .abil-warn { color: #fff; background: #c2413a; }
 .abil-tip { color: #5a3e00; background: rgba(255,255,255,.55); box-shadow: inset 0 0 0 1px rgba(217,158,30,.6); }
@@ -1229,8 +1365,8 @@ html.gfx-lite {
 
 /* ---- battle floats: summonWait "Waiting for room" (a quiet dark pill) + the Signature Move name callout (gold) — both
    ride the existing .float rise (transform/opacity only) ---- */
-.float.wait { font-family: 'Nunito', sans-serif; font-size: .66rem; font-weight: 900; letter-spacing: .01em; color: #fff; background: rgba(18,32,52,.8); border-radius: 999px; padding: 1px 8px; text-shadow: none; }
-.float.sig { font-family: 'Cinzel', Georgia, serif; font-size: .84rem; font-weight: 900; letter-spacing: .03em; color: #ffe08a; z-index: 24;
+.float.wait { font-family: var(--ff-body); font-size: .66rem; font-weight: 900; letter-spacing: .01em; color: #fff; background: rgba(18,32,52,.8); border-radius: 999px; padding: 1px 8px; text-shadow: none; }
+.float.sig { font-family: var(--ff-display); font-size: .84rem; font-weight: 900; letter-spacing: .03em; color: #ffe08a; z-index: 24;
   text-shadow: 0 1px 2px #5a3e00, 0 0 8px rgba(245,197,66,.9), 0 0 2px #5a3e00;
   /* (R8) a signature name may now carry a trigger tail ("…, From the First Step" — up to 45 chars, 404 px on one line at 360 px wide).
      `.float` is `white-space: nowrap`, and floatOver()'s clamp gives up and centres anything WIDER than the arena, so the longest names
@@ -1248,7 +1384,7 @@ html.gfx-lite {
 .sheet-card h2 { text-align: center; font-size: 1.05rem; margin: 0 0 2px; }
 .sheet-sub { text-align: center; font-size: .74rem; font-weight: 700; color: var(--ink-soft); line-height: 1.35; margin: 0 0 8px; }
 .sheet-body { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; gap: 6px; }
-.sheet-sec { font-family: 'Cinzel', serif; text-transform: uppercase; letter-spacing: .06em; font-weight: 800; font-size: .74rem; color: var(--gilt-deep); margin: 8px 0 0; }
+.sheet-sec { font-family: var(--ff-display); text-transform: uppercase; letter-spacing: .06em; font-weight: 800; font-size: .74rem; color: var(--gilt-deep); margin: 8px 0 0; }
 .sheet-card .btn { margin-top: 8px; }
 .sheet-card .btn.ghostbtn { color: var(--ink-soft); text-shadow: none; }
 @media (orientation: landscape) and (max-height: 600px) { .modal-card.sheet-card { max-width: 640px; max-height: 94vh; max-height: 94dvh; padding: 10px 14px; } }
@@ -1261,11 +1397,17 @@ html.gfx-lite {
 .row-tools { display: inline-flex; align-items: center; gap: 6px; position: relative; z-index: 3; }
 .row-label > .row-tools { overflow: visible; flex: none; }   /* the global `.row-label > span { overflow: hidden }` word-spill guard would clip the chips' enlarged ::before tap targets */
 .chip-btn { position: relative; display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 9px; border-radius: 999px; white-space: nowrap; cursor: pointer;
-  border: 1px solid rgba(255,255,255,.32); background: rgba(16,32,52,.66); color: #fff; font: 800 .68rem/1 'Nunito', sans-serif; letter-spacing: .02em; text-transform: none; text-shadow: none; }
+  border: 1px solid rgba(255,255,255,.32); background: rgba(16,32,52,.66); color: #fff; font: 800 .68rem/1 var(--ff-body); letter-spacing: .02em; text-transform: none; text-shadow: none; }
 /* Enlarged tap target, grown ONLY downward and sideways: measured at 360x560 the chip's top edge sits exactly on #coach's
    bottom edge (coach 66-174, chip 174-196), so any upward extension steals taps and scroll starts from #coach / #cardDetail
    (verify-r4 step 1 asserts the coach's bottom-right corner is not a chip). 13px of free gap lies BELOW the chips, above the
-   squad cards (squad top 209) — take 12 of it: a 34px target that touches neither neighbour. */
+   squad cards (squad top 209) — take 12 of it: a target that touches neither neighbour.
+   (R9 lane C) MEASURED CORRECTION: this comment used to call that "a 34px target". It is **32 px**. `top: 0`
+   and `bottom: -12px` resolve against the PADDING box, and .chip-btn carries a 1px border on every side, so
+   the pad is 20 + 12 = 32 px tall and spans y in [top+1, bottom+11) — for #tacticsChip and #rivalBtn exactly
+   as much as for #obChip. tools/perf/verify-onboard.mjs check 11 reads the number off the pseudo-element
+   rather than re-deriving it, and the R9-C gate block records the 32 px as the stated deviation from the
+   >= 40 px rule. Nothing about the geometry above changed; only the arithmetic in this sentence was wrong. */
 .chip-btn::before { content: ""; position: absolute; left: -6px; right: -6px; top: 0; bottom: -12px; }
 .chip-btn:active { transform: translateY(1px); }
 .chip-btn.warn { background: rgba(194,65,58,.94); border-color: rgba(255,255,255,.55); }
@@ -1275,7 +1417,7 @@ html.gfx-lite {
 .rival-row .rr-art { position: relative; width: 50px; height: 50px; --pet-scale: 1; }
 .rival-row .rr-art .art { position: relative; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; }
 .rival-row .rr-art .art img { width: 100%; height: 100%; object-fit: contain; }
-.rival-row .rr-slot { position: absolute; left: -4px; top: -4px; z-index: 4; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px; background: rgba(18,32,52,.82); color: #fff; font: 900 .56rem/16px 'Nunito', sans-serif; text-align: center; }
+.rival-row .rr-slot { position: absolute; left: -4px; top: -4px; z-index: 4; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px; background: rgba(18,32,52,.82); color: #fff; font: 900 .56rem/16px var(--ff-body); text-align: center; }
 .rival-row.front .rr-slot { background: #1f7d49; }
 .rival-row .rr-head { display: flex; align-items: center; gap: 5px; font-size: .84rem; font-weight: 900; color: var(--ink); min-width: 0; }
 .rival-row .rr-nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1290,7 +1432,7 @@ html.gfx-lite {
 .news-list { list-style: none; margin: 2px 0 4px; padding: 0; }
 .news-list li { position: relative; padding-left: 18px; margin: 7px 0; font-size: .88rem; font-weight: 600; line-height: 1.4; color: var(--ink); }
 .news-list li::before { content: "\2726"; position: absolute; left: 1px; top: 0; color: var(--gold-deep); font-weight: 900; }
-.settings-foot { display: block; width: 100%; margin-top: 10px; padding: 6px 0 0; border: none; background: none; cursor: pointer; font: 800 .78rem/1.3 'Nunito', sans-serif; color: var(--ink-soft); text-decoration: underline; }
+.settings-foot { display: block; width: 100%; margin-top: 10px; padding: 6px 0 0; border: none; background: none; cursor: pointer; font: 800 .78rem/1.3 var(--ff-body); color: var(--ink-soft); text-decoration: underline; }
 #settingsModal .modal-card { max-height: 92vh; max-height: 92dvh; overflow-y: auto; -webkit-overflow-scrolling: touch; }   /* 8 buttons already brush 560px; never clip */
 .update-banner { position: absolute; left: 50%; top: calc(env(safe-area-inset-top) + 8px); transform: translateX(-50%); z-index: 19; display: flex; align-items: center; gap: 8px; max-width: calc(100% - 76px);
   padding: 5px 6px 5px 14px; border-radius: 999px; background: rgba(16,28,46,.9); color: #fff; font-size: .8rem; font-weight: 800; box-shadow: var(--sh-soft); }
@@ -1303,7 +1445,7 @@ html.gfx-lite {
 /* ---- 6c: the order strip, the coach's tactic line, the Tactics sheet ---- */
 .order-strip { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; direction: rtl; height: 14px; margin-top: 3px; pointer-events: none; contain: layout style; }
 .os-cell { direction: ltr; display: flex; align-items: center; justify-content: center; gap: 3px; min-width: 0; overflow: hidden; white-space: nowrap;
-  font: 900 .62rem/14px 'Nunito', sans-serif; letter-spacing: .02em; color: #fff; }
+  font: 900 .62rem/14px var(--ff-body); letter-spacing: .02em; color: #fff; }
 .os-front { padding: 0 4px; border-radius: 999px; background: #1f7d49; }
 .os-act { padding: 0 3px; border-radius: 999px; background: #6a4bc0; letter-spacing: 0; }
 .os-act.tie { box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.85); }
@@ -1349,7 +1491,7 @@ html.gfx-lite {
 .record-line .tr-main { font-weight: 900; font-size: .88rem; color: var(--gilt-deep); display: flex; align-items: center; justify-content: center; gap: 5px; flex-wrap: wrap; }
 .record-line .tr-sub { font-size: .68rem; font-weight: 700; color: var(--ink-soft); margin-top: 1px; }
 .perfect-badge { display: inline-flex; align-items: center; padding: 1px 8px; border-radius: 999px; font-size: .68rem; font-weight: 900; letter-spacing: .02em; white-space: nowrap; color: #5a3e00; background: linear-gradient(180deg, #ffe08a, #f5c542); box-shadow: 0 1px 2px rgba(90,70,10,.35); }
-.perfect-ribbon { width: fit-content; margin: 0 auto; padding: 2px 14px; border-radius: 999px; font: 900 .8rem/1.5 'Cinzel', Georgia, serif; letter-spacing: .08em; color: #5a3e00; background: linear-gradient(180deg, #ffe08a, #f5c542); box-shadow: 0 2px 6px rgba(90,70,10,.35); animation: pop .4s var(--ease-bounce) .25s backwards; }
+.perfect-ribbon { width: fit-content; margin: 0 auto; padding: 2px 14px; border-radius: 999px; font: 900 .8rem/1.5 var(--ff-display); letter-spacing: .08em; color: #5a3e00; background: linear-gradient(180deg, #ffe08a, #f5c542); box-shadow: 0 2px 6px rgba(90,70,10,.35); animation: pop .4s var(--ease-bounce) .25s backwards; }
 #gameover #goEmoji { filter: none; }   /* .logo bobs for ever: an animating element carries no filter. The paintings have their own ground shadow */
 .perfect-fx { position: relative; margin: 6px 0 0; pointer-events: none; }
 #gameover.perfect #goTitle { color: #a8740a; -webkit-text-fill-color: #a8740a; }
@@ -1375,7 +1517,7 @@ html.gfx-lite {
   display: flex; justify-content: flex-end; align-items: flex-start; flex-wrap: wrap; gap: 6px;
   width: auto; max-width: calc(100% - 86px); margin: 0; min-height: 30px; flex-shrink: 0; }
 .meta-chip { display: inline-flex; align-items: center; gap: 5px; height: 30px; max-width: 190px; padding: 0 13px; border-radius: 999px; border: 1px solid rgba(255,255,255,.55);
-  background: rgba(16,32,52,.72); color: #fff; font: 800 .8rem/1 'Nunito', sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+  background: rgba(16,32,52,.72); color: #fff; font: 800 .8rem/1 var(--ff-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
 .meta-chip:active { transform: translateY(1px); }
 .meta-chip.pts b { color: #ffe9a8; }
 .meta-chip.pts.ready { animation: ptsPulse 2.4s var(--ease-soft) infinite; background: rgba(150,110,20,.9); }
@@ -1385,15 +1527,15 @@ html.gfx-lite {
   opacity: 0; transform: translate(-50%, 8px); transition: opacity .2s var(--ease-soft), transform .2s var(--ease-soft); }
 .toast.on { opacity: 1; transform: translate(-50%, 0); }
 /* ---- deck select: counter + locked tiles ---- */
-.deck-mode { text-align: center; font: 800 .72rem/1 'Cinzel', serif; letter-spacing: .08em; text-transform: uppercase; color: var(--gilt-deep); margin-top: 2px; }
-.deck-points { display: block; margin: 6px auto 0; padding: 5px 12px; border: none; border-radius: 999px; background: rgba(16,32,52,.72); color: #fff; font: 700 .76rem/1.2 'Nunito', sans-serif; cursor: pointer; }
+.deck-mode { text-align: center; font: 800 .72rem/1 var(--ff-display); letter-spacing: .08em; text-transform: uppercase; color: var(--gilt-deep); margin-top: 2px; }
+.deck-points { display: block; margin: 6px auto 0; padding: 5px 12px; border: none; border-radius: 999px; background: rgba(16,32,52,.72); color: #fff; font: 700 .76rem/1.2 var(--ff-body); cursor: pointer; }
 .deck-points b { color: #ffe9a8; }
 .faction-card.locked:not(.sel) { background: linear-gradient(180deg, rgba(226,234,242,.94), rgba(208,219,230,.92)); -webkit-backdrop-filter: none; backdrop-filter: none; }
 /* REQUIRED: `.gfx-lite .faction-card:not(.sel)` is (0,3,0) and would repaint a locked tile with the bright Lite fill */
 .gfx-lite .faction-card.locked:not(.sel) { background: linear-gradient(180deg, rgba(226,234,242,.94), rgba(208,219,230,.92)); }
 .faction-card.locked .fname, .faction-card.locked .ftag { opacity: .62; }
 .faction-card.locked .fpick { display: none; }
-.lock-row { display: flex; align-items: center; gap: 6px; margin-top: 5px; font: 900 .62rem/1 'Nunito', sans-serif; color: var(--ink-soft); }
+.lock-row { display: flex; align-items: center; gap: 6px; margin-top: 5px; font: 900 .62rem/1 var(--ff-body); color: var(--ink-soft); }
 .lock-tag { padding: 2px 6px; border-radius: 999px; background: rgba(18,32,52,.78); color: #fff; letter-spacing: .05em; }
 .lock-bar { flex: 1; height: 5px; border-radius: 3px; background: rgba(18,32,52,.16); overflow: hidden; }
 .lock-bar b { display: block; height: 100%; background: var(--gold-deep); transform-origin: 0 50%; }
@@ -1403,7 +1545,7 @@ html.gfx-lite {
 .deck-card.daily-first > h1 { order: 0; } .deck-card.daily-first > .deck-mode { order: 1; } .deck-card.daily-first > .deck-points { order: 2; }
 .deck-card.daily-first > #deckDaily { order: 3; margin-top: 10px; } .deck-card.daily-first > .deck-cap { order: 4; } .deck-card.daily-first > .faction-grid { order: 5; }
 .deck-card.daily-first > #deckBegin { order: 6; } .deck-card.daily-first > #deckBack { order: 7; } .deck-card.daily-first > .deck-or { display: none; }
-.deck-cap { display: none; text-align: center; margin: 12px 0 0; font: 800 .74rem/1.2 'Nunito', sans-serif; color: var(--ink); opacity: .7; }
+.deck-cap { display: none; text-align: center; margin: 12px 0 0; font: 800 .74rem/1.2 var(--ff-body); color: var(--ink); opacity: .7; }
 .deck-card.daily-first > .deck-cap { display: block; }
 .go-points { margin: 2px 0 10px; font-weight: 800; font-size: .86rem; color: #8a6410; }
 /* ---- unlock + points sheets ---- */
@@ -1414,24 +1556,24 @@ html.gfx-lite {
 .unlock-cost { text-align: center; font-weight: 800; font-size: .86rem; color: var(--ink); }
 .unlock-help { text-align: center; font-size: .74rem; font-weight: 700; color: var(--ink-soft); min-height: 1em; }
 .pts-step { display: grid; grid-template-columns: 24px 1fr; gap: 8px; align-items: start; font-size: .88rem; font-weight: 600; line-height: 1.4; color: var(--ink); }
-.pts-step i { width: 22px; height: 22px; border-radius: 50%; background: var(--gilt-deep); color: #fff; font: 900 .74rem/22px 'Nunito', sans-serif; text-align: center; font-style: normal; }
+.pts-step i { width: 22px; height: 22px; border-radius: 50%; background: var(--gilt-deep); color: #fff; font: 900 .74rem/22px var(--ff-body); text-align: center; font-style: normal; }
 .pts-foot { margin-top: 8px; font-size: .74rem; font-weight: 700; color: var(--ink-soft); text-align: center; }
 /* ---- codex fusions + the tracker (B-ADD-1) ---- */
 .codex-tabs { display: flex; justify-content: center; gap: 6px; margin: 0 0 8px; }
-.codex-tabs button { padding: 6px 14px; border-radius: 999px; border: 1px solid var(--panel-line); background: #fff; color: var(--ink-soft); font: 800 .78rem/1 'Nunito', sans-serif; cursor: pointer; }
+.codex-tabs button { padding: 6px 14px; border-radius: 999px; border: 1px solid var(--panel-line); background: #fff; color: var(--ink-soft); font: 800 .78rem/1 var(--ff-body); cursor: pointer; }
 .codex-tabs button.on { background: var(--gilt-deep); color: #fff; border-color: var(--gilt-deep); }
 .fz-status, .fz-note { text-align: center; font-size: .76rem; font-weight: 700; color: var(--ink-soft); margin: 0 0 8px; }
 .fz-note u { cursor: pointer; }
 .fz-seg, .fz-chips { display: flex; justify-content: center; gap: 6px; margin: 0 0 10px; }
-.fz-seg button, .fz-chips button { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--panel-line); background: #fff; color: var(--ink-soft); font: 800 .74rem/1 'Nunito', sans-serif; cursor: pointer; }
+.fz-seg button, .fz-chips button { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--panel-line); background: #fff; color: var(--ink-soft); font: 800 .74rem/1 var(--ff-body); cursor: pointer; }
 .fz-seg button.on, .fz-chips button.on { background: var(--gilt-deep); color: #fff; border-color: var(--gilt-deep); }
 .fz-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 7px; }
-.fz-group { grid-column: 1 / -1; margin: 6px 0 0; font: 900 .68rem/1.2 'Nunito', sans-serif; letter-spacing: .05em; text-transform: uppercase; color: var(--gilt-deep); }
+.fz-group { grid-column: 1 / -1; margin: 6px 0 0; font: 900 .68rem/1.2 var(--ff-body); letter-spacing: .05em; text-transform: uppercase; color: var(--gilt-deep); }
 .fz-tile { contain: layout style; background: var(--panel); border: 1.5px solid var(--panel-line); border-radius: var(--r-md); padding: 6px; text-align: center; }
 .fz-art { position: relative; width: 64px; height: 64px; margin: 0 auto 3px; border-radius: var(--r-sm); overflow: hidden; background: radial-gradient(circle at 50% 34%, #fff, #dceeff); }
 .fz-art img { width: 100%; height: 100%; object-fit: contain; }
 .fz-tile.todo .fz-art img { opacity: .55; }
-.fz-q { position: absolute; right: 2px; bottom: 2px; width: 16px; height: 16px; border-radius: 50%; background: rgba(18,32,52,.78); color: #fff; font: 900 .64rem/16px 'Nunito', sans-serif; }
+.fz-q { position: absolute; right: 2px; bottom: 2px; width: 16px; height: 16px; border-radius: 50%; background: rgba(18,32,52,.78); color: #fff; font: 900 .64rem/16px var(--ff-body); }
 .fz-nm { font-weight: 800; font-size: .74rem; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fz-par { font-size: .6rem; font-weight: 700; color: var(--ink-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fz-more { display: block; margin: 10px auto; }
@@ -1441,11 +1583,13 @@ html.gfx-lite {
 .fz-rowmain { min-width: 0; }
 .fz-bar { display: block; height: 5px; margin-top: 4px; border-radius: 3px; background: rgba(18,32,52,.16); overflow: hidden; }
 .fz-bar b { display: block; height: 100%; background: var(--gilt); transform-origin: 0 50%; }
-.fz-count { font: 900 .7rem/1 'Nunito', sans-serif; color: var(--ink-soft); white-space: nowrap; }
+.fz-count { font: 900 .7rem/1 var(--ff-body); color: var(--ink-soft); white-space: nowrap; }
 .fz-new { margin: 2px 0 6px; text-align: center; font-weight: 900; font-size: .82rem; color: #8a6410; }
 .fz-new.muted { color: var(--ink-soft); font-weight: 700; }
-.fz-pip { position: absolute; top: 2px; left: 2px; z-index: 3; width: 16px; height: 16px; border-radius: 50%; background: rgba(150,110,20,.92); color: #ffe9a8;
-  font: 900 .66rem/16px 'Nunito', sans-serif; font-style: normal; text-align: center; pointer-events: none; }
+/* (R9) the ✦ fresh-fusion pip moves to the top-RIGHT: squad cards are never .frozen and never carry a
+   .merge-badge (both are added only in renderShop), so the right corner of a squad card is empty. */
+.fz-pip { position: absolute; top: 2px; right: 2px; left: auto; z-index: 3; width: 16px; height: 16px; border-radius: 50%; background: rgba(150,110,20,.92); color: #ffe9a8;
+  font: 900 .66rem/16px var(--ff-body); font-style: normal; text-align: center; pointer-events: none; }
 /* ---- auth / account ---- */
 .auth-input { max-width: 100%; letter-spacing: 0; text-align: left; font-weight: 700; }
 .auth-code { text-align: center; letter-spacing: .5em; font-size: 1.3rem; font-weight: 900; }
@@ -1475,7 +1619,7 @@ html.gfx-lite {
 .lad-card p { margin: 0 0 8px; font-size: .84rem; font-weight: 600; color: var(--ink-soft); line-height: 1.4; }
 .lad-card .btn { width: 100%; margin-top: 8px; }
 .lad-name { font-weight: 900; font-size: 1.05rem; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.lad-tier { display: inline-flex; align-items: center; padding: 2px 9px; border-radius: 999px; font: 900 .7rem/1.4 'Nunito', sans-serif; color: #fff; background: #7d8a96; }
+.lad-tier { display: inline-flex; align-items: center; padding: 2px 9px; border-radius: 999px; font: 900 .7rem/1.4 var(--ff-body); color: #fff; background: #7d8a96; }
 .lad-tier.t1 { background: #b0703c; } .lad-tier.t2 { background: #8d9aa8; } .lad-tier.t3 { background: #c9971b; color: #3b2a00; }
 .lad-tier.t4 { background: #4b9fd0; } .lad-tier.t5 { background: linear-gradient(90deg, #2f9d8f, #2ba3d8); }
 .lad-bar { height: 7px; border-radius: 4px; background: rgba(18,32,52,.14); overflow: hidden; margin: 6px 0 3px; }
@@ -1508,7 +1652,7 @@ html.gfx-lite {
 .lad-delta.up { color: #1f7d49; } .lad-delta.down { color: var(--coral-deep); } .lad-delta.flat { color: var(--ink-soft); }
 .lad-strip .lad-rew { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; color: #8a6410; }   /* the ONLY token allowed to shrink — the line can never wrap */
 @media (max-width: 340px) { .lad-strip { padding: 0; gap: 6px; font-size: .74rem; } }
-.result-card > .lad-rankup { position: absolute; top: 8px; left: 50%; z-index: 2; padding: 3px 12px; border-radius: 999px; background: #1f7d49; color: #fff; font: 900 .74rem/1.3 'Nunito', sans-serif; white-space: nowrap;
+.result-card > .lad-rankup { position: absolute; top: 8px; left: 50%; z-index: 2; padding: 3px 12px; border-radius: 999px; background: #1f7d49; color: #fff; font: 900 .74rem/1.3 var(--ff-body); white-space: nowrap;
   transform: translateX(-50%); animation: ladRankPop .35s var(--ease-bounce) backwards; }   /* out of flow: zero layout height */
 @keyframes ladRankPop { from { opacity: 0; transform: translateX(-50%) scale(.6); } to { opacity: 1; transform: translateX(-50%) scale(1); } }
 /* never-clip safety net for the result card (5.5): the overlay scrolls, and the card centres with auto margins, which — unlike align-items:center — fall back to top-aligned + scrollable when the card is taller than the screen */
@@ -1533,8 +1677,8 @@ html.gfx-lite {
 .cos-plate::after { content: ""; position: absolute; inset: 0; pointer-events: none;      /* static name scrim — a gradient, not a filter */
   background: linear-gradient(90deg, rgba(8,14,28,.55), rgba(8,14,28,.18) 55%, transparent 75%); }
 .cos-plate .cos-pip { position: relative; z-index: 1; flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--pip, #9aa3ad); box-shadow: 0 0 0 2px rgba(255,255,255,.8); }
-.cos-plate .cos-name { position: relative; z-index: 1; min-width: 0; font: 800 1rem 'Nunito', sans-serif; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.cos-plate .cos-sub { position: relative; z-index: 1; margin-left: auto; flex: none; font: 700 .72rem 'Nunito', sans-serif; color: rgba(255,255,255,.9); text-shadow: 0 1px 2px rgba(0,0,0,.6); }
+.cos-plate .cos-name { position: relative; z-index: 1; min-width: 0; font: 800 1rem var(--ff-body); color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cos-plate .cos-sub { position: relative; z-index: 1; margin-left: auto; flex: none; font: 700 .72rem var(--ff-body); color: rgba(255,255,255,.9); text-shadow: 0 1px 2px rgba(0,0,0,.6); }
 .lad-row .cos-plate { flex: none; width: 72px; padding: 0; border-radius: 5px; box-shadow: inset 0 0 0 1px rgba(255,255,255,.35); }   /* leaderboard chip: host.bannerHTML(id) inside a .lad-row */
 .lad-row .cos-plate::after { display: none; }                                                                                          /* no name on it → no scrim */
 .cos-plate.mini { aspect-ratio: auto; height: 32px; padding: 0 8px; border-radius: 9px; } .cos-plate.mini .cos-name { font-size: .78rem; }
@@ -1576,9 +1720,9 @@ html.gfx-lite {
 /* (R5) the Mote pill and its icon are gone; `.pts` / `.pts-pill` replace them in the R5-C2 block at the
    end of this file, carrying the same geometry so the header does not move. */
 .stall-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; flex: none; }
-.stall-tab { height: 40px; border: 0; border-radius: 12px; font: 800 .9rem 'Nunito', sans-serif; color: var(--ink-soft); background: rgba(255,255,255,.6); }
+.stall-tab { height: 40px; border: 0; border-radius: 12px; font: 800 .9rem var(--ff-body); color: var(--ink-soft); background: rgba(255,255,255,.6); }
 .stall-tab.on { background: #fff; color: var(--ink); box-shadow: var(--sh-soft); }
-.stall-note, .stall-bar { flex: none; padding: 8px 12px; border-radius: 12px; background: rgba(255,255,255,.88); font: 700 .82rem 'Nunito', sans-serif; color: var(--ink); }
+.stall-note, .stall-bar { flex: none; padding: 8px 12px; border-radius: 12px; background: rgba(255,255,255,.88); font: 700 .82rem var(--ff-body); color: var(--ink); }
 .stall-bar { display: flex; align-items: center; gap: 8px; }
 .stall-slot { position: relative; width: 56px; height: 56px; padding: 4px; border-radius: 14px; border: 2px dashed rgba(18,38,54,.25); background: rgba(255,255,255,.6); }
 .stall-slot img { width: 100%; height: 100%; object-fit: contain; }
@@ -1598,7 +1742,7 @@ html.gfx-lite {
 .stall-chip { flex: none; max-width: 100%; display: inline-flex; align-items: center; gap: 3px; padding: 2px 8px; border-radius: 999px; font-size: .72rem; font-weight: 900; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: rgba(18,38,54,.08); }   /* never a two-line pill: emote tiles show the bare rank name (§6.2) */
 .stall-chip .ic { width: 13px; height: 13px; }
 .stall-chip.on { background: #2a9c5e; color: #fff; }  .stall-chip.short { opacity: .55; }
-/* (R4 deploy B, I4) CLASS COLLISION with deploy A: `.price` (line 319) is the shop card's absolutely-positioned
+/* (R4 deploy B, I4) CLASS COLLISION with deploy A: `.price` is the shop card's absolutely-positioned
    corner pill and its containing block is a `position:relative` card. A Stall price chip is `stall-chip price`
    and its tile is `position:static`, so without this reset every price pill escaped its tile and stacked in the
    top-left corner of the screen (and no tile showed a price at all). Keep the gold pill look, drop the escape. */
@@ -1798,7 +1942,7 @@ html.gfx-lite {
 .lad-head .lad-sub, .lad-head .lad-stats { margin-top: 2px; }
 .lad-head .lad-stats { margin-top: 5px; padding-top: 6px; border-top: 1px solid var(--rule-soft); }
 .lad-runs { display: flex; flex-direction: column; gap: 7px; }
-.lad-runs h3 { margin: 4px 0 0; font-family: 'Cinzel', Georgia, serif; font-weight: 800; text-transform: uppercase; letter-spacing: .08em;
+.lad-runs h3 { margin: 4px 0 0; font-family: var(--ff-display); font-weight: 800; text-transform: uppercase; letter-spacing: .08em;
   font-size: .8rem; color: var(--gilt-deep); text-shadow: 0 1px 0 rgba(255,255,255,.85), 0 0 12px rgba(255,255,255,.8); }
 /* the four nav links were underlined white words floating on the grass; they are plates now, in the grid
    the stylesheet already had for them */
@@ -1892,7 +2036,7 @@ html.gfx-lite {
 .deck-card.daily-first > #deckBegin { order: 8; } .deck-card.daily-first > #deckBack { order: 9; }
 
 .gear-cap { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 12px 0 0;
-  font: 800 .74rem/1.2 'Nunito', sans-serif; color: var(--ink); }
+  font: 800 .74rem/1.2 var(--ff-body); color: var(--ink); }
 .gear-cap > span { opacity: .78; }
 #deckselect .gear-cap { text-shadow: 0 1px 0 rgba(255,255,255,.75); }
 /* `Change ▸` gets the .acct-row treatment: the base chip is a 22 px pill with a downward-only pad, which
@@ -1909,7 +2053,7 @@ html.gfx-lite {
 .gfx-lite .gear-tile { background: rgba(255,255,255,.88); }
 
 /* ---- the sheet ----------------------------------------------------------------------------------- */
-.gear-points { font: 800 .82rem/1 'Nunito', sans-serif; color: var(--gilt-deep); margin-left: 6px; white-space: nowrap; }
+.gear-points { font: 800 .82rem/1 var(--ff-body); color: var(--gilt-deep); margin-left: 6px; white-space: nowrap; }
 .gear-list { display: flex; flex-direction: column; gap: 6px; }
 .gear-item { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; gap: 8px;
   padding: 6px 8px; border-radius: 12px; border: 1px solid var(--panel-line); background: #fff; cursor: pointer; }
@@ -1917,17 +2061,17 @@ html.gfx-lite {
 .gear-item.locked { opacity: .62; }                 /* dimmed, never hidden — seeing what you do not own is the point */
 .gear-item:active { transform: translateY(1px); }
 .gear-ic { width: 32px; height: 32px; object-fit: contain; }
-.gear-nm { display: flex; align-items: center; gap: 5px; font: 800 .82rem/1.2 'Nunito', sans-serif; color: var(--ink); }
-.gear-tx { font: 600 .7rem/1.3 'Nunito', sans-serif; color: var(--ink-soft); }
+.gear-nm { display: flex; align-items: center; gap: 5px; font: 800 .82rem/1.2 var(--ff-body); color: var(--ink); }
+.gear-tx { font: 600 .7rem/1.3 var(--ff-body); color: var(--ink-soft); }
 .gear-pick { width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--panel-line);
-  display: inline-flex; align-items: center; justify-content: center; font: 900 .78rem/1 'Nunito', sans-serif; color: #fff; }
+  display: inline-flex; align-items: center; justify-content: center; font: 900 .78rem/1 var(--ff-body); color: #fff; }
 .gear-item.on .gear-pick { background: var(--gilt-deep); border-color: var(--gilt-deep); }
-.gear-lock { font: 800 .74rem/1 'Nunito', sans-serif; color: var(--ink-soft); white-space: nowrap; }
+.gear-lock { font: 800 .74rem/1 var(--ff-body); color: var(--ink-soft); white-space: nowrap; }
 .gear-buy { min-height: 34px; padding: 0 10px; white-space: nowrap; }
 /* (R5 final verification) A pinned footer line, not a list row: it is OUTSIDE .sheet-body now (see
    index.html), so `flex: 0 0 auto` keeps it off the scroller and `min-height` reserves its line so the
    sheet does not jump by 1em the first time a tap is refused. */
-.gear-why { flex: 0 0 auto; min-height: 1em; margin: 8px 0 0; text-align: center; font: 700 .74rem/1.3 'Nunito', sans-serif; color: var(--ink-soft); }
+.gear-why { flex: 0 0 auto; min-height: 1em; margin: 8px 0 0; text-align: center; font: 700 .74rem/1.3 var(--ff-body); color: var(--ink-soft); }
 @media (max-width: 340px) { .gear-tx { display: none; } }
 
 /* ===================================================================================================
@@ -1940,6 +2084,40 @@ html.gfx-lite {
    narrowed by `.combined` (0,2,0 beats 0,1,0) rather than by editing the shared line. At 360 px the six
    cells are (336 − 5×6) / 6 = 51 px each; the card art is object-fit:contain, so it just gets smaller. */
 .shop-row.combined { grid-template-columns: repeat(6, 1fr); }
+
+/* (R9 lane D) The gear card's 3-gold coin chip. It rides the art's lower edge, OUT OF FLOW. In flow it would take
+   ~21 px of the 74 px content box from `.art-wrap { flex: 1 }` and shrink the gear art by ~28 %, undoing the owner
+   fix recorded at the `.card .art img` scale rules ("food should show larger" — 1.2 against the pets' 1.61). Out of
+   flow there is no row-height arithmetic to do at all: the cell's height is exactly what it was, so verify-r4's
+   "the cells are the same height" and 360×560 budget pins cannot be disturbed. z-index 4 and emitted AFTER
+   .art-wrap, so the price stays readable over a frozen cell's ice (same z, later in DOM order); under the tier
+   mark at 5. Centred with translateX(-50%), so it cannot push a neighbour even if a future glyph widens it.
+   Footprint: ~31 px against 41 px of cell inner width at 360 px; with the <=344 px trim, ~25 px against 36 px. */
+#shopSnacks .gear-cost { position: absolute; left: 50%; bottom: 2px; transform: translateX(-50%); z-index: 4;
+  display: inline-flex; align-items: center; gap: 2px; white-space: nowrap; pointer-events: none;
+  padding: 1px 7px; border-radius: 999px; font-size: .68rem; font-weight: 900; line-height: 1.3;
+  color: #6b4e12; background: linear-gradient(180deg,#ffe9a8,#f5c542);
+  box-shadow: 0 1px 2px rgba(20,40,70,.35), 0 0 0 1px rgba(107,78,18,.25); }
+#shopSnacks .gear-cost .ic { width: .8em; height: .8em; }
+/* (R9-V2, DE-7) THE CHIP OBEYS THE SAME 10 px FLOOR THIS LANE FOUGHT TO GIVE THE TIER MARK. `.tierbadge` is a
+   `10.5px` LITERAL precisely because `.6rem` renders 9.6 px at the default root and the floor is a RENDERED 10 px
+   (client.test.js gate A5) — and then these two trims shipped 9.92 px at 320x568 and 9.28 px in short landscape,
+   measured in headless Chrome, with no gate covering the chip's rendered size at all. Both are now px literals at
+   the floor. The BASE rule is left at .68rem (10.88 px at 360x640): the fix is to lift the two trims, not to shrink
+   the one size that was already legal. Landscape's padding drops 6px -> 3px in the same edit: at 10 px the chip
+   was 27.0 px against a 23.3 px gear cell — centred with translateX(-50%), so it overhung ~1.9 px each side into a
+   6 px gutter — and 3 px padding brings it inside the cell with the coin kept, which is better than shrinking the
+   digit or dropping the coin. verify-r9-board's B1 walk now measures this chip the way it measures the mark. */
+@media (max-width: 344px) { #shopSnacks .gear-cost { font-size: 10px; padding: 0 6px; } }
+@media (orientation: landscape) and (max-height: 600px) { #shopSnacks .gear-cost { font-size: 10px; padding: 0 3px; } }
+
+/* (R9 lane D) The shop row-label's empty right half finally says the word. `.row-label` is a
+   `justify-content: space-between` flex whose right half the squad row already uses for `.row-tools`, so naming
+   the halves costs ZERO height. flex 0 0 50% + centred text, NOT a right-aligned word: right-aligned, a ~34 px
+   "GEAR" in Cinzel sits over cell 6 alone and reads as naming ONE cell (FB-R3). Centred in the right half it
+   lands within 5 px of the three gear cells' own centre at every tested width (Δ 3.5 px at 360, 5 px at 320,
+   ~3.5 px in 640×360 landscape). */
+.row-label .rl-half { flex: 0 0 50%; text-align: center; font-size: .74rem; opacity: .92; }
 
 /* (§1.8) The ✦ pill and price chip. The mark is the GLYPH, not `assets/cos/mote` — the same ✦ the
    deck-select chip, the unlock sheet and the result strip already print, so one currency looks like one
@@ -2149,3 +2327,159 @@ html.gfx-lite {
    and shadow ("See my fusions" looked cut off). Give the scroller room for the ledge, and never let the button be the clipped edge. */
 #ptsModal .sheet-body { padding-bottom: 14px; }
 #ptsModal #ptsGo { display: block; width: 100%; margin: 12px 0 4px; }
+
+/* ================= ONBOARDING (R9 lane C) — docs/round9/spec-onboarding.md §6.3 ================= */
+/* z 15: above the board, below .update-banner (19) and every .modal (20). See index.html's comment. */
+.ob-layer { position: fixed; inset: 0; z-index: 15; pointer-events: none; }
+/* The "hole": a transparent rounded box with a huge spread shadow = everything else dimmed, in ONE paint.
+   No filter, no blend mode — nothing gfx-lite has to strip, and nothing that forces a full-screen filter pass
+   (the draftIn keyframe carries that warning for exactly this reason).
+   THE RING IS THE FIRST SHADOW, NOT AN `outline`. `outline` follows `border-radius` only on Safari 16.4+;
+   before that it paints a SQUARE ring around a rounded hole. Lane D's report came from an iPhone, so the ring
+   lives in the shadow stack, where `border-radius` has always been honoured. Two terms, so `.on-battle` and
+   `.gfx-lite` can strip the second without touching the first. */
+.ob-hole { position: fixed; border-radius: var(--r-md);
+  box-shadow: 0 0 0 2px var(--glow), 0 0 0 9999px var(--scrim);
+  transition: top .18s var(--ease-soft), left .18s var(--ease-soft), width .18s var(--ease-soft), height .18s var(--ease-soft);
+  animation: obPulse 1.6s ease-in-out infinite; }
+@keyframes obPulse {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(53,181,143,.55), 0 0 0 9999px var(--scrim); }
+  50%      { box-shadow: 0 0 0 4px rgba(53,181,143,1),   0 0 0 9999px var(--scrim); } }
+/* THE BATTLE SCREEN IS NEVER DIMMED. This is a class, not prose: the scrim is baked into the hole's
+   box-shadow, so "no dim here" has to STRIP THE SPREAD, not merely be asserted in a spec. The fight is the
+   payoff; dimming it would be vandalism. */
+.ob-layer.on-battle .ob-hole { animation: none; box-shadow: 0 0 0 2px var(--glow); }
+.ob-tip { position: fixed; max-width: 260px; padding: 7px 12px; border-radius: 999px; font-size: .82rem;
+  font-weight: 700; color: #fff; background: rgba(16,28,46,.88); box-shadow: var(--sh-soft); text-align: center; }
+.ob-tip b { color: var(--gilt-bloom); }
+/* THE CUE IS NEVER DIMMED. Lift the five things the player has to READ above the layer. All five are already
+   in flow, so `position: relative` adds no height and moves nothing; .hud / .coach.show / .card-detail already
+   carry `contain: layout style` and are therefore already stacking contexts — the z-index only places them.
+   #game itself is NOT a stacking context (position:absolute with z-index:auto), which is what lets a z-16
+   child out-paint a z-15 sibling of #game. Gate 7 asserts exactly that. */
+#game.ob-on .hud, #game.ob-on #coach, #game.ob-on #cardDetail,
+#game.ob-on .hint-slot, #game.ob-on .row-label { position: relative; z-index: 16; }
+/* The Skip chip inherits the house tap pad VERBATIM from .chip-btn::before — 32 px, grown only downward and
+   sideways. It is NOT re-declared here, and it must never be: the comment above that rule records the
+   measurement that forbids an upward extension (at 360x560 the chip's top edge sits exactly on #coach's bottom
+   edge, coach 66-174, chip 174-196), and verify-r4 step 1 asserts the coach's bottom-right corner is not a
+   chip. The 32 px is a STATED deviation from the >= 40 px rule, ruled on by the orchestrator. It used to say
+   34 here too: 34 is the arithmetic (22 px border box + 12 px down), but `top: 0; bottom: -12px` resolves
+   against the PADDING box and .chip-btn carries a 1 px border, so 20 + 12 = 32 — measured 32.0 in headless
+   Chrome at all four viewports AND 32.0 on WebKit / iPhone 12 (verify-onboard.mjs checks 11 and WK 11). */
+/* A CORRECTION, PUBLISHED RATHER THAN QUIETLY DROPPED. A `min-height: 44px` floor stood here for one
+   iteration, because the gate read #obSkip at 37.7 px and called it a miss of GATES-R8's >= 40 px rule. It was
+   not a miss: `.modal-card { animation: pop .3s }` SCALES the card, and a getBoundingClientRect() taken while
+   that animation runs returns the scaled box — 0.82 x 46 = 37.7. The shipped `.btn.ghostbtn` is 46 px on its
+   own. The floor was dead CSS for a defect that never existed, so it is gone and the gate waits for the
+   animation instead (verify-onboard.mjs check 2). */
+.ob-card .ob-art { display: flex; justify-content: center; gap: 4px; margin: -6px 0 4px; }
+.ob-card .ob-art img { height: 64px; width: auto; }
+.ob-card .ob-lead { font-size: .95rem; font-weight: 700; color: var(--ink); margin: 0 0 10px; text-align: center; }
+.ob-rows { list-style: none; margin: 0; padding: 0; display: grid; gap: 9px; text-align: left; }
+.ob-rows li { display: flex; align-items: flex-start; gap: 9px; font-size: .9rem; font-weight: 600;
+  line-height: 1.35; color: var(--ink); }
+.ob-rows .ic { width: 20px; height: 20px; flex: none; margin-top: 1px; }
+/* the first result card's one explanatory line — inside .result-card, above #continueBtn */
+.ob-result { margin: 0; font-size: .82rem; font-weight: 700; line-height: 1.35; color: var(--ink-soft); text-align: center; }
+/* gfx-lite: DROP THE SPREAD ENTIRELY, not just the pulse. A 9999px box-shadow is a full-screen fill that
+   repaints on every ring move; on a weak GPU the ring alone carries the attention. Same policy as
+   mergePulseLite: the teaching never degrades with the tier, only the motion and the fill. */
+.gfx-lite .ob-hole { animation: none; transition: none; box-shadow: 0 0 0 3px var(--glow); }
+/* reduced motion: nothing loops, nothing slides — the hole jumps to its new rect */
+@media (prefers-reduced-motion: reduce) { .ob-hole { animation: none; transition: none; } }
+/* short landscape: the art strip goes and the three rows pair up; .modal-card.sheet-card already caps at
+   94dvh with 10px 14px padding there, so the card clears 338 px at 640x360. */
+@media (orientation: landscape) and (max-height: 600px) {
+  .ob-card .ob-art { display: none; }
+  .ob-card .ob-lead { font-size: .86rem; margin-bottom: 7px; }
+  .ob-rows { grid-template-columns: 1fr 1fr; gap: 6px; }
+  .ob-rows li { font-size: .8rem; }
+  .ob-tip { max-width: 44vw; font-size: .76rem; padding: 5px 10px; }
+  /* THE RESULT NOTE HAS TO BE PLACED HERE OR THE GRID PUTS IT IN THE WRONG PLACE — found by LOOKING at
+     the 640x360-high-06-result-note screenshot, not by a number. In short landscape `.result-card.has-insights` becomes a
+     two-column grid and EVERY other child is explicitly placed (the R4 block above: #duelScore 1/-1, emblem
+     col 1 rows 2-3, banner col 1 row 4, sub col 1 row 5, insights col 2 rows 2-4, the button col 2 row 5).
+     #obResultNote is inserted immediately above #continueBtn in the DOM, which is exactly right in the flex
+     portrait card — but in the grid an unplaced item auto-flows into the first free cell, row 1 column 1, so
+     the sentence explaining `-1 ❤ · 4 left` rendered ABOVE the emblem and the DEFEATED headline, before the
+     player had read the thing it explains. Placed at the foot of the LEFT column it sits directly under the
+     stat line it is about, which is its portrait relationship, and the shipped placement of every other child
+     — the button included — is untouched. */
+  .result-card.has-insights .ob-result { grid-column: 1; grid-row: 6; }
+}
+/* THE DIAL, SWITCHED ON AT THE SPEC'S OWN <= 344 px BAND — and the band is now MEASURED, not guessed.
+   `.row-tools` carries THREE chips during the guided run. With the dial OFF, the clearance between the
+   "Your squad" label's right edge and the chips' left edge, on turn 2 (when #tacticsChip reads `1 Tactics`
+   rather than the turn-1 `Rules`), is:  320x568 -> 0 px.  360x640 -> 11 px.  412x915 -> 63 px.
+   Zero is not a margin: a two-digit warning count (`12 Tactics`) or lane B's zh-CN sweep eats it immediately,
+   and 320x568 portrait is the binding case for this row. So the dial fires at <= 344 px, where it buys the
+   margin, and stops there, so the chips keep their words on every wider phone — which is the better
+   conveyance. The remedy is the spec's own ("shorten the chips, never hide one") and it is the portrait twin
+   of `.chip-btn .long { display: none }`, which short landscape has shipped since round 4. It applies ONLY
+   while the guide is live (#game.ob-on): a player who skips, or who has finished, gets the shipped row back
+   untouched, long labels and all. */
+@media (max-width: 344px) { #game.ob-on .row-tools .long { display: none; } }
+
+/* ===== (R9 lane B) Simplified Chinese ==========================================================
+   Scoped entirely under :root:lang(zh), so the English path is untouched BY CONSTRUCTION — not by
+   care. <html> carries lang="zh-Hans", which :lang(zh) matches (a language range matches a tag that
+   equals it or extends it with a hyphen); data-lang="zh-CN" is the preference value the JS reads.   */
+
+/* The CJK stacks. Latin faces stay FIRST: fallback is per-glyph, so Latin names, Lv3, T4 and digits
+   keep the Cinzel/Nunito look and only hanzi fall through to the system CJK face. */
+:root:lang(zh) {
+  --ff-body: 'Nunito', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif;
+  --ff-display: 'Cinzel', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', serif;
+  --ff-hero: 'Cinzel Decorative', 'Cinzel', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', serif;
+}
+
+/* TRACKING AND CAPS. text-transform: uppercase appears 24 times and letter-spacing 59 times; uppercase
+   is a no-op on hanzi and positive tracking on CJK looks broken. Specificity (0,2,0) beats every
+   single-class rule in the sheet, and it CAN win: there is no `!important` on any letter-spacing or
+   text-transform anywhere here, and no ID-scoped rule sets either. So no per-rule override list is
+   needed and no rule can be missed.
+   THIS ALSO ZEROES TRACKING ON THE LATIN RUNS ZH KEEPS (creature names, Lv3, T4, the `English` half of
+   the language row), and that is a deliberate taste call, not an oversight. Kept global because a
+   `:not(.card-name)`-style exception list goes stale the moment another lane adds a Latin-bearing
+   class — exactly the "one missed painter" failure mode the reload decision rejects a live re-render
+   for — and because the affected runs are short tokens where 0.08em is a nicety, not legibility. It is
+   ONE REVERSIBLE LINE: if the zh screenshots read badly, the fix is to add the exceptions then,
+   informed by the pixels, rather than to guess a list now. The gate block records which way it went. */
+:root:lang(zh) *, :root:lang(zh) *::before, :root:lang(zh) *::after { letter-spacing: 0; text-transform: none; }
+
+/* CSS is a one-string surface: of 104 `content:` declarations exactly ONE carries real English — the
+   rewatch marker. The rest are "", escape-coded glyphs (\2726 ✦, \2655 ♕, \2728 ✨, \2713 ✓) or single
+   characters, and need no locale. The ID in the original selector is repeated here so this rule wins on
+   specificity rather than on source order. */
+:root:lang(zh) #battle.rewatch .vs-label::after { content: " · 回放中"; }
+
+/* (R9-B) THE SECOND content: STRING, found by the browser gate rather than by reading — which is why §16
+   exists. `.os-cell.has-act .os-front` sets the translated word (tr('FRONT') → 前排) to font-size:0 and
+   paints a bare Latin "F" over it, so on EVERY board turn after the first buy the one Latin glyph on the
+   screen sat beside 第 1 位. Chinese has a one-character form for free, so the compact mark the 62 px cell
+   needs costs no width: 前. Reproduced on WebKit too, so it was never a Chrome artefact. The tactics rule
+   that NAMES this mark (public/i18n/zh/tactics.js rule 4) is changed in the same edit — the two must agree. */
+:root:lang(zh) .os-cell.has-act .os-front::before { content: "前"; }
+
+/* (R9-B) AND THE WIDTH THAT COMES WITH IT — the ONE place the zh build measured wider than English, found by
+   running an English control at the SAME viewport rather than by assuming. `.os-cell` is `overflow: hidden`
+   (line ~1404), so this is a real clip risk, not a harmless spill: at 640x360 the shared cell ran 6 px over
+   its box in zh and 0 px in en, and at 320x568, 2 px over. Two hanzi are simply wider than "1st".
+   Fixed the way the English rule above it was: by tightening THIS cell, not by shrinking the type — the
+   original note records that dropping below .62rem brings back 8.6 px text, and that is as true in Chinese.
+   Dropping the two spaces the English key's shape left inside the ordinal (第 1 位 -> 第1位, a typography fix
+   in its own right) bought 3 px; the remaining 3 come from the pill padding and the gap, which are generous
+   for a glyph that needs no side bearing. MEASURED AFTER, at every size, against the same-size en control. */
+:root:lang(zh) .os-cell.has-act { gap: 1px; }
+:root:lang(zh) .os-cell.has-act .os-front { padding: 0 3px; }
+:root:lang(zh) .os-cell.has-act .os-act { padding: 0 2px; }
+
+/* THE ENGLISH FLASH, AND ITS GUARD. public/app.js is a deferred module, so the static English markup
+   paints before applyLang() runs — on a slow Android that is hundreds of milliseconds of English in a
+   Chinese build, and a screenshot taken after load would never show it. `visibility: hidden` rather
+   than `display: none` so layout still resolves and nothing re-flows when the class lifts. The class is
+   added ONLY when the pre-paint script chose zh, so the English path has no extra paint state at all;
+   app.js removes it the instant applyLang() finishes, and index.html's 4000 ms timer is the
+   broken-bundle failsafe only. */
+html.i18n-pending #app { visibility: hidden; }
