@@ -1769,6 +1769,14 @@ html.gfx-lite {
 .stall-chip.prl { background: none; box-shadow: inset 0 0 0 1.5px #6fa8dc; color: #2a5f8a; }
 .stall-chip.prl .dsh-fb { width: 13px; height: 13px; font-size: .5rem; }
 .stall-chip.play { background: none; box-shadow: inset 0 0 0 1.5px rgba(18,38,54,.22); color: var(--ink-soft); }
+/* (R11 lane G) the Alliances tab reuses the Gear row MINUS its 34 px icon column (no art on the row: the unlock sheet
+   shows the four creatures one tap away), so it is two columns — name + tag, then the button. An affordable,
+   still-locked alliance wears the same gold ring the deck screen's tile wears (.faction-card.can-unlock), so "you can
+   buy this now" reads the same in both places. The button mirrors .gear-buy exactly. */
+.stall-gear.stall-alliance { grid-template-columns: minmax(0, 1fr) auto; }
+.stall-alliance.can { box-shadow: 0 0 0 2px var(--gold), var(--sh-soft); }
+.stall-alliance .gear-nm { text-transform: uppercase; letter-spacing: .02em; }
+.stall-gear .alliance-unlock { min-height: 34px; padding: 0 10px; white-space: nowrap; }
 
 .dsh-list { display: grid; gap: 8px; }
 .dsh-pack { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; min-height: 56px; padding: 10px 12px; border: 0; border-radius: 14px;
@@ -2122,8 +2130,12 @@ html.gfx-lite {
 
 /* FOUR tabs now (Gear · Banners · Emotes · Arena). At 360 px that is (336 − 3×6) / 4 = 79 px a tab, so
    the labels still read at .9rem; at 320 the font steps down rather than the tab wrapping. */
-.stall-tabs { grid-template-columns: repeat(4, 1fr); }
-@media (max-width: 340px) { .stall-tab { font-size: .8rem; } }
+/* (R11 lane G) FIVE tabs — Alliances joined Gear, Banners, Emotes, Arena — on one row at every phone width: the
+   type steps down instead of the strip wrapping (measured: 'Alliances' at .8rem is 58 px of glyphs, five cells at
+   320 px are 59 px each). */
+.stall-tabs { grid-template-columns: repeat(5, 1fr); gap: 4px; }
+.stall-tab { font-size: .8rem; padding: 0 2px; }
+@media (max-width: 340px) { .stall-tab { font-size: .7rem; letter-spacing: -.01em; } }
 
 /* (§2.4) the Gear tab's rows — the sheet's `.gear-item` geometry, minus the pick circle and the tap
    affordance: an owned row is a statement, not a control (you choose your loadout on deck select). */
@@ -2132,7 +2144,9 @@ html.gfx-lite {
   padding: 6px 8px; border-radius: 12px; border: 1px solid var(--panel-line); background: #fff; }
 .stall-gear.own { opacity: .72; }
 .stall-gear .gear-buy { min-height: 34px; padding: 0 10px; white-space: nowrap; }
-.stall-list.gearlist .stall-sub { margin-top: 2px; }
+/* (R11 lane G) the one-line hint under the Gear and Alliances lists rides a soft plate: pale ink straight on the painted
+   floor was hard to read (looked at, 360×640 en). Scoped to the single-column lists; the emote grid is untouched. */
+.stall-list.gearlist .stall-sub { margin-top: 2px; padding: 8px 10px; border-radius: 12px; background: rgba(255,255,255,.72); }
 
 /* R5 owner-eye fix, kept — (R11 lane B) simplified: the Gear row sits directly under the Daily Deck button in EVERY
    progression state now, by DOM order rather than flex `order:`, and both lines ride one soft plate so the caption is

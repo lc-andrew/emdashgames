@@ -63,7 +63,7 @@
   <link rel="preload" as="font" type="font/woff2" href="assets/fonts/Nunito.woff2" crossorigin />
   <link rel="preload" as="font" type="font/woff2" href="assets/fonts/Cinzel.woff2" crossorigin />
   <link rel="preload" as="image" href="assets/ui/hero-scene.webp" fetchpriority="high" />
-  <link rel="stylesheet" href="public/style.css?v=185726f6f8" />
+  <link rel="stylesheet" href="public/style.css?v=ec6684c698" />
   <link rel="stylesheet" href="public/fx.css?v=969db94a22" />
 </head>
 <body>
@@ -354,9 +354,12 @@
         <button class="dsh-pill" id="prlChip" type="button" hidden aria-label="Dash Points"></button>
       </div>
     </header>
-    <!-- (R5 §1.8) GEAR FIRST — it is the tab that changes how you play — then the three cosmetic slots. -->
+    <!-- (R11 lane G, "Alliance decks should be in the shop") ALLIANCES FIRST — the ✦ 50 purchase that makes a deck —
+         then Gear (R5 §1.8: it changes how you play), then the three cosmetic slots. Both of the first two are
+         open to guests (honour system, round 5 §1.3); the cosmetics still need an account. -->
     <div class="stall-tabs" role="tablist">
-      <button class="stall-tab on" data-tab="gear" role="tab">Gear</button>
+      <button class="stall-tab on" data-tab="alliance" role="tab">Alliances</button>
+      <button class="stall-tab" data-tab="gear" role="tab">Gear</button>
       <button class="stall-tab" data-tab="banner" role="tab">Banners</button>
       <button class="stall-tab" data-tab="emote" role="tab">Emotes</button>
       <button class="stall-tab" data-tab="skin" role="tab">Arena</button>
@@ -774,6 +777,6 @@
 </div>
 <audio id="bgm" loop preload="none" src="assets/audio/music.m4a"></audio>
 <audio id="bgm-battle" loop preload="none" src="assets/audio/battle-music.m4a"></audio>
-<script type="module" src="public/app.js?v=039920f423"></script>
+<script type="module" src="public/app.js?v=d8f6f692aa"></script>
 </body>
 </html>
