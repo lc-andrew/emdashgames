@@ -1118,8 +1118,9 @@ h1 { font-family: var(--ff-hero); font-size: 2.2rem; letter-spacing: .06em; marg
 #deckBegin { width: 100%; }                                     /* the primary CTA spans the grid */
 /* Daily Deck reads as a clear ALTERNATIVE to picking factions: an "— or —" divider + a compact, centred
    secondary button (not a second full-width primary crammed under the selector). */
-.deck-or { text-align: center; margin: 13px 0 9px; opacity: .6; font-weight: 800; font-size: .8rem; letter-spacing: .06em; color: var(--ink); text-shadow: 0 1px 0 rgba(255,255,255,.7); }
-.deck-daily { display: block; width: -webkit-fit-content; width: fit-content; margin: 0 auto; padding: 9px 22px; font-size: .9rem; }
+/* (R11 lane B) `.deck-or` is gone (see .deck-altcap). The Daily Deck button is a full-width `.btn.big.primary` now — the
+   same paint as #ptsGo and the title's Online button — and `.deck-daily` only spaces it. */
+.deck-daily { display: block; width: 100%; margin: 12px 0 0; }
 #deckBack { margin-top: 14px; }
 .btn-ic { width: 1.3em; height: 1.3em; object-fit: contain; vertical-align: -0.28em; margin-right: 3px; }
 .btn-ic.duel-ic { width: 1.9em; height: 1.9em; vertical-align: -0.55em; margin-right: 1px; }
@@ -1533,12 +1534,11 @@ html.gfx-lite {
 .lock-bar b { display: block; height: 100%; background: var(--gold-deep); transform-origin: 0 50%; }
 .faction-card.can-unlock { box-shadow: 0 0 0 2px var(--gold), var(--sh-soft); }
 .lock-cta { padding: 3px 9px; border-radius: 999px; background: linear-gradient(180deg, #ffe08a, #f5c542); color: #5a3e00; }
-.deck-card.daily-first { display: flex; flex-direction: column; }
-.deck-card.daily-first > h1 { order: 0; } .deck-card.daily-first > .deck-mode { order: 1; } .deck-card.daily-first > .deck-points { order: 2; }
-.deck-card.daily-first > #deckDaily { order: 3; margin-top: 10px; } .deck-card.daily-first > .deck-cap { order: 4; } .deck-card.daily-first > .faction-grid { order: 5; }
-.deck-card.daily-first > #deckBegin { order: 6; } .deck-card.daily-first > #deckBack { order: 7; } .deck-card.daily-first > .deck-or { display: none; }
-.deck-cap { display: none; text-align: center; margin: 12px 0 0; font: 800 .74rem/1.2 var(--ff-body); color: var(--ink); opacity: .7; }
-.deck-card.daily-first > .deck-cap { display: block; }
+/* (R11 lane B, spec-deck-choice.md §2) The `.daily-first` flex re-ordering is GONE: every progression state now shares
+   ONE DOM order (Daily Deck → Gear → alliances → Begin → Back), so there is nothing to re-order and no "flex order trap"
+   for a new child to fall into. `.deck-cap` and `.deck-or` went with it; these two lines replaced them. */
+.deck-sub { text-align: center; margin: 6px 4px 0; font: 700 .78rem/1.3 var(--ff-body); color: var(--ink); opacity: .8; text-shadow: 0 1px 0 rgba(255,255,255,.7); }
+.deck-altcap { text-align: center; margin: 16px 0 2px; font: 800 .8rem/1.2 var(--ff-body); letter-spacing: .06em; color: var(--ink); text-shadow: 0 1px 0 rgba(255,255,255,.7); }
 .go-points { margin: 2px 0 10px; font-weight: 800; font-size: .86rem; color: #8a6410; }
 /* ---- unlock + points sheets ---- */
 .unlock-art { position: relative; display: flex; justify-content: center; gap: 6px; margin: 8px 0; min-height: 64px; }
@@ -2021,11 +2021,8 @@ html.gfx-lite {
 /* ================================================================================================== */
 
 /* ---- the row (two stacked lines between #factionGrid and #deckBegin) ------------------------------ */
-/* THE FLEX ORDER TRAP: .deck-card.daily-first gives every child an explicit `order:`, so a child
-   appended without one defaults to 0 and lands beside the <h1>. Both new lines get one, and
-   #deckBegin / #deckBack shift by two (6,7 → 8,9). */
-.deck-card.daily-first > .gear-cap { order: 6; } .deck-card.daily-first > .gear-row { order: 7; }
-.deck-card.daily-first > #deckBegin { order: 8; } .deck-card.daily-first > #deckBack { order: 9; }
+/* (R11 lane B) The "flex order trap" this comment used to describe is gone with `.daily-first`: the two Gear lines sit
+   in DOM order under the Daily Deck button in every state. */
 
 .gear-cap { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 12px 0 0;
   font: 800 .74rem/1.2 var(--ff-body); color: var(--ink); }
@@ -2137,24 +2134,12 @@ html.gfx-lite {
 .stall-gear .gear-buy { min-height: 34px; padding: 0 10px; white-space: nowrap; }
 .stall-list.gearlist .stall-sub { margin-top: 2px; }
 
-/* R5 owner-eye fix: on a 360×640 phone the Gear row sat BELOW six alliance tiles (off-screen). In the daily-first layout it now
-   sits directly under the Daily Deck button — what a new player with every alliance locked actually uses — and both lines ride
-   one soft plate so the caption is readable over the painted floor. Order only; no markup moved.
-   (R7) RE-MEASURED AT SEVEN TILES and DELIBERATELY UNCHANGED — the seventh alliance adds one 83 px row, nothing else.
-   Measured with all three unlock states (0 / 2 / 7 open) at BOTH 360×640 and 320×568: `.faction-grid` is already one
-   column below 420 px (the rule ~line 553), so no tile clips and there is no horizontal scroll (scrollWidth === clientWidth);
-   #deckselect scrolls 1013 px / 1133 px against a 640 / 568 viewport — it scrolled with six too — and #deckBegin is fully
-   on screen after that scroll in every cell. The point of this block still holds: Daily Deck and the Gear row are both above
-   the fold for a locked-out player, and the alliance list is what scrolls. */
-.deck-card.daily-first > .gear-cap { order: 3; margin: 12px 0 0; padding: 8px 10px 0; border-radius: 14px 14px 0 0; background: rgba(255,255,255,.72); text-shadow: none; }
-.deck-card.daily-first > .gear-row { order: 3; margin: 0; padding: 6px 10px 10px; border-radius: 0 0 14px 14px; background: rgba(255,255,255,.72); }
-.deck-card.daily-first > .deck-cap { order: 4; margin-top: 12px; }
-.deck-card:not(.daily-first) > .gear-cap { padding: 8px 10px 0; border-radius: 14px 14px 0 0; background: rgba(255,255,255,.72); text-shadow: none; }
-.deck-card:not(.daily-first) > .gear-row { margin: 0; padding: 6px 10px 10px; border-radius: 0 0 14px 14px; background: rgba(255,255,255,.72); }
-/* explicit, collision-free order for the daily-first deck screen: Daily Deck → Gear → Alliances → Begin → Back */
-.deck-card.daily-first > #deckDaily { order: 3; } .deck-card.daily-first > .gear-cap { order: 4; } .deck-card.daily-first > .gear-row { order: 5; }
-.deck-card.daily-first > .deck-cap { order: 6; } .deck-card.daily-first > .faction-grid { order: 7; }
-.deck-card.daily-first > #deckBegin { order: 8; } .deck-card.daily-first > #deckBack { order: 9; }
+/* R5 owner-eye fix, kept — (R11 lane B) simplified: the Gear row sits directly under the Daily Deck button in EVERY
+   progression state now, by DOM order rather than flex `order:`, and both lines ride one soft plate so the caption is
+   readable over the painted floor. `.faction-grid` is one column below 420 px (the rule ~line 570), so no tile clips and
+   there is no horizontal scroll; #deckselect scrolls, and the alliance list is what scrolls. */
+.deck-card > .gear-cap { padding: 8px 10px 0; border-radius: 14px 14px 0 0; background: rgba(255,255,255,.72); text-shadow: none; }
+.deck-card > .gear-row { margin: 0; padding: 6px 10px 10px; border-radius: 0 0 14px 14px; background: rgba(255,255,255,.72); }
 
 /* ===================================================================================================
    ROUND 6 — LANE B (UI pass). Owner feedback, verbatim:

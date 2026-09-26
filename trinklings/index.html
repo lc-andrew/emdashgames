@@ -63,7 +63,7 @@
   <link rel="preload" as="font" type="font/woff2" href="assets/fonts/Nunito.woff2" crossorigin />
   <link rel="preload" as="font" type="font/woff2" href="assets/fonts/Cinzel.woff2" crossorigin />
   <link rel="preload" as="image" href="assets/ui/hero-scene.webp" fetchpriority="high" />
-  <link rel="stylesheet" href="public/style.css?v=e2cae2c47a" />
+  <link rel="stylesheet" href="public/style.css?v=185726f6f8" />
   <link rel="stylesheet" href="public/fx.css?v=969db94a22" />
 </head>
 <body>
@@ -229,23 +229,32 @@
     </div>
   </section>
 
-  <!-- DECK SELECT (coalition of 2) -->
+  <!-- DECK SELECT — (R11 lane B, docs/round11/spec-deck-choice.md) TWO named options in ONE DOM order for every
+       progression state: the Daily Deck first, styled and worded as "play", with one line saying what it is; then the
+       Gear row; then the alliance path, named as the alternative with the one rule that applies to this player. -->
   <section id="deckselect" class="screen">
     <div class="deck-card">
-      <h1>Your Alliance</h1>
+      <h1>Choose your deck</h1>
       <!-- M2 — deck select header (§4.6). #deckModeTag is painted by the ladder and stays hidden outside a ranked run. -->
       <div id="deckModeTag" class="deck-mode" hidden></div>
       <button id="deckPoints" class="deck-points" type="button"></button>
-      <div class="deck-cap">Alliances — unlock two to build a deck</div>
-      <div id="factionGrid" class="faction-grid"></div>
-      <!-- R5 §2.5 — GEAR: two stacked lines between #factionGrid and #deckBegin. The label and `Change ▸`
-           sit on their OWN line so the six 44 px tiles get the full content width (6×44 + 5×6 = 294 px
-           inside 336 px at 360). Both lines carry an explicit `order:` in .deck-card.daily-first. -->
+      <!-- (R11 lane B) `glass` is GONE from this button: .btn.glass outranked the .primary class decorateDeckSelect used to
+           toggle onto it (same specificity, later in style.css), so the only playable option for a player with fewer than
+           two alliances had painted as a pale pill since round 4. The label carries the verb; the sub-line says what it is
+           (filled by decorateDeckSelect: the ranked variant differs). -->
+      <button class="btn big primary deck-daily" id="deckDaily">Play today’s Daily Deck ▶</button>
+      <div class="deck-sub" id="deckDailySub"></div>
+      <!-- R5 §2.5 — GEAR: two stacked lines. The label and `Change ▸` sit on their OWN line so the six 44 px tiles get the
+           full content width (6×44 + 5×6 = 294 px inside 336 px at 360). -->
       <div class="gear-cap" id="gearCap"><span id="gearCapLabel">Gear — what you bring</span><button class="chip-btn" id="gearChange" type="button">Change ▸</button></div>
       <div class="gear-row" id="gearRow"></div>
+      <!-- (R11 lane B) The alternative, named. #deckAltSub is the one rule for THIS player's state (0 / 1 / 2+ alliances). -->
+      <div class="deck-altcap" id="deckAltCap">— or build an alliance deck —</div>
+      <div class="deck-sub" id="deckAltSub"></div>
+      <div id="factionGrid" class="faction-grid"></div>
+      <!-- hidden (not disabled) by decorateDeckSelect while fewer than two alliances are unlocked: a dead primary that
+           only repeated the caption above was the second thing wrong with this screen. -->
       <button class="btn big primary" id="deckBegin" disabled>Pick 2 factions</button>
-      <div class="deck-or">— or —</div>
-      <button class="btn glass deck-daily" id="deckDaily">Today’s Daily Deck</button>
       <button class="btn ghostbtn" id="deckBack">Back</button>
     </div>
   </section>
@@ -765,6 +774,6 @@
 </div>
 <audio id="bgm" loop preload="none" src="assets/audio/music.m4a"></audio>
 <audio id="bgm-battle" loop preload="none" src="assets/audio/battle-music.m4a"></audio>
-<script type="module" src="public/app.js?v=a7bdb7ac7d"></script>
+<script type="module" src="public/app.js?v=039920f423"></script>
 </body>
 </html>
