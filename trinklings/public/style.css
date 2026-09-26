@@ -336,11 +336,13 @@ h1 { font-family: var(--ff-hero); font-size: 2.2rem; letter-spacing: .06em; marg
 .cd-m .atk { background: linear-gradient(180deg,#5c6675,#39424f); }
 .cd-m .hp { background: linear-gradient(180deg,#ff6f84,#e0475f); }
 .cd-m .cd-mv { background: rgba(18,38,66,.55); }
-/* (R9 lane E) The card's top-left corner now belongs to the PERMANENT tier mark, so the three TRANSIENT marks
-   that used to share it move. All three are edited IN PLACE: an appended `.price { … }` would have the same
-   specificity as the original and would silently depend on source order. "FREE" drops to just under the 15 px
-   mark (2 + 15 = 17, + 2 of air). `.price` is shop-only and `.rot-pip` is squad-only, so they can never meet. */
-.price { position: absolute; top: 19px; left: 3px; z-index: 2; display: inline-flex; align-items: center; gap: 2px; background: linear-gradient(180deg,#ffe9a8,#f5c542); color: #6b4e12; font-size: .6rem; font-weight: 900; border-radius: 999px; padding: 1px 6px 1px 4px; box-shadow: var(--sh-soft); }
+/* (R9 lane E → R10) "FREE" is back in the top-left corner. Lane E dropped it to `top: 19px` to sit under the
+   permanent tier mark; the owner's 2026-09-25 ruling removed that mark from every card face, so the reason for the
+   drop went with it (a chip floating 17 px under nothing would be the removal's artefact). Edited IN PLACE, as
+   before: an appended `.price { … }` would have the same specificity and silently depend on source order. `.price`
+   is shop-only and `.rot-pip` is squad-only, so they can never meet; `.fz-pip` stays top-RIGHT on its own merits
+   (it no longer collides with `.rot-pip`). test/client.test.js A5 pins all three positions. */
+.price { position: absolute; top: 3px; left: 4px; z-index: 2; display: inline-flex; align-items: center; gap: 2px; background: linear-gradient(180deg,#ffe9a8,#f5c542); color: #6b4e12; font-size: .6rem; font-weight: 900; border-radius: 999px; padding: 1px 6px 1px 4px; box-shadow: var(--sh-soft); }
 .price .ic { width: .8em; height: .8em; }
 .freeze { position: absolute; top: 2px; right: 2px; z-index: 3; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--panel-line); background: rgba(255,255,255,.92); cursor: pointer; box-shadow: var(--sh-soft); display: flex; align-items: center; justify-content: center; padding: 0; }
 .freeze .ic { width: 13px; height: 13px; }
@@ -674,22 +676,23 @@ h1 { font-family: var(--ff-hero); font-size: 2.2rem; letter-spacing: .06em; marg
 .btn.fb-mic { width: auto; margin: 10px auto 0; display: inline-flex; }
 .btn.fb-mic.on { background: linear-gradient(180deg,#ffd9de,#ffb3bf); border-color: var(--coral-deep); color: #7a1626; }
 
-/* ---- tier mark (R9 lane E) -----------------------------------------------------------------------
-   ONE component, two dresses: `.tierbadge` inline (tap-detail, Codex, rival rows, gear loadout sheet)
-   and `.tierbadge.tiermark` pinned to a card's top-left corner. The NUMBER is the signal now; the
-   tier colour is redundant reinforcement, which is why the pills may be near-isoluminant to each
-   other (1.02-1.06) while every one of them clears 4.5:1 against its own ink (7.30-11.53:1 measured,
-   where the old white-on-tier-colour chip was 2.15-2.95:1 for tiers 1-4 — the tiers a player meets on
-   turns 1-8). font-size is a px LITERAL, not a rem: the gate asserts a RENDERED glyph >= 10 px and
-   .6rem is 9.6 px at the default root. height 15 = 10.5 of glyph + 2.25 of optical padding a side.
-   min-width 19 so a row of cards cannot ripple as tiers change ("T6" is the widest at ~12 px of advance).
-   The box-shadow hairline is what separates a pale pill from the pale-grass half of the painted scene
-   (~2:1 against it) — and it is a SHADOW, not a border, so `.card { border-color: … !important }`
-   cannot reach it. No backdrop-filter, no animation, no filter: byte-identical in gfx-lite and under
-   prefers-reduced-motion, so there is no lite variant to keep in sync.
-   The two custom properties carry LITERAL FALLBACKS: a `.tierbadge` that ever reaches the DOM without
-   a tN class must render a wrong-coloured pill, never an invisible one — which is the one failure mode
-   this lane exists to prevent. */
+/* ---- tier badge (R9 lane E; the card-face mark removed in R10) ----------------------------------
+   ONE component, ONE dress: `.tierbadge` inline — the tap-detail ("[T3] of 6"), the Codex row, a rival
+   row and the Gear loadout sheet. Lane E also pinned it to every card's corner as `.tierbadge.tiermark`;
+   the owner ruled that off on 2026-09-25 ("I'm not sure about the tiers being shown on the cards. Let's
+   not do that." — FEEDBACK_LOG.md 2026-09-25T08:41:12Z), so the three `.tiermark` rules that lived here
+   (board top-left, battle top-right, the enemy-line inset) are DELETED, not commented out, and
+   test/client.test.js A5 fails on any `.tiermark` selector returning to comment-stripped CSS. Everything
+   below is the badge a player reads BEHIND A TAP. Dark ink on a pale pill: every tier clears 4.5:1
+   against its own ink (7.30-11.53:1, computed by client.test.js A6 out of this file and measured live in
+   the tap-detail by verify-r9-board B2) where the pre-R9 white-on-tier-colour chip was 2.15-2.95:1 for
+   tiers 1-4 — the E23 defect, which stays fixed. font-size is a px LITERAL, not a rem: .6rem is 9.6 px at
+   the default root and the floor is a RENDERED 10 px. height 15 = 10.5 of glyph + 2.25 of optical padding
+   a side; min-width 19 so a row cannot ripple as tiers change ("T6" is the widest at ~12 px of advance).
+   The box-shadow hairline separates a pale pill from a pale row. No backdrop-filter, no animation, no
+   filter: byte-identical in gfx-lite and under prefers-reduced-motion, so there is no lite variant to keep
+   in sync. The two custom properties carry LITERAL FALLBACKS: a `.tierbadge` that ever reaches the DOM
+   without a tN class must render a wrong-coloured pill, never an invisible one. */
 .tierbadge { flex: none; display: inline-flex; align-items: center; justify-content: center;
   min-width: 19px; height: 15px; padding: 0 3px; vertical-align: middle;
   font-family: var(--ff-body); font-weight: 900; font-size: 10.5px; line-height: 1; letter-spacing: .01em;
@@ -701,19 +704,8 @@ h1 { font-family: var(--ff-hero); font-size: 2.2rem; letter-spacing: .06em; marg
 .tierbadge.t4 { --tm-bg: #ece1fc; --tm-ink: #472680; }
 .tierbadge.t5 { --tm-bg: #ffe6d2; --tm-ink: #7a3806; }
 .tierbadge.t6 { --tm-bg: #fff0c4; --tm-ink: #6b4700; }
-/* the corner mark. z-index 5: above .price/.lvl/.rot-pip (2-3) and above .held, the frozen ice and the ::after
-   crown (4); below .shieldbadge (6), which is a battle-card element only. `.card { contain: layout style }` makes
-   every card its own stacking context, so these numbers only ever compete with each other.
-   pointer-events:none — the whole card is the tap target, and a mark that swallowed a tap would break give/buy. */
-.card .tiermark { position: absolute; top: 2px; left: 2px; z-index: 5; pointer-events: none; }
-/* BATTLE: top-RIGHT, not top-left. `.shieldbadge` is pinned top-left at z-index 6 and would cover ~12x13 px of a
-   top-left mark AND win the stack; nothing else on a .bcard occupies the top-right. */
-.bcard .tiermark { position: absolute; top: 0; right: 0; left: auto; z-index: 5; pointer-events: none; }
-/* the far line is drawn in a .7x-wide box whose .art keeps the full --bw, so the mark shifts OUT by the same inset
-   the shield shifts IN and keeps its spot beside the pet. */
-#battle .side.enemy .bcard > .tiermark { right: calc(0px - var(--bw) * .15); }
-/* the tap-detail's tier item: "[T3] of 6". The mark reads T3 and the suffix completes the sentence, so there is no
-   "TIER" label saying it twice — the full words are on the item's aria-label and the mark's title. */
+/* the tap-detail's tier item: "[T3] of 6". The badge reads T3 and the suffix completes the sentence, so there is no
+   "TIER" label saying it twice — the full words are on the item's aria-label and the badge's title. */
 .cd-tier > i { font-style: normal; text-transform: none; font-size: .62rem; font-weight: 800; color: var(--ink-soft); }
 
 /* ---- HUD mini-labels (touch devices have no title= tooltips) ---- */
@@ -1216,7 +1208,7 @@ html.gfx-lite {
   line-height: 1.45; letter-spacing: .02em; color: var(--ink-soft); background: rgba(57,80,95,.1); box-shadow: inset 0 0 0 1px rgba(57,80,95,.32); white-space: nowrap; vertical-align: 1px; }
 /* (R4) the "Next: 2/2 ⟳" tag on its "instead" turn, and the ⟳ pip on a squad card whose next fire is that turn. Static — no animation, no filter. */
 .lvrot.alt { color: #7a4a00; background: rgba(255,176,32,.2); box-shadow: inset 0 0 0 1px rgba(200,130,20,.5); }
-.rot-pip { position: absolute; top: 19px; left: 3px; z-index: 3;   /* (R9) under the tier mark — see .price */ pointer-events: none; font: 900 .8rem/1 var(--ff-body); color: #7a4a00; text-shadow: 0 1px 0 rgba(255,255,255,.7); }
+.rot-pip { position: absolute; top: 1px; left: 3px; z-index: 3;   /* (R10) back in the corner — the tier mark it sat under is gone; see .price */ pointer-events: none; font: 900 .8rem/1 var(--ff-body); color: #7a4a00; text-shadow: 0 1px 0 rgba(255,255,255,.7); }
 /* "Fed +A/+H" — the tracked stat-food total in the tap-detail header (stat foods are baked into atk/hp, so they leave no badge) */
 .cd-fed { flex: none; display: inline-flex; align-items: center; margin-top: 1px; padding: 1px 7px; border-radius: 999px; font-size: .66rem; font-weight: 900; line-height: 1.35;
   white-space: nowrap; color: #1d6b55; background: rgba(79,194,160,.2); box-shadow: inset 0 0 0 1px rgba(47,157,143,.45); }
@@ -2099,7 +2091,7 @@ html.gfx-lite {
   color: #6b4e12; background: linear-gradient(180deg,#ffe9a8,#f5c542);
   box-shadow: 0 1px 2px rgba(20,40,70,.35), 0 0 0 1px rgba(107,78,18,.25); }
 #shopSnacks .gear-cost .ic { width: .8em; height: .8em; }
-/* (R9-V2, DE-7) THE CHIP OBEYS THE SAME 10 px FLOOR THIS LANE FOUGHT TO GIVE THE TIER MARK. `.tierbadge` is a
+/* (R9-V2, DE-7) THE CHIP OBEYS THE SAME 10 px FLOOR THIS LANE FOUGHT TO GIVE THE TIER BADGE. `.tierbadge` is a
    `10.5px` LITERAL precisely because `.6rem` renders 9.6 px at the default root and the floor is a RENDERED 10 px
    (client.test.js gate A5) — and then these two trims shipped 9.92 px at 320x568 and 9.28 px in short landscape,
    measured in headless Chrome, with no gate covering the chip's rendered size at all. Both are now px literals at
@@ -2107,7 +2099,7 @@ html.gfx-lite {
    the one size that was already legal. Landscape's padding drops 6px -> 3px in the same edit: at 10 px the chip
    was 27.0 px against a 23.3 px gear cell — centred with translateX(-50%), so it overhung ~1.9 px each side into a
    6 px gutter — and 3 px padding brings it inside the cell with the coin kept, which is better than shrinking the
-   digit or dropping the coin. verify-r9-board's B1 walk now measures this chip the way it measures the mark. */
+   digit or dropping the coin. verify-r9-board's B1 walk measures this chip the way it once measured the card-face mark (gone since R10). */
 @media (max-width: 344px) { #shopSnacks .gear-cost { font-size: 10px; padding: 0 6px; } }
 @media (orientation: landscape) and (max-height: 600px) { #shopSnacks .gear-cost { font-size: 10px; padding: 0 3px; } }
 

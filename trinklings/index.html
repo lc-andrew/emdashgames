@@ -63,7 +63,7 @@
   <link rel="preload" as="font" type="font/woff2" href="assets/fonts/Nunito.woff2" crossorigin />
   <link rel="preload" as="font" type="font/woff2" href="assets/fonts/Cinzel.woff2" crossorigin />
   <link rel="preload" as="image" href="assets/ui/hero-scene.webp" fetchpriority="high" />
-  <link rel="stylesheet" href="public/style.css?v=2393c9b8eb" />
+  <link rel="stylesheet" href="public/style.css?v=e2cae2c47a" />
   <link rel="stylesheet" href="public/fx.css?v=969db94a22" />
 </head>
 <body>
@@ -365,8 +365,9 @@
       <h2 id="tierModalTitle">Tier 2 unlocked!</h2>
       <!-- (R9 lane C) "Tier 2 unlocked!" + "Nice ▶" names a mechanic and never explains it, in a modal every
            player meets on turn 3 of every run. Static markup: no hook, no step, no storage, no lifetime. It is
-           the only change in that lane which reaches a player who never sees the guide, and it is what makes
-           lane E's tier mark readable instead of a second unexplained mark. -->
+           the only change in that lane which reaches a player who never sees the guide. (R10: lane E's card-face
+           tier mark was removed on the owner's 2026-09-25 ruling — this modal, the how-to legend and the tap-detail
+           are now where a tier is explained; no card face carries one.) -->
       <p id="tierModalSub" class="sheet-sub">Stronger Trinklings now show up in the shop.</p>
       <button class="btn big primary" id="tierModalOk">Nice ▶</button>
     </div>
@@ -689,7 +690,7 @@
       <h2>How to play</h2>
       <ul>
         <li data-i18n="html">Each turn you get <b>10 <img class="ic" src="assets/ui/coin.webp" alt="gold"></b> to spend in the shop. It doesn't carry over.</li>
-        <li data-i18n="html">Every Trinkling and every piece of Gear carries a small <b>tier</b> badge in its top corner — <b>T1</b> up to <b>T6</b>. A new tier opens every second turn, and the higher the tier, the stronger the Trinkling. Tap a card to see its tier written out.</li>
+        <li data-i18n="html">Trinklings and Gear come in six <b>tiers</b>. A new tier opens every second turn, and the higher the tier, the stronger the Trinkling. <b>Tap a card</b> to see its tier.</li>
         <li data-i18n="html">Every Trinkling shows two chips: a <b>grey Attack</b> and a <b>red Health</b> (X / Y). So "+2/+2" means +2 attack and +2 health.</li>
         <li data-i18n="html"><b>Tap a shop Trinkling</b>, then <b>tap an empty squad slot</b> to buy it (<span id="howBuyCost">3</span> <img class="ic" src="assets/ui/coin.webp" alt="gold">).</li>
         <li data-i18n="html">Tap a squad Trinkling, then another slot to <b>reorder</b> — the <b>rightmost one fights first ▶</b>.</li>
@@ -764,6 +765,6 @@
 </div>
 <audio id="bgm" loop preload="none" src="assets/audio/music.m4a"></audio>
 <audio id="bgm-battle" loop preload="none" src="assets/audio/battle-music.m4a"></audio>
-<script type="module" src="public/app.js?v=c0097e2c64"></script>
+<script type="module" src="public/app.js?v=a7bdb7ac7d"></script>
 </body>
 </html>
